@@ -1,0 +1,13 @@
+# This is coolify specific compose setup for deployment
+services:
+    app:
+        build:
+            context: .
+            dockerfile: docker/Dockerfile
+        environment:
+            - SPRING_DATASOURCE_PASSWORD
+            - SPRING_DATASOURCE_URL
+            - SPRING_DATASOURCE_USERNAME
+
+        image: firo1919/inventory
+        restart: unless-stopped
