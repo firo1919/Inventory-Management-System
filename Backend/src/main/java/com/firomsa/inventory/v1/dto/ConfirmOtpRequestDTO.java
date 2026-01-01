@@ -1,0 +1,7 @@
+package com.firomsa.inventory.v1.dto;
+
+import jakarta.validation.constraints.NotBlank;
+
+public record ConfirmOtpRequestDTO(
+        @NotBlank String otp) {
+}
