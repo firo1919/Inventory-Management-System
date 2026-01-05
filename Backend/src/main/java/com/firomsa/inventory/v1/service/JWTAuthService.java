@@ -1,16 +1,13 @@
 package com.firomsa.inventory.v1.service;
 
-import java.util.Date;
-import java.util.Random;
-import java.util.concurrent.TimeUnit;
-
-import org.springframework.stereotype.Service;
-
 import com.firomsa.inventory.config.AuthSecret;
-
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import java.util.Date;
+import java.util.Random;
+import java.util.concurrent.TimeUnit;
+import org.springframework.stereotype.Service;
 
 @Service
 public class JWTAuthService {
@@ -29,30 +26,26 @@ public class JWTAuthService {
         var now = new Date(System.currentTimeMillis());
 
         return Jwts.builder()
-                .header()
-                .keyId(tokenId)
-                .and()
-                .subject(subject)
-                .issuedAt(now)
-                .expiration(
-                        new Date(
-                                now.getTime() +
-                                        TimeUnit.MINUTES.toMillis(JWT_DURATION)))
-                .signWith(Keys.hmacShaKeyFor(authSecret.getSecret().getBytes()))
-                .compact();
+            .header()
+            .keyId(tokenId)
+            .and()
+            .subject(subject)
+            .issuedAt(now)
+            .expiration(new Date(now.getTime() + TimeUnit.MINUTES.toMillis(JWT_DURATION)))
+            .signWith(Keys.hmacShaKeyFor(authSecret.getSecret().getBytes()))
+            .compact();
     }
 
     public Claims getClaims(String token) {
         return Jwts.parser()
-                .verifyWith(Keys.hmacShaKeyFor(authSecret.getSecret().getBytes()))
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
+            .verifyWith(Keys.hmacShaKeyFor(authSecret.getSecret().getBytes()))
+            .build()
+            .parseSignedClaims(token)
+            .getPayload();
     }
 
     public boolean isValidToken(String token) {
-        return getExpirationDate(token).after(
-                new Date(System.currentTimeMillis()));
+        return getExpirationDate(token).after(new Date(System.currentTimeMillis()));
     }
 
     public boolean isValidToken(String token, String username) {
@@ -62,8 +55,7 @@ public class JWTAuthService {
     }
 
     public boolean isTokenExpired(String token) {
-        return getExpirationDate(token).before(
-                new Date(System.currentTimeMillis()));
+        return getExpirationDate(token).before(new Date(System.currentTimeMillis()));
     }
 
     public Date getExpirationDate(String token) {

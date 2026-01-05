@@ -7,7 +7,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
-public record RegisterRequestDTO(
+public record UserUpdateRequestDTO(
         @NotBlank String firstName,
         @NotBlank String lastName,
         @NotBlank String username,

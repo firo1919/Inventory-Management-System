@@ -48,6 +48,7 @@ public class AdminLoader implements CommandLineRunner {
                     .firstName(adminProperties.getFirstName())
                     .lastName(adminProperties.getLastName())
                     .active(true)
+                    .enabled(true)
                     .role(role)
                     .createdAt(now)
                     .build();

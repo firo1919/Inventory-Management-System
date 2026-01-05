@@ -9,6 +9,7 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
@@ -55,6 +56,7 @@ public class User {
     private String password;
 
     @NotBlank
+    @Column(unique = true)
     private String email;
 
     @NotBlank
@@ -62,17 +64,21 @@ public class User {
 
     @NotNull
     @Builder.Default
-    private boolean active = Boolean.FALSE;
+    private boolean active = Boolean.TRUE;
+
+    @NotNull
+    @Builder.Default
+    private boolean enabled = Boolean.FALSE;
 
     @ManyToOne
     @JoinColumn(name = "role_id", referencedColumnName = "id")
     private Role role;
 
-    @OneToMany(mappedBy = "user")
+    @OneToMany(mappedBy = "user", cascade = CascadeType.REMOVE)
     @Builder.Default
     private List<RefreshToken> refreshTokens = new ArrayList<>();
 
-    @OneToMany(mappedBy = "user")
+    @OneToMany(mappedBy = "user", cascade = CascadeType.REMOVE)
     @Builder.Default
     private List<ConfirmationOTP> confirmationOtps = new ArrayList<>();
 
