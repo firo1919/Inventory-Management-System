@@ -1,0 +1,50 @@
+# This is for standalone local deployment
+services:
+    app:
+        build:
+            context: ../
+            dockerfile: docker/Dockerfile
+        environment:
+            - SPRING_DATASOURCE_PASSWORD
+            - SPRING_DATASOURCE_URL
+            - SPRING_DATASOURCE_USERNAME
+            - SPRING_MAIL_USERNAME
+            - SPRING_MAIL_PASSWORD
+            - SPRING_MAIL_HOST
+            - SPRING_MAIL_PORT
+            - SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH
+            - SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE
+            - ADMIN_FIRSTNAME
+            - ADMIN_LASTNAME
+            - ADMIN_USERNAME
+            - ADMIN_PASSWORD
+            - ADMIN_EMAIL
+            - ADMIN_PHONE
+            - AUTH_SECRET
+        ports:
+            - 8080:8080
+        image: firo1919/inventory
+        restart: unless-stopped
+        depends_on:
+            postgres:
+                condition: service_healthy
+    postgres:
+        image: "postgres:latest"
+        environment:
+            - POSTGRES_DB
+            - POSTGRES_PASSWORD
+            - POSTGRES_USER
+        volumes:
+            - db_data:/var/lib/postgresql/18/data
+        ports:
+            - 5432
+        healthcheck:
+            test:
+                ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+            start_period: 10s
+
+volumes:
+    db_data:
