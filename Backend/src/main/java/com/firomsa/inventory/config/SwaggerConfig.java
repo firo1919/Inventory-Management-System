@@ -17,8 +17,8 @@ public class SwaggerConfig {
                 .pathsToMatch("/api/v1/**")
                 .addOpenApiCustomizer(openApi -> openApi.info(
                         new Info()
-                                .title("Maaed API v1")
-                                .description("Version 1 of the maaed API")
+                                .title("IMS API v1")
+                                .description("Version 1 of the IMS API")
                                 .version("v1")))
                 .build();
     }
@@ -26,7 +26,7 @@ public class SwaggerConfig {
     @Bean
     public OpenAPI mainOpenApiInfo() {
         return new OpenAPI().info(new Info()
-                .title("Maaed API")
+                .title("IMS API")
                 .description("All available API versions")
                 .version("Current"));
     }
