@@ -1,9 +1,8 @@
-# This is coolify specific compose setup for deployment
 services:
     app:
         build:
-            context: .
-            dockerfile: docker/Dockerfile
+            context: ./
+            dockerfile: Dockerfile
         environment:
             - SPRING_DATASOURCE_PASSWORD
             - SPRING_DATASOURCE_URL
@@ -21,6 +20,8 @@ services:
             - ADMIN_EMAIL
             - ADMIN_PHONE
             - AUTH_SECRET
-
-        image: firo1919/inventory
+        ports:
+            - 8080:8080
+        container_name: inventory_app
+        image: inventory:prod
         restart: unless-stopped
