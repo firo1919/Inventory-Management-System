@@ -1,6 +1,8 @@
 package com.firomsa.inventory.v1.service;
 
 import com.firomsa.inventory.config.AdminConfig;
+
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.mail.MailException;
 import org.springframework.mail.SimpleMailMessage;
@@ -9,15 +11,11 @@ import org.springframework.stereotype.Service;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class EmailService {
 
-    private JavaMailSender javaMailSender;
-    private AdminConfig adminConfig;
-
-    public EmailService(JavaMailSender javaMailSender, AdminConfig adminConfig) {
-        this.javaMailSender = javaMailSender;
-        this.adminConfig = adminConfig;
-    }
+    private final JavaMailSender javaMailSender;
+    private final AdminConfig adminConfig;
 
     public void sendOtp(String otp, String email) throws MailException {
         log.info("Sending confirmation otp to: {}", email);

@@ -61,6 +61,8 @@ public class User {
 
     @NotBlank
     private String phone;
+    
+    private String imageKey;
 
     @NotNull
     @Builder.Default

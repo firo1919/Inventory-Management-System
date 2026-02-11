@@ -4,22 +4,20 @@ import com.firomsa.inventory.config.AuthSecret;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import lombok.RequiredArgsConstructor;
+
 import java.util.Date;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class JWTAuthService {
 
     private final int JWT_DURATION = 15;
     private final AuthSecret authSecret;
-
     private final Random random = new Random();
-
-    public JWTAuthService(AuthSecret authSecret) {
-        this.authSecret = authSecret;
-    }
 
     public String generateToken(String subject) {
         String tokenId = String.valueOf(random.nextInt(10000));

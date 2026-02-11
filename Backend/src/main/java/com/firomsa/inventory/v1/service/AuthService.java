@@ -26,6 +26,8 @@ import com.firomsa.inventory.v1.dto.ResendOtpResponseDTO;
 import com.firomsa.inventory.v1.mapper.UserMapper;
 import java.time.LocalDateTime;
 import java.util.Random;
+
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -35,6 +37,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class AuthService {
 
     private final PasswordEncoder passwordEncoder;
@@ -48,28 +51,6 @@ public class AuthService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final int OTP_DURATION = 6;
     private final int REFRESH_TOKEN_DURATION = 15;
-
-    public AuthService(
-        PasswordEncoder passwordEncoder,
-        UserRepository userRepository,
-        RoleRepository roleRepository,
-        UserMapper userMapper,
-        EmailService emailService,
-        ConfirmationOtpRepository confirmationOtpRepository,
-        AuthenticationManager authenticationManager,
-        JWTAuthService jwtAuthService,
-        RefreshTokenRepository refreshTokenRepository
-    ) {
-        this.passwordEncoder = passwordEncoder;
-        this.emailService = emailService;
-        this.userRepository = userRepository;
-        this.roleRepository = roleRepository;
-        this.userMapper = userMapper;
-        this.confirmationOtpRepository = confirmationOtpRepository;
-        this.authenticationManager = authenticationManager;
-        this.jwtAuthService = jwtAuthService;
-        this.refreshTokenRepository = refreshTokenRepository;
-    }
 
     @Transactional
     public RegisterResponseDTO create(RegisterRequestDTO registerRequestDTO) {

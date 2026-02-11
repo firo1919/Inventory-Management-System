@@ -1,5 +1,11 @@
 package com.firomsa.inventory.v1.service;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
+import org.springframework.stereotype.Service;
+
 import com.firomsa.inventory.exception.ResourceNotFoundException;
 import com.firomsa.inventory.model.Role;
 import com.firomsa.inventory.repository.RoleRepository;
@@ -7,31 +13,30 @@ import com.firomsa.inventory.repository.UserRepository;
 import com.firomsa.inventory.v1.dto.UserResponseDTO;
 import com.firomsa.inventory.v1.dto.UserUpdateRequestDTO;
 import com.firomsa.inventory.v1.mapper.UserMapper;
-import java.util.List;
-import java.util.UUID;
-import org.springframework.stereotype.Service;
+
+import lombok.RequiredArgsConstructor;
 
 @Service
-public class AdminService {
+@RequiredArgsConstructor
+public class EmployeeService {
 
-    private UserRepository userRepository;
-    private UserMapper userMapper;
-    private RoleRepository roleRepository;
-
-    public AdminService(
-        UserRepository userRepository,
-        UserMapper userMapper,
-        RoleRepository roleRepository
-    ) {
-        this.userRepository = userRepository;
-        this.userMapper = userMapper;
-        this.roleRepository = roleRepository;
-    }
+    private final UserRepository userRepository;
+    private final UserMapper userMapper;
+    private final RoleRepository roleRepository;
+    private final StorageService storageService;
 
     public List<UserResponseDTO> getEmployees() {
         var users = userRepository.findAll();
-        var userResponses = users.stream().map(userMapper::toDTO).toList();
-        return userResponses;
+        var response = new ArrayList<UserResponseDTO>();
+        for (var user : users) {
+            var userResponse = userMapper.toDTO(user);
+            if (user.getImageKey() != null) {
+                userResponse.setProfilePictureUrl(storageService.getUrl(user.getImageKey()));
+            }
+            response.add(userResponse);
+        }
+        
+        return response;
     }
 
     public UserResponseDTO getEmployeeById(UUID id) {
@@ -39,6 +44,9 @@ public class AdminService {
             .findById(id)
             .orElseThrow(() -> new ResourceNotFoundException(id.toString() + " User not found"));
         var userResponse = userMapper.toDTO(user);
+        if (user.getImageKey() != null) {
+            userResponse.setProfilePictureUrl(storageService.getUrl(user.getImageKey()));
+        }
         return userResponse;
     }
 
@@ -83,6 +91,9 @@ public class AdminService {
         user.setRole(role);
         userRepository.save(user);
         var updatedUserResponse = userMapper.toDTO(user);
+        if (user.getImageKey() != null) {
+            updatedUserResponse.setProfilePictureUrl(storageService.getUrl(user.getImageKey()));
+        }
         return updatedUserResponse;
     }
 }

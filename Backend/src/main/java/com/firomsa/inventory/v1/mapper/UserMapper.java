@@ -11,6 +11,7 @@ import com.firomsa.inventory.v1.dto.UserResponseDTO;
 public interface UserMapper {
     @Mapping(source = "role.name", target = "role")
     @Mapping(target = "createdAt", dateFormat = "dd.MM.yyyy")
+    @Mapping(target = "profilePictureUrl", ignore = true)
     UserResponseDTO toDTO(User user);
 
     @Mapping(target = "id", ignore = true)
@@ -21,5 +22,6 @@ public interface UserMapper {
     @Mapping(target = "refreshTokens", ignore = true)
     @Mapping(target = "confirmationOtps", ignore = true)
     @Mapping(target = "role", ignore = true)
+    @Mapping(target = "imageKey", ignore = true)
     User toModel(RegisterRequestDTO requestDTO);
 }
