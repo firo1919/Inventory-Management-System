@@ -25,7 +25,7 @@ public class StorageService {
         String key = System.currentTimeMillis() + "_" + file.getFilename();
         return new UploadResponseDTO(key, s3Template.createSignedPutURL(s3Config.getBucketName(), key,
                 Duration.ofDays(s3Config.getExpiryDays()), null, file.getContentType()).toString(),
-                s3Config.getExpiryDays().toString());
+                String.valueOf(s3Config.getExpiryDays()));
     }
 
     public boolean exists(String key) {
