@@ -87,20 +87,26 @@ public class AuthService {
 
     @Transactional
     public RegisterResponseDTO createAdmin(RegisterAdminRequestDTO registerAdminRequestDTO) {
-        if (userRepository.count() > 0) {
-            throw new AuthenticationException(
-                    "Only one admin can be registered, if you want to create more admins please ask the existing admin to create them");
-        }
-
-        // Validate bootstrap token
+        // Validate bootstrap token configuration first to avoid revealing deployment state
         if (bootstrapConfig.getToken() == null || bootstrapConfig.getToken().isBlank()) {
             throw new AuthenticationException(
                     "Bootstrap token is not configured. Please set APP_BOOTSTRAP_TOKEN environment variable to enable admin registration.");
         }
 
+        // Validate that request contains a bootstrap token
+        if (registerAdminRequestDTO.bootstrapToken() == null || registerAdminRequestDTO.bootstrapToken().isBlank()) {
+            throw new AuthenticationException("Authentication failed");
+        }
+
         // Use constant-time comparison to prevent timing attacks
         if (!constantTimeEquals(bootstrapConfig.getToken(), registerAdminRequestDTO.bootstrapToken())) {
             throw new AuthenticationException("Authentication failed");
+        }
+
+        // Check if admin already exists
+        if (userRepository.count() > 0) {
+            throw new AuthenticationException(
+                    "Only one admin can be registered, if you want to create more admins please ask the existing admin to create them");
         }
 
         Role role = roleRepository.findByName(Roles.ADMIN).orElseThrow(
