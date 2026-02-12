@@ -7,7 +7,7 @@ import lombok.Data;
 
 @Component
 @Data
-@ConfigurationProperties(prefix = "bootstrap")
+@ConfigurationProperties(prefix = "app.bootstrap")
 public class BootstrapConfig {
     private String token;
 }

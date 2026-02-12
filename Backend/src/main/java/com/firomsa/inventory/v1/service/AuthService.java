@@ -27,6 +27,8 @@ import com.firomsa.inventory.v1.dto.RegisterResponseDTO;
 import com.firomsa.inventory.v1.dto.ResendOtpRequestDTO;
 import com.firomsa.inventory.v1.dto.ResendOtpResponseDTO;
 import com.firomsa.inventory.v1.mapper.UserMapper;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.time.LocalDateTime;
 import java.util.Random;
 
@@ -96,7 +98,8 @@ public class AuthService {
                     "Bootstrap token is not configured. Admin registration is disabled.");
         }
 
-        if (!bootstrapConfig.getToken().equals(registerAdminRequestDTO.bootstrapToken())) {
+        // Use constant-time comparison to prevent timing attacks
+        if (!constantTimeEquals(bootstrapConfig.getToken(), registerAdminRequestDTO.bootstrapToken())) {
             throw new AuthenticationException(
                     "Invalid bootstrap token. Please provide the correct bootstrap token to register as admin.");
         }
@@ -209,5 +212,18 @@ public class AuthService {
 
         refreshTokenRepository.deleteAllByUser(user);
         return new LogoutResponseDTO("Successfully logged out");
+    }
+
+    /**
+     * Performs constant-time string comparison to prevent timing attacks.
+     * This method ensures that the comparison time is independent of the input values.
+     */
+    private boolean constantTimeEquals(String expected, String actual) {
+        if (expected == null || actual == null) {
+            return false;
+        }
+        byte[] expectedBytes = expected.getBytes(StandardCharsets.UTF_8);
+        byte[] actualBytes = actual.getBytes(StandardCharsets.UTF_8);
+        return MessageDigest.isEqual(expectedBytes, actualBytes);
     }
 }
