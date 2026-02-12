@@ -101,7 +101,7 @@ public class Product {
     private LocalDateTime updatedAt;
 
     public List<String> getImageKeys() {
-        return new ArrayList<>(imageKeys);
+        return imageKeys != null ? new ArrayList<>(imageKeys) : new ArrayList<>();
     }
 
     public void setImageKeys(List<String> imageKeys) {
@@ -109,7 +109,7 @@ public class Product {
     }
 
     public Set<Category> getCategories() {
-        return new HashSet<>(categories);
+        return categories != null ? new HashSet<>(categories) : new HashSet<>();
     }
 
     public void setCategories(Set<Category> categories) {
