@@ -100,18 +100,42 @@ public class Product {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
+    /**
+     * Returns a defensive copy of the image keys list to prevent external modification
+     * of internal state.
+     * 
+     * @return a new ArrayList containing the image keys, or null if the field is null
+     */
     public List<String> getImageKeys() {
         return imageKeys != null ? new ArrayList<>(imageKeys) : null;
     }
 
+    /**
+     * Sets the image keys by creating a defensive copy of the provided list to prevent
+     * external modification of internal state.
+     * 
+     * @param imageKeys the list of image keys to set, or null to clear the field
+     */
     public void setImageKeys(List<String> imageKeys) {
         this.imageKeys = imageKeys != null ? new ArrayList<>(imageKeys) : null;
     }
 
+    /**
+     * Returns a defensive copy of the categories set to prevent external modification
+     * of internal state.
+     * 
+     * @return a new HashSet containing the categories, or null if the field is null
+     */
     public Set<Category> getCategories() {
         return categories != null ? new HashSet<>(categories) : null;
     }
 
+    /**
+     * Sets the categories by creating a defensive copy of the provided set to prevent
+     * external modification of internal state.
+     * 
+     * @param categories the set of categories to set, or null to clear the field
+     */
     public void setCategories(Set<Category> categories) {
         this.categories = categories != null ? new HashSet<>(categories) : null;
     }
