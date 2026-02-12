@@ -99,4 +99,20 @@ public class Product {
     @LastModifiedDate
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
+
+    public List<String> getImageKeys() {
+        return new ArrayList<>(imageKeys);
+    }
+
+    public void setImageKeys(List<String> imageKeys) {
+        this.imageKeys = imageKeys != null ? new ArrayList<>(imageKeys) : new ArrayList<>();
+    }
+
+    public Set<Category> getCategories() {
+        return new HashSet<>(categories);
+    }
+
+    public void setCategories(Set<Category> categories) {
+        this.categories = categories != null ? new HashSet<>(categories) : new HashSet<>();
+    }
 }
