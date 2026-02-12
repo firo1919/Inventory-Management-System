@@ -1,5 +1,6 @@
 package com.firomsa.inventory.v1.service;
 
+import com.firomsa.inventory.config.BootstrapConfig;
 import com.firomsa.inventory.exception.AuthenticationException;
 import com.firomsa.inventory.exception.InvalidOtpException;
 import com.firomsa.inventory.exception.ResourceNotFoundException;
@@ -20,6 +21,7 @@ import com.firomsa.inventory.v1.dto.LoginResponseDTO;
 import com.firomsa.inventory.v1.dto.LogoutRequestDTO;
 import com.firomsa.inventory.v1.dto.LogoutResponseDTO;
 import com.firomsa.inventory.v1.dto.RefreshTokenRequestDTO;
+import com.firomsa.inventory.v1.dto.RegisterAdminRequestDTO;
 import com.firomsa.inventory.v1.dto.RegisterRequestDTO;
 import com.firomsa.inventory.v1.dto.RegisterResponseDTO;
 import com.firomsa.inventory.v1.dto.ResendOtpRequestDTO;
@@ -50,6 +52,7 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final JWTAuthService jwtAuthService;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final BootstrapConfig bootstrapConfig;
     private final int OTP_DURATION = 6;
     private final int REFRESH_TOKEN_DURATION = 15;
 
@@ -81,14 +84,34 @@ public class AuthService {
     }
 
     @Transactional
-    public RegisterResponseDTO createAdmin(RegisterRequestDTO registerRequestDTO) {
+    public RegisterResponseDTO createAdmin(RegisterAdminRequestDTO registerAdminRequestDTO) {
         if (userRepository.count() > 0) {
             throw new AuthenticationException(
                     "Only one admin can be registered, if you want to create more admins please ask the existing admin to create them");
         }
 
+        // Validate bootstrap token
+        if (bootstrapConfig.getToken() == null || bootstrapConfig.getToken().isBlank()) {
+            throw new AuthenticationException(
+                    "Bootstrap token is not configured. Admin registration is disabled.");
+        }
+
+        if (!bootstrapConfig.getToken().equals(registerAdminRequestDTO.bootstrapToken())) {
+            throw new AuthenticationException(
+                    "Invalid bootstrap token. Please provide the correct bootstrap token to register as admin.");
+        }
+
         Role role = roleRepository.findByName(Roles.ADMIN).orElseThrow(
-                () -> new ResourceNotFoundException("Role: " + registerRequestDTO.role().name()));
+                () -> new ResourceNotFoundException("Role: ADMIN"));
+
+        RegisterRequestDTO registerRequestDTO = new RegisterRequestDTO(
+                registerAdminRequestDTO.firstName(),
+                registerAdminRequestDTO.lastName(),
+                registerAdminRequestDTO.username(),
+                registerAdminRequestDTO.password(),
+                registerAdminRequestDTO.email(),
+                Roles.ADMIN,
+                registerAdminRequestDTO.phone());
 
         User user = userMapper.toModel(registerRequestDTO);
         user.setRole(role);

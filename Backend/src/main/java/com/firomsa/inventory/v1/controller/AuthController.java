@@ -7,7 +7,7 @@ import com.firomsa.inventory.v1.dto.LoginResponseDTO;
 import com.firomsa.inventory.v1.dto.LogoutRequestDTO;
 import com.firomsa.inventory.v1.dto.LogoutResponseDTO;
 import com.firomsa.inventory.v1.dto.RefreshTokenRequestDTO;
-import com.firomsa.inventory.v1.dto.RegisterRequestDTO;
+import com.firomsa.inventory.v1.dto.RegisterAdminRequestDTO;
 import com.firomsa.inventory.v1.dto.RegisterResponseDTO;
 import com.firomsa.inventory.v1.dto.ResendOtpRequestDTO;
 import com.firomsa.inventory.v1.dto.ResendOtpResponseDTO;
@@ -38,8 +38,8 @@ public class AuthController {
     @PostMapping("/admins")
     @ResponseStatus(HttpStatus.OK)
     public RegisterResponseDTO registerAdmin(
-            @Valid @RequestBody RegisterRequestDTO registerRequestDTO) {
-        var response = authService.createAdmin(registerRequestDTO);
+            @Valid @RequestBody RegisterAdminRequestDTO registerAdminRequestDTO) {
+        var response = authService.createAdmin(registerAdminRequestDTO);
         return response;
     }
 
