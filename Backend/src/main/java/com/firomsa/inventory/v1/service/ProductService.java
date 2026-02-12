@@ -34,21 +34,14 @@ public class ProductService {
 
     @Transactional(readOnly = true)
     public List<ProductResponseDTO> getAll() {
-        var response = productRepository
-            .findAll()
-            .stream()
-            .map(productMapper::toDTO)
-            .collect(Collectors.toList());
-        
+        var response = productRepository.findAll().stream().map(productMapper::toDTO)
+                .collect(Collectors.toList());
+
         // Fetch image URLs for each product
         response.forEach(productResponse -> {
-            var imageUrls = productRepository
-                .findById(productResponse.getId())
-                .map(Product::getImageKeys)
-                .orElse(List.of())
-                .stream()
-                .map(storageService::getUrl)
-                .collect(Collectors.toList());
+            var imageUrls = productRepository.findById(productResponse.getId())
+                    .map(Product::getImageKeys).orElse(List.of()).stream()
+                    .map(storageService::getUrl).collect(Collectors.toList());
             productResponse.setImageUrls(imageUrls);
         });
         return response;
@@ -56,13 +49,11 @@ public class ProductService {
 
     @Transactional(readOnly = true)
     public ProductResponseDTO getById(@NotNull UUID id) {
-        Product product = productRepository
-            .findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + id));
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + id));
         var response = productMapper.toDTO(product);
-        var imageUrls = product.getImageKeys().stream()
-            .map(storageService::getUrl)
-            .collect(Collectors.toList());
+        var imageUrls = product.getImageKeys().stream().map(storageService::getUrl)
+                .collect(Collectors.toList());
         response.setImageUrls(imageUrls);
         return response;
     }
@@ -70,43 +61,34 @@ public class ProductService {
     public ProductResponseDTO create(@Valid @NotNull ProductRequestDTO request) {
         Product product = productMapper.toModel(request);
         if (request.getCategoryIds() != null) {
-            Set<Category> categories = categoryRepository
-                .findAllById(request.getCategoryIds())
-                .stream()
-                .collect(Collectors.toSet());
+            Set<Category> categories = categoryRepository.findAllById(request.getCategoryIds())
+                    .stream().collect(Collectors.toSet());
             product.setCategories(categories);
         }
         Product saved = productRepository.save(product);
         var response = productMapper.toDTO(saved);
-        var imageUrls = saved.getImageKeys().stream()
-            .map(storageService::getUrl)
-            .collect(Collectors.toList());
+        var imageUrls = saved.getImageKeys().stream().map(storageService::getUrl)
+                .collect(Collectors.toList());
         response.setImageUrls(imageUrls);
         return response;
     }
 
-    public ProductResponseDTO update(
-        @NotNull UUID id,
-        @Valid @NotNull ProductUpdateRequestDTO request
-    ) {
-        Product existing = productRepository
-            .findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + id));
+    public ProductResponseDTO update(@NotNull UUID id,
+            @Valid @NotNull ProductUpdateRequestDTO request) {
+        Product existing = productRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + id));
 
         // Update mutable fields from DTO
         productMapper.updateModelFromDTO(request, existing);
         if (request.getCategoryIds() != null) {
-            Set<Category> categories = categoryRepository
-                .findAllById(request.getCategoryIds())
-                .stream()
-                .collect(Collectors.toSet());
+            Set<Category> categories = categoryRepository.findAllById(request.getCategoryIds())
+                    .stream().collect(Collectors.toSet());
             existing.setCategories(categories);
         }
         Product saved = productRepository.save(existing);
         var response = productMapper.toDTO(saved);
-        var imageUrls = saved.getImageKeys().stream()
-            .map(storageService::getUrl)
-            .collect(Collectors.toList());
+        var imageUrls = saved.getImageKeys().stream().map(storageService::getUrl)
+                .collect(Collectors.toList());
         response.setImageUrls(imageUrls);
         return response;
     }
@@ -119,39 +101,33 @@ public class ProductService {
     }
 
     public void activate(@NotNull UUID id) {
-        Product product = productRepository
-            .findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + id));
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + id));
         product.setActive(true);
         productRepository.save(product);
     }
 
     public void deactivate(@NotNull UUID id) {
-        Product product = productRepository
-            .findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + id));
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + id));
         product.setActive(false);
         productRepository.save(product);
     }
 
-    public ProductResponseDTO addImageToProduct(@NotNull UUID id, @NotNull String objectKey
-    ) {
-        Product product = productRepository
-            .findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + id));
+    public ProductResponseDTO addImageToProduct(@NotNull UUID id, @NotNull String objectKey) {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + id));
         if (storageService.exists(objectKey)) {
             product.getImageKeys().add(objectKey);
             Product saved = productRepository.save(product);
             var response = productMapper.toDTO(saved);
-            var imageUrls = saved.getImageKeys().stream()
-                .map(storageService::getUrl)
-                .collect(Collectors.toList());
+            var imageUrls = saved.getImageKeys().stream().map(storageService::getUrl)
+                    .collect(Collectors.toList());
             response.setImageUrls(imageUrls);
             return response;
-        } 
-        else {
+        } else {
             throw new ResourceNotFoundException("Image not found in storage: " + objectKey);
         }
-        
+
     }
 }

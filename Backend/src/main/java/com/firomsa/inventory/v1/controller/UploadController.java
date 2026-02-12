@@ -19,9 +19,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @RequiredArgsConstructor
 public class UploadController {
-    
+
     private final StorageService storageService;
-    
+
     @PostMapping("/presign")
     public UploadResponseDTO createUploadPresignTicket(@RequestBody UploadRequestDTO filename) {
         return storageService.createUploadPresignTicket(filename);

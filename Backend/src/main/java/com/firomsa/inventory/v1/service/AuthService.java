@@ -7,6 +7,7 @@ import com.firomsa.inventory.exception.UserAlreadyExistsException;
 import com.firomsa.inventory.model.ConfirmationOTP;
 import com.firomsa.inventory.model.RefreshToken;
 import com.firomsa.inventory.model.Role;
+import com.firomsa.inventory.model.Roles;
 import com.firomsa.inventory.model.User;
 import com.firomsa.inventory.repository.ConfirmationOtpRepository;
 import com.firomsa.inventory.repository.RefreshTokenRepository;
@@ -62,11 +63,8 @@ public class AuthService {
             throw new UserAlreadyExistsException(registerRequestDTO.email());
         }
 
-        Role role = roleRepository
-            .findByName(registerRequestDTO.role())
-            .orElseThrow(() ->
-                new ResourceNotFoundException("Role: " + registerRequestDTO.role().name())
-            );
+        Role role = roleRepository.findByName(registerRequestDTO.role()).orElseThrow(
+                () -> new ResourceNotFoundException("Role: " + registerRequestDTO.role().name()));
 
         User user = userMapper.toModel(registerRequestDTO);
         user.setRole(role);
@@ -74,36 +72,47 @@ public class AuthService {
 
         var registeredUser = userRepository.save(user);
         var otp = generateOtp();
-        confirmationOtpRepository.save(
-            ConfirmationOTP.builder()
-                .otp(otp)
-                .user(registeredUser)
-                .expiresAt(LocalDateTime.now().plusMinutes(OTP_DURATION))
-                .build()
-        );
+        confirmationOtpRepository.save(ConfirmationOTP.builder().otp(otp).user(registeredUser)
+                .expiresAt(LocalDateTime.now().plusMinutes(OTP_DURATION)).build());
         emailService.sendOtp(otp, user.getEmail());
-        var response = new RegisterResponseDTO(
-            userMapper.toDTO(registeredUser),
-            "You have successfully registered, confirm the OTP sent to your email"
-        );
+        var response = new RegisterResponseDTO(userMapper.toDTO(registeredUser),
+                "You have successfully registered, confirm the OTP sent to your email");
+        return response;
+    }
+
+    @Transactional
+    public RegisterResponseDTO createAdmin(RegisterRequestDTO registerRequestDTO) {
+        if (userRepository.count() > 0) {
+            throw new AuthenticationException(
+                    "Only one admin can be registered, if you want to create more admins please ask the existing admin to create them");
+        }
+
+        Role role = roleRepository.findByName(Roles.ADMIN).orElseThrow(
+                () -> new ResourceNotFoundException("Role: " + registerRequestDTO.role().name()));
+
+        User user = userMapper.toModel(registerRequestDTO);
+        user.setRole(role);
+        user.setPassword(passwordEncoder.encode(registerRequestDTO.password()));
+
+        var registeredUser = userRepository.save(user);
+        var otp = generateOtp();
+        confirmationOtpRepository.save(ConfirmationOTP.builder().otp(otp).user(registeredUser)
+                .expiresAt(LocalDateTime.now().plusMinutes(OTP_DURATION)).build());
+        emailService.sendOtp(otp, user.getEmail());
+        var response = new RegisterResponseDTO(userMapper.toDTO(registeredUser),
+                "You have successfully registered, confirm the OTP sent to your email");
         return response;
     }
 
     @Transactional
     public ConfirmOtpResponseDTO confirmOtp(ConfirmOtpRequestDTO confirmOtpRequestDTO) {
-        User user = userRepository
-            .findByEmail(confirmOtpRequestDTO.email())
-            .orElseThrow(() -> new ResourceNotFoundException(confirmOtpRequestDTO.email()));
+        User user = userRepository.findByEmail(confirmOtpRequestDTO.email())
+                .orElseThrow(() -> new ResourceNotFoundException(confirmOtpRequestDTO.email()));
         var otp = confirmationOtpRepository
-            .findByOtpAndExpiresAtAfterAndConfirmedFalse(
-                confirmOtpRequestDTO.otp(),
-                LocalDateTime.now()
-            )
-            .orElseThrow(() ->
-                new InvalidOtpException(
-                    "Wrong otp, please use the correct OTP code or ask for a resend"
-                )
-            );
+                .findByOtpAndExpiresAtAfterAndConfirmedFalse(confirmOtpRequestDTO.otp(),
+                        LocalDateTime.now())
+                .orElseThrow(() -> new InvalidOtpException(
+                        "Wrong otp, please use the correct OTP code or ask for a resend"));
 
         user.setEnabled(true);
         otp.setConfirmed(true);
@@ -111,8 +120,7 @@ public class AuthService {
         confirmationOtpRepository.save(otp);
         confirmationOtpRepository.deleteAllByUser(user);
         return new ConfirmOtpResponseDTO(
-            "Successfully confirmed OTP, please login using your email and password"
-        );
+                "Successfully confirmed OTP, please login using your email and password");
     }
 
     public String generateOtp() {
@@ -127,31 +135,20 @@ public class AuthService {
     }
 
     public ResendOtpResponseDTO resendOtp(ResendOtpRequestDTO resendOtpRequestDTO) {
-        User user = userRepository
-            .findByEmail(resendOtpRequestDTO.email())
-            .orElseThrow(() -> new ResourceNotFoundException(resendOtpRequestDTO.email()));
+        User user = userRepository.findByEmail(resendOtpRequestDTO.email())
+                .orElseThrow(() -> new ResourceNotFoundException(resendOtpRequestDTO.email()));
         var otp = generateOtp();
-        confirmationOtpRepository.save(
-            ConfirmationOTP.builder()
-                .otp(otp)
-                .user(user)
-                .expiresAt(LocalDateTime.now().plusMinutes(OTP_DURATION))
-                .build()
-        );
+        confirmationOtpRepository.save(ConfirmationOTP.builder().otp(otp).user(user)
+                .expiresAt(LocalDateTime.now().plusMinutes(OTP_DURATION)).build());
         emailService.sendOtp(otp, user.getEmail());
         return new ResendOtpResponseDTO("Successfully resent OTP, check your inbox");
     }
 
     public LoginResponseDTO login(LoginRequestDTO loginRequestDTO) {
-        User user = userRepository
-            .findByEmail(loginRequestDTO.email())
-            .orElseThrow(() -> new ResourceNotFoundException(loginRequestDTO.email()));
-        authenticationManager.authenticate(
-            new UsernamePasswordAuthenticationToken(
-                loginRequestDTO.email(),
-                loginRequestDTO.password()
-            )
-        );
+        User user = userRepository.findByEmail(loginRequestDTO.email())
+                .orElseThrow(() -> new ResourceNotFoundException(loginRequestDTO.email()));
+        authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
+                loginRequestDTO.email(), loginRequestDTO.password()));
 
         String accessToken = jwtAuthService.generateToken(loginRequestDTO.email());
 
@@ -160,45 +157,32 @@ public class AuthService {
         refreshToken.setExpiresAt(LocalDateTime.now().plusDays(REFRESH_TOKEN_DURATION));
         var savedRefreshToken = refreshTokenRepository.save(refreshToken);
 
-        return new LoginResponseDTO(
-            user.getRole().getName(),
-            accessToken,
-            savedRefreshToken.getId().toString(),
-            user.getUsername(),
-            user.getEmail()
-        );
+        return new LoginResponseDTO(user.getRole().getName(), accessToken,
+                savedRefreshToken.getId().toString(), user.getUsername(), user.getEmail());
     }
 
     public LoginResponseDTO refreshAccessToken(RefreshTokenRequestDTO refreshTokenRequestDTO) {
-        User user = userRepository
-            .findByEmail(refreshTokenRequestDTO.email())
-            .orElseThrow(() -> new ResourceNotFoundException(refreshTokenRequestDTO.email()));
+        User user = userRepository.findByEmail(refreshTokenRequestDTO.email())
+                .orElseThrow(() -> new ResourceNotFoundException(refreshTokenRequestDTO.email()));
         var refreshToken = refreshTokenRepository
-            .findByIdAndExpiresAtAfter(refreshTokenRequestDTO.refreshToken(), LocalDateTime.now())
-            .orElseThrow(() ->
-                new AuthenticationException("Refresh token is invalid, please login")
-            );
+                .findByIdAndExpiresAtAfter(refreshTokenRequestDTO.refreshToken(),
+                        LocalDateTime.now())
+                .orElseThrow(() -> new AuthenticationException(
+                        "Refresh token is invalid, please login"));
         String accessToken = jwtAuthService.generateToken(refreshTokenRequestDTO.email());
 
-        return new LoginResponseDTO(
-            user.getRole().getName(),
-            accessToken,
-            refreshToken.getId().toString(),
-            user.getUsername(),
-            user.getEmail()
-        );
+        return new LoginResponseDTO(user.getRole().getName(), accessToken,
+                refreshToken.getId().toString(), user.getUsername(), user.getEmail());
     }
 
     @Transactional
     public LogoutResponseDTO logoutUser(LogoutRequestDTO logoutRequestDTO) {
-        User user = userRepository
-            .findByEmail(logoutRequestDTO.email())
-            .orElseThrow(() -> new ResourceNotFoundException(logoutRequestDTO.email()));
+        User user = userRepository.findByEmail(logoutRequestDTO.email())
+                .orElseThrow(() -> new ResourceNotFoundException(logoutRequestDTO.email()));
         refreshTokenRepository
-            .findByIdAndExpiresAtAfter(logoutRequestDTO.refreshToken(), LocalDateTime.now())
-            .orElseThrow(() ->
-                new AuthenticationException("Refresh token is invalid, please login")
-            );
+                .findByIdAndExpiresAtAfter(logoutRequestDTO.refreshToken(), LocalDateTime.now())
+                .orElseThrow(() -> new AuthenticationException(
+                        "Refresh token is invalid, please login"));
 
         refreshTokenRepository.deleteAllByUser(user);
         return new LogoutResponseDTO("Successfully logged out");

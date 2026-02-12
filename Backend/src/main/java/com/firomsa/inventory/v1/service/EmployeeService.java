@@ -35,14 +35,13 @@ public class EmployeeService {
             }
             response.add(userResponse);
         }
-        
+
         return response;
     }
 
     public UserResponseDTO getEmployeeById(UUID id) {
-        var user = userRepository
-            .findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException(id.toString() + " User not found"));
+        var user = userRepository.findById(id).orElseThrow(
+                () -> new ResourceNotFoundException(id.toString() + " User not found"));
         var userResponse = userMapper.toDTO(user);
         if (user.getImageKey() != null) {
             userResponse.setProfilePictureUrl(storageService.getUrl(user.getImageKey()));
@@ -51,37 +50,30 @@ public class EmployeeService {
     }
 
     public void deactivateEmployee(UUID id) {
-        var user = userRepository
-            .findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException(id.toString() + " User not found"));
+        var user = userRepository.findById(id).orElseThrow(
+                () -> new ResourceNotFoundException(id.toString() + " User not found"));
         user.setActive(false);
         userRepository.save(user);
     }
 
     public void activateEmployee(UUID id) {
-        var user = userRepository
-            .findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException(id.toString() + " User not found"));
+        var user = userRepository.findById(id).orElseThrow(
+                () -> new ResourceNotFoundException(id.toString() + " User not found"));
         user.setActive(true);
         userRepository.save(user);
     }
 
     public void deleteEmployee(UUID id) {
-        var user = userRepository
-            .findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException(id.toString() + " User not found"));
+        var user = userRepository.findById(id).orElseThrow(
+                () -> new ResourceNotFoundException(id.toString() + " User not found"));
         userRepository.delete(user);
     }
 
     public UserResponseDTO updateEmployee(UUID id, UserUpdateRequestDTO userUpdateRequestDTO) {
-        var user = userRepository
-            .findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException(id.toString() + " User not found"));
-        Role role = roleRepository
-            .findByName(userUpdateRequestDTO.role())
-            .orElseThrow(() ->
-                new ResourceNotFoundException("Role: " + userUpdateRequestDTO.role().name())
-            );
+        var user = userRepository.findById(id).orElseThrow(
+                () -> new ResourceNotFoundException(id.toString() + " User not found"));
+        Role role = roleRepository.findByName(userUpdateRequestDTO.role()).orElseThrow(
+                () -> new ResourceNotFoundException("Role: " + userUpdateRequestDTO.role().name()));
         user.setFirstName(userUpdateRequestDTO.firstName());
         user.setLastName(userUpdateRequestDTO.lastName());
         user.setEmail(userUpdateRequestDTO.email());

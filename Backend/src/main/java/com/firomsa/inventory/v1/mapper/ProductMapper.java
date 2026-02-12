@@ -57,5 +57,5 @@ public interface ProductMapper {
         }
         return categories.stream().map(Category::getId).collect(Collectors.toSet());
     }
-    
+
 }

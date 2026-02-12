@@ -9,10 +9,10 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class UploadRequestDTO {
-    
+
     @NotBlank
     private String filename;
-    
+
     @NotBlank
     private String contentType;
 }

@@ -39,21 +39,18 @@ public class ProfileController {
     @Operation(summary = "For updating user profile")
     @PutMapping("")
     @ResponseStatus(HttpStatus.OK)
-    public UserResponseDTO updateProfile(
-        @AuthenticationPrincipal UserDetails userDetails,
-        @Valid @RequestBody ProfileUpdateDTO profileUpdateDTO
-    ) {
+    public UserResponseDTO updateProfile(@AuthenticationPrincipal UserDetails userDetails,
+            @Valid @RequestBody ProfileUpdateDTO profileUpdateDTO) {
         return userService.updateProfile(userDetails.getUsername(), profileUpdateDTO);
     }
-    
+
     @Operation(summary = "For adding/updating user profile picture")
     @PostMapping("/profile-picture")
     @ResponseStatus(HttpStatus.OK)
-    public UserResponseDTO addProductImage(
-        @AuthenticationPrincipal UserDetails userDetails,
-        @Valid @RequestBody FileDTO profileImageDTO
-    ) {
-        var response = userService.addProfilePicture(userDetails.getUsername(), profileImageDTO.getObjectKey());
+    public UserResponseDTO addProductImage(@AuthenticationPrincipal UserDetails userDetails,
+            @Valid @RequestBody FileDTO profileImageDTO) {
+        var response = userService.addProfilePicture(userDetails.getUsername(),
+                profileImageDTO.getObjectKey());
         return response;
     }
 }

@@ -7,6 +7,8 @@ import com.firomsa.inventory.v1.dto.LoginResponseDTO;
 import com.firomsa.inventory.v1.dto.LogoutRequestDTO;
 import com.firomsa.inventory.v1.dto.LogoutResponseDTO;
 import com.firomsa.inventory.v1.dto.RefreshTokenRequestDTO;
+import com.firomsa.inventory.v1.dto.RegisterRequestDTO;
+import com.firomsa.inventory.v1.dto.RegisterResponseDTO;
 import com.firomsa.inventory.v1.dto.ResendOtpRequestDTO;
 import com.firomsa.inventory.v1.dto.ResendOtpResponseDTO;
 import com.firomsa.inventory.v1.service.AuthService;
@@ -31,12 +33,21 @@ public class AuthController {
 
     private final AuthService authService;
 
+    // Employee management endpoints
+    @Operation(summary = "For registering an admin")
+    @PostMapping("/admins")
+    @ResponseStatus(HttpStatus.OK)
+    public RegisterResponseDTO registerAdmin(
+            @Valid @RequestBody RegisterRequestDTO registerRequestDTO) {
+        var response = authService.createAdmin(registerRequestDTO);
+        return response;
+    }
+
     @Operation(summary = "For confirming otp")
     @PostMapping("/confirm-otp")
     @ResponseStatus(HttpStatus.OK)
     public ConfirmOtpResponseDTO confirmOtp(
-        @Valid @RequestBody ConfirmOtpRequestDTO confirmOtpRequestDTO
-    ) {
+            @Valid @RequestBody ConfirmOtpRequestDTO confirmOtpRequestDTO) {
         var response = authService.confirmOtp(confirmOtpRequestDTO);
         return response;
     }
@@ -45,8 +56,7 @@ public class AuthController {
     @PostMapping("/resend-otp")
     @ResponseStatus(HttpStatus.OK)
     public ResendOtpResponseDTO resendOtp(
-        @Valid @RequestBody ResendOtpRequestDTO resendOtpRequestDTO
-    ) {
+            @Valid @RequestBody ResendOtpRequestDTO resendOtpRequestDTO) {
         var response = authService.resendOtp(resendOtpRequestDTO);
         return response;
     }
@@ -63,8 +73,7 @@ public class AuthController {
     @PostMapping("/refresh")
     @ResponseStatus(HttpStatus.OK)
     public LoginResponseDTO refreshToken(
-        @Valid @RequestBody RefreshTokenRequestDTO refreshTokenRequestDTO
-    ) {
+            @Valid @RequestBody RefreshTokenRequestDTO refreshTokenRequestDTO) {
         var response = authService.refreshAccessToken(refreshTokenRequestDTO);
         return response;
     }

@@ -20,19 +20,13 @@ public class CustomUserDetailsService implements UserDetailsService {
         }
 
         @Override
-        public UserDetails loadUserByUsername(String email)
-                        throws UsernameNotFoundException {
-                var user = userRepository
-                                .findByEmail(email)
+        public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+                var user = userRepository.findByEmail(email)
                                 .orElseThrow(() -> new UsernameNotFoundException("USER: " + email));
-                return User.builder()
-                                .username(user.getEmail())
-                                .password(user.getPassword())
+                return User.builder().username(user.getEmail()).password(user.getPassword())
                                 .disabled(!user.isActive() || !user.isEnabled())
-                                .authorities(
-                                                List.of(
-                                                                new SimpleGrantedAuthority("ROLE_"
-                                                                                + user.getRole().getName().name())))
+                                .authorities(List.of(new SimpleGrantedAuthority(
+                                                "ROLE_" + user.getRole().getName().name())))
                                 .build();
         }
 }

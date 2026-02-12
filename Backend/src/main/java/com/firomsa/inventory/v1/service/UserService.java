@@ -22,9 +22,8 @@ public class UserService {
     private final StorageService storageService;
 
     public UserResponseDTO updateProfile(String username, ProfileUpdateDTO profileUpdateDTO) {
-        var user = userRepository
-            .findByEmail(username)
-            .orElseThrow(() -> new RuntimeException("User not found"));
+        var user = userRepository.findByEmail(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
         user.setFirstName(profileUpdateDTO.firstName());
         user.setLastName(profileUpdateDTO.lastName());
         user.setUsername(profileUpdateDTO.username());
@@ -40,31 +39,27 @@ public class UserService {
     }
 
     public UserResponseDTO getProfile(String username) {
-        var user = userRepository
-            .findByEmail(username)
-            .orElseThrow(() -> new RuntimeException("User not found"));
+        var user = userRepository.findByEmail(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
         var response = userMapper.toDTO(user);
         if (user.getImageKey() != null) {
             response.setProfilePictureUrl(storageService.getUrl(user.getImageKey()));
         }
         return response;
     }
-    
-    public UserResponseDTO addProfilePicture(String username, String objectKey
-    ) {
-        var user = userRepository
-            .findByEmail(username)
-            .orElseThrow(() -> new RuntimeException("User not found"));
+
+    public UserResponseDTO addProfilePicture(String username, String objectKey) {
+        var user = userRepository.findByEmail(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
         if (storageService.exists(objectKey)) {
             user.setImageKey(objectKey);
             User saved = userRepository.save(user);
             var response = userMapper.toDTO(saved);
             response.setProfilePictureUrl(storageService.getUrl(objectKey));
             return response;
-        } 
-        else {
+        } else {
             throw new ResourceNotFoundException("Image not found in storage: " + objectKey);
         }
-        
+
     }
 }

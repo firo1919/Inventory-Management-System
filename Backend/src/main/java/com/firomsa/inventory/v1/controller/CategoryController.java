@@ -24,9 +24,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @RequiredArgsConstructor
 public class CategoryController {
-    
+
     private final CategoryService categoryService;
-    
+
     @Operation(summary = "Get all categories")
     @GetMapping("")
     @ResponseStatus(HttpStatus.OK)

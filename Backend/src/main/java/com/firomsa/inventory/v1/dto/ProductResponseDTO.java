@@ -39,6 +39,6 @@ public class ProductResponseDTO {
     private LocalDateTime updatedAt;
 
     private Set<UUID> categoryIds;
-    
+
     private List<String> imageUrls;
 }

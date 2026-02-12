@@ -53,8 +53,7 @@ public class AdminController {
     @PostMapping("/employees")
     @ResponseStatus(HttpStatus.OK)
     public RegisterResponseDTO registerUser(
-        @Valid @RequestBody RegisterRequestDTO registerRequestDTO
-    ) {
+            @Valid @RequestBody RegisterRequestDTO registerRequestDTO) {
         var response = authService.create(registerRequestDTO);
         return response;
     }
@@ -78,10 +77,8 @@ public class AdminController {
     @Operation(summary = "For updating an employee by id")
     @PutMapping("/employees/{id}")
     @ResponseStatus(HttpStatus.OK)
-    public UserResponseDTO updateEmployee(
-        @PathVariable UUID id,
-        @Valid @RequestBody UserUpdateRequestDTO userUpdateRequestDTO
-    ) {
+    public UserResponseDTO updateEmployee(@PathVariable UUID id,
+            @Valid @RequestBody UserUpdateRequestDTO userUpdateRequestDTO) {
         var response = employeeService.updateEmployee(id, userUpdateRequestDTO);
         return response;
     }
@@ -112,8 +109,7 @@ public class AdminController {
     @PostMapping("/products")
     @ResponseStatus(HttpStatus.OK)
     public ProductResponseDTO createProduct(
-        @Valid @RequestBody ProductRequestDTO productRequestDTO
-    ) {
+            @Valid @RequestBody ProductRequestDTO productRequestDTO) {
         var response = productService.create(productRequestDTO);
         return response;
     }
@@ -121,14 +117,12 @@ public class AdminController {
     @Operation(summary = "Update a product by id")
     @PutMapping("/products/{id}")
     @ResponseStatus(HttpStatus.OK)
-    public ProductResponseDTO updateProduct(
-        @PathVariable UUID id,
-        @Valid @RequestBody ProductUpdateRequestDTO productUpdateRequestDTO
-    ) {
+    public ProductResponseDTO updateProduct(@PathVariable UUID id,
+            @Valid @RequestBody ProductUpdateRequestDTO productUpdateRequestDTO) {
         var response = productService.update(id, productUpdateRequestDTO);
         return response;
     }
-    
+
     // Product management endpoints
     @Operation(summary = "Delete a product by id")
     @DeleteMapping("/products/{id}")
@@ -150,14 +144,12 @@ public class AdminController {
     public void deactivateProduct(@PathVariable UUID id) {
         productService.deactivate(id);
     }
-    
+
     @Operation(summary = "Add an image to a product by id")
     @PostMapping("/products/{id}/images")
     @ResponseStatus(HttpStatus.OK)
-    public ProductResponseDTO addProductImage(
-        @PathVariable UUID id,
-        @Valid @RequestBody FileDTO productImageDTO
-    ) {
+    public ProductResponseDTO addProductImage(@PathVariable UUID id,
+            @Valid @RequestBody FileDTO productImageDTO) {
         var response = productService.addImageToProduct(id, productImageDTO.getObjectKey());
         return response;
     }
@@ -167,8 +159,7 @@ public class AdminController {
     @PostMapping("/categories")
     @ResponseStatus(HttpStatus.OK)
     public CategoryResponseDTO createCategory(
-        @Valid @RequestBody CategoryRequestDTO categoryRequestDTO
-    ) {
+            @Valid @RequestBody CategoryRequestDTO categoryRequestDTO) {
         var response = categoryService.create(categoryRequestDTO);
         return response;
     }
@@ -176,10 +167,8 @@ public class AdminController {
     @Operation(summary = "Update a category by id")
     @PutMapping("/categories/{id}")
     @ResponseStatus(HttpStatus.OK)
-    public CategoryResponseDTO updateCategory(
-        @PathVariable UUID id,
-        @Valid @RequestBody CategoryUpdateRequestDTO categoryUpdateRequestDTO
-    ) {
+    public CategoryResponseDTO updateCategory(@PathVariable UUID id,
+            @Valid @RequestBody CategoryUpdateRequestDTO categoryUpdateRequestDTO) {
         var response = categoryService.update(id, categoryUpdateRequestDTO);
         return response;
     }

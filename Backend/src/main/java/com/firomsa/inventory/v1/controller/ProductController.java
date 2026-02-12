@@ -24,9 +24,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @RequiredArgsConstructor
 public class ProductController {
-    
+
     private final ProductService productService;
-    
+
     @Operation(summary = "Get all products")
     @GetMapping("")
     @ResponseStatus(HttpStatus.OK)

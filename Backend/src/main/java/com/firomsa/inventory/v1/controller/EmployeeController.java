@@ -9,4 +9,5 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/employee")
 @Tag(name = "Employee", description = "API for employee operations")
 @Slf4j
-public class EmployeeController {}
+public class EmployeeController {
+}

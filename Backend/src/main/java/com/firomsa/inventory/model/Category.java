@@ -47,11 +47,9 @@ public class Category {
     private String name;
 
     @ManyToMany
-    @JoinTable(
-        name = "Product_Categories",
-        joinColumns = @JoinColumn(name = "categories_id", referencedColumnName = "id"),
-        inverseJoinColumns = @JoinColumn(name = "product_id", referencedColumnName = "id")
-    )
+    @JoinTable(name = "Product_Categories",
+            joinColumns = @JoinColumn(name = "categories_id", referencedColumnName = "id"),
+            inverseJoinColumns = @JoinColumn(name = "product_id", referencedColumnName = "id"))
     @Builder.Default
     private Set<Product> products = new HashSet<>();
 

@@ -29,18 +29,14 @@ public class CategoryService {
 
     @Transactional(readOnly = true)
     public List<CategoryResponseDTO> getAll() {
-        return categoryRepository
-            .findAll()
-            .stream()
-            .map(categoryMapper::toDTO)
-            .collect(Collectors.toList());
+        return categoryRepository.findAll().stream().map(categoryMapper::toDTO)
+                .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
     public CategoryResponseDTO getById(@NotNull UUID id) {
-        Category category = categoryRepository
-            .findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Category not found: " + id));
+        Category category = categoryRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Category not found: " + id));
         return categoryMapper.toDTO(category);
     }
 
@@ -50,13 +46,10 @@ public class CategoryService {
         return categoryMapper.toDTO(saved);
     }
 
-    public CategoryResponseDTO update(
-        @NotNull UUID id,
-        @Valid @NotNull CategoryUpdateRequestDTO request
-    ) {
-        Category existing = categoryRepository
-            .findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Category not found: " + id));
+    public CategoryResponseDTO update(@NotNull UUID id,
+            @Valid @NotNull CategoryUpdateRequestDTO request) {
+        Category existing = categoryRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Category not found: " + id));
 
         categoryMapper.updateModelFromDTO(request, existing);
 
