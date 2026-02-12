@@ -87,8 +87,8 @@ public class AuthService {
                     "Only one admin can be registered, if you want to create more admins please ask the existing admin to create them");
         }
 
-        Role role = roleRepository.findByName(Roles.ADMIN).orElseThrow(
-                () -> new ResourceNotFoundException("Role: " + registerRequestDTO.role().name()));
+        Role role = roleRepository.findByName(Roles.ADMIN)
+                .orElseThrow(() -> new ResourceNotFoundException("Role: ADMIN"));
 
         User user = userMapper.toModel(registerRequestDTO);
         user.setRole(role);

@@ -4,12 +4,11 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
 import com.firomsa.inventory.v1.dto.UploadRequestDTO;
 import com.firomsa.inventory.v1.dto.UploadResponseDTO;
 import com.firomsa.inventory.v1.service.StorageService;
-
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -23,7 +22,7 @@ public class UploadController {
     private final StorageService storageService;
 
     @PostMapping("/presign")
-    public UploadResponseDTO createUploadPresignTicket(@RequestBody UploadRequestDTO filename) {
+    public UploadResponseDTO createUploadPresignTicket(@Valid @RequestBody UploadRequestDTO filename) {
         return storageService.createUploadPresignTicket(filename);
     }
 }

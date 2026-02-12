@@ -3,9 +3,8 @@ package com.firomsa.inventory.v1.service;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
 import com.firomsa.inventory.exception.ResourceNotFoundException;
 import com.firomsa.inventory.model.Role;
 import com.firomsa.inventory.repository.RoleRepository;
@@ -13,7 +12,6 @@ import com.firomsa.inventory.repository.UserRepository;
 import com.firomsa.inventory.v1.dto.UserResponseDTO;
 import com.firomsa.inventory.v1.dto.UserUpdateRequestDTO;
 import com.firomsa.inventory.v1.mapper.UserMapper;
-
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -24,6 +22,7 @@ public class EmployeeService {
     private final UserMapper userMapper;
     private final RoleRepository roleRepository;
     private final StorageService storageService;
+    private final PasswordEncoder passwordEncoder;
 
     public List<UserResponseDTO> getEmployees() {
         var users = userRepository.findAll();
@@ -79,7 +78,7 @@ public class EmployeeService {
         user.setEmail(userUpdateRequestDTO.email());
         user.setPhone(userUpdateRequestDTO.phone());
         user.setUsername(userUpdateRequestDTO.username());
-        user.setPassword(userUpdateRequestDTO.password());
+        user.setPassword(passwordEncoder.encode(userUpdateRequestDTO.password()));
         user.setRole(role);
         userRepository.save(user);
         var updatedUserResponse = userMapper.toDTO(user);

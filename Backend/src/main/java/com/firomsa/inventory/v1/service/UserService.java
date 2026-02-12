@@ -23,7 +23,7 @@ public class UserService {
 
     public UserResponseDTO updateProfile(String username, ProfileUpdateDTO profileUpdateDTO) {
         var user = userRepository.findByEmail(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         user.setFirstName(profileUpdateDTO.firstName());
         user.setLastName(profileUpdateDTO.lastName());
         user.setUsername(profileUpdateDTO.username());
@@ -40,7 +40,7 @@ public class UserService {
 
     public UserResponseDTO getProfile(String username) {
         var user = userRepository.findByEmail(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         var response = userMapper.toDTO(user);
         if (user.getImageKey() != null) {
             response.setProfilePictureUrl(storageService.getUrl(user.getImageKey()));
@@ -50,7 +50,7 @@ public class UserService {
 
     public UserResponseDTO addProfilePicture(String username, String objectKey) {
         var user = userRepository.findByEmail(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         if (storageService.exists(objectKey)) {
             user.setImageKey(objectKey);
             User saved = userRepository.save(user);
