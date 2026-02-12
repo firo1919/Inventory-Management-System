@@ -118,7 +118,7 @@ public class ProductService {
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + id));
         if (storageService.exists(objectKey)) {
             List<String> currentKeys = product.getImageKeys();
-            List<String> updatedImageKeys = new ArrayList<>(currentKeys != null ? currentKeys : List.of());
+            List<String> updatedImageKeys = currentKeys != null ? new ArrayList<>(currentKeys) : new ArrayList<>();
             updatedImageKeys.add(objectKey);
             product.setImageKeys(updatedImageKeys);
             Product saved = productRepository.save(product);
