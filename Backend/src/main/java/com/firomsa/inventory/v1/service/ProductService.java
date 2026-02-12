@@ -52,8 +52,9 @@ public class ProductService {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + id));
         var response = productMapper.toDTO(product);
-        var imageUrls = product.getImageKeys().stream().map(storageService::getUrl)
-                .collect(Collectors.toList());
+        var imageKeys = product.getImageKeys();
+        var imageUrls = imageKeys != null ? imageKeys.stream().map(storageService::getUrl)
+                .collect(Collectors.toList()) : new ArrayList<String>();
         response.setImageUrls(imageUrls);
         return response;
     }
@@ -67,8 +68,9 @@ public class ProductService {
         }
         Product saved = productRepository.save(product);
         var response = productMapper.toDTO(saved);
-        var imageUrls = saved.getImageKeys().stream().map(storageService::getUrl)
-                .collect(Collectors.toList());
+        var imageKeys = saved.getImageKeys();
+        var imageUrls = imageKeys != null ? imageKeys.stream().map(storageService::getUrl)
+                .collect(Collectors.toList()) : new ArrayList<String>();
         response.setImageUrls(imageUrls);
         return response;
     }
@@ -87,8 +89,9 @@ public class ProductService {
         }
         Product saved = productRepository.save(existing);
         var response = productMapper.toDTO(saved);
-        var imageUrls = saved.getImageKeys().stream().map(storageService::getUrl)
-                .collect(Collectors.toList());
+        var imageKeys = saved.getImageKeys();
+        var imageUrls = imageKeys != null ? imageKeys.stream().map(storageService::getUrl)
+                .collect(Collectors.toList()) : new ArrayList<String>();
         response.setImageUrls(imageUrls);
         return response;
     }
@@ -123,8 +126,9 @@ public class ProductService {
             product.setImageKeys(imageKeys);
             Product saved = productRepository.save(product);
             var response = productMapper.toDTO(saved);
-            var imageUrls = saved.getImageKeys().stream().map(storageService::getUrl)
-                    .collect(Collectors.toList());
+            var savedImageKeys = saved.getImageKeys();
+            var imageUrls = savedImageKeys != null ? savedImageKeys.stream().map(storageService::getUrl)
+                    .collect(Collectors.toList()) : new ArrayList<String>();
             response.setImageUrls(imageUrls);
             return response;
         } else {
