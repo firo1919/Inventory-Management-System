@@ -33,8 +33,9 @@ When registering the first admin user, include the bootstrap token in the reques
 #### Security Notes
 
 - The bootstrap token must be configured via the `APP_BOOTSTRAP_TOKEN` environment variable
+- The bootstrap token must be at least 32 characters long
 - Without a valid bootstrap token, admin registration will be rejected
 - This protection only applies to the initial admin registration on fresh deployments
 - After the first admin is created, additional admins can be created by the existing admin through the admin management endpoints
-- Keep the bootstrap token secret and use a strong, randomly generated value
+- Keep the bootstrap token secret and use a strong, randomly generated value (e.g., generated with `openssl rand -base64 32`)
 - The implementation uses constant-time comparison to prevent timing attacks

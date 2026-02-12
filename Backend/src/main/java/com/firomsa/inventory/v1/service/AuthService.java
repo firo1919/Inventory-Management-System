@@ -95,13 +95,12 @@ public class AuthService {
         // Validate bootstrap token
         if (bootstrapConfig.getToken() == null || bootstrapConfig.getToken().isBlank()) {
             throw new AuthenticationException(
-                    "Bootstrap token is not configured. Admin registration is disabled.");
+                    "Bootstrap token is not configured. Please set APP_BOOTSTRAP_TOKEN environment variable to enable admin registration.");
         }
 
         // Use constant-time comparison to prevent timing attacks
         if (!constantTimeEquals(bootstrapConfig.getToken(), registerAdminRequestDTO.bootstrapToken())) {
-            throw new AuthenticationException(
-                    "Invalid bootstrap token. Please provide the correct bootstrap token to register as admin.");
+            throw new AuthenticationException("Authentication failed");
         }
 
         Role role = roleRepository.findByName(Roles.ADMIN).orElseThrow(
@@ -217,13 +216,15 @@ public class AuthService {
     /**
      * Performs constant-time string comparison to prevent timing attacks.
      * This method ensures that the comparison time is independent of the input values.
+     * Uses MessageDigest.isEqual() which performs constant-time byte array comparison.
      */
     private boolean constantTimeEquals(String expected, String actual) {
-        if (expected == null || actual == null) {
-            return false;
-        }
-        byte[] expectedBytes = expected.getBytes(StandardCharsets.UTF_8);
-        byte[] actualBytes = actual.getBytes(StandardCharsets.UTF_8);
+        // Convert nulls to empty strings to maintain constant-time behavior
+        String expectedStr = (expected == null) ? "" : expected;
+        String actualStr = (actual == null) ? "" : actual;
+        
+        byte[] expectedBytes = expectedStr.getBytes(StandardCharsets.UTF_8);
+        byte[] actualBytes = actualStr.getBytes(StandardCharsets.UTF_8);
         return MessageDigest.isEqual(expectedBytes, actualBytes);
     }
 }
