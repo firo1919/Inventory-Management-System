@@ -118,9 +118,9 @@ public class ProductService {
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + id));
         if (storageService.exists(objectKey)) {
             List<String> currentKeys = product.getImageKeys();
-            List<String> imageKeys = currentKeys != null ? currentKeys : new ArrayList<>();
-            imageKeys.add(objectKey);
-            product.setImageKeys(imageKeys);
+            List<String> updatedImageKeys = currentKeys != null ? currentKeys : new ArrayList<>();
+            updatedImageKeys.add(objectKey);
+            product.setImageKeys(updatedImageKeys);
             Product saved = productRepository.save(product);
             var response = productMapper.toDTO(saved);
             var imageUrls = convertImageKeysToUrls(saved.getImageKeys());
