@@ -105,7 +105,7 @@ public class Product {
     }
 
     public void setImageKeys(List<String> imageKeys) {
-        this.imageKeys = imageKeys != null ? new ArrayList<>(imageKeys) : new ArrayList<>();
+        this.imageKeys = imageKeys != null ? new ArrayList<>(imageKeys) : null;
     }
 
     public Set<Category> getCategories() {
@@ -113,6 +113,6 @@ public class Product {
     }
 
     public void setCategories(Set<Category> categories) {
-        this.categories = categories != null ? new HashSet<>(categories) : new HashSet<>();
+        this.categories = categories != null ? new HashSet<>(categories) : null;
     }
 }
