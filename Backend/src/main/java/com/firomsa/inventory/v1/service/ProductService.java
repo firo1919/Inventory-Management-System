@@ -1,5 +1,7 @@
 package com.firomsa.inventory.v1.service;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -52,9 +54,7 @@ public class ProductService {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + id));
         var response = productMapper.toDTO(product);
-        var imageKeys = product.getImageKeys();
-        var imageUrls = imageKeys != null ? imageKeys.stream().map(storageService::getUrl)
-                .collect(Collectors.toList()) : new ArrayList<String>();
+        var imageUrls = convertImageKeysToUrls(product.getImageKeys());
         response.setImageUrls(imageUrls);
         return response;
     }
@@ -68,9 +68,7 @@ public class ProductService {
         }
         Product saved = productRepository.save(product);
         var response = productMapper.toDTO(saved);
-        var imageKeys = saved.getImageKeys();
-        var imageUrls = imageKeys != null ? imageKeys.stream().map(storageService::getUrl)
-                .collect(Collectors.toList()) : new ArrayList<String>();
+        var imageUrls = convertImageKeysToUrls(saved.getImageKeys());
         response.setImageUrls(imageUrls);
         return response;
     }
@@ -89,9 +87,7 @@ public class ProductService {
         }
         Product saved = productRepository.save(existing);
         var response = productMapper.toDTO(saved);
-        var imageKeys = saved.getImageKeys();
-        var imageUrls = imageKeys != null ? imageKeys.stream().map(storageService::getUrl)
-                .collect(Collectors.toList()) : new ArrayList<String>();
+        var imageUrls = convertImageKeysToUrls(saved.getImageKeys());
         response.setImageUrls(imageUrls);
         return response;
     }
@@ -127,14 +123,17 @@ public class ProductService {
             product.setImageKeys(imageKeys);
             Product saved = productRepository.save(product);
             var response = productMapper.toDTO(saved);
-            var savedImageKeys = saved.getImageKeys();
-            var imageUrls = savedImageKeys != null ? savedImageKeys.stream().map(storageService::getUrl)
-                    .collect(Collectors.toList()) : new ArrayList<String>();
+            var imageUrls = convertImageKeysToUrls(saved.getImageKeys());
             response.setImageUrls(imageUrls);
             return response;
         } else {
             throw new ResourceNotFoundException("Image not found in storage: " + objectKey);
         }
 
+    }
+
+    private List<String> convertImageKeysToUrls(List<String> imageKeys) {
+        return imageKeys != null ? imageKeys.stream().map(storageService::getUrl)
+                .collect(Collectors.toList()) : Collections.emptyList();
     }
 }
