@@ -10,5 +10,5 @@ import lombok.Data;
 @ConfigurationProperties(prefix = "s3")
 public class S3Config {
     private String bucketName;
-    private Integer expiryDays;
+    private int expiryDays;
 }
