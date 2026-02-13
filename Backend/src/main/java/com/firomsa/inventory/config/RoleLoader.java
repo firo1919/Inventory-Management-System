@@ -1,17 +1,13 @@
 package com.firomsa.inventory.config;
 
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
-
 import com.firomsa.inventory.model.Role;
 import com.firomsa.inventory.model.Roles;
 import com.firomsa.inventory.repository.RoleRepository;
-
 import lombok.extern.slf4j.Slf4j;
 
 @Component
-@Order(1)
 @Slf4j
 public class RoleLoader implements CommandLineRunner {
     private final RoleRepository roleRepository;

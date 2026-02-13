@@ -6,8 +6,6 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
-public record RefreshTokenRequestDTO(
-                @NotNull UUID refreshToken,
-                @NotBlank @Email String email) {
+public record RefreshTokenRequestDTO(@NotNull UUID refreshToken, @NotBlank @Email String email) {
 
 }

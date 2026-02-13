@@ -1,5 +1,4 @@
 package com.firomsa.inventory.v1.dto;
 
-public record ConfirmOtpResponseDTO(
-                String message) {
+public record ConfirmOtpResponseDTO(String message) {
 }

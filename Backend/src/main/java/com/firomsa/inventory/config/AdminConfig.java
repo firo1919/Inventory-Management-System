@@ -9,10 +9,6 @@ import lombok.Data;
 @Data
 @ConfigurationProperties(prefix = "admin")
 public class AdminConfig {
-    private String firstName;
-    private String lastName;
-    private String username;
-    private String password;
     private String email;
     private String phone;
 }

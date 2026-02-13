@@ -14,5 +14,6 @@ public interface ConfirmationOtpRepository extends JpaRepository<ConfirmationOTP
 
     void deleteAllByUser(User user);
 
-    Optional<ConfirmationOTP> findByOtpAndExpiresAtAfterAndConfirmedFalse(String otp, LocalDateTime date);
+    Optional<ConfirmationOTP> findByOtpAndExpiresAtAfterAndConfirmedFalse(String otp,
+            LocalDateTime date);
 }

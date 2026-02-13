@@ -1,5 +1,6 @@
 package com.firomsa.inventory.v1.service;
 
+import com.firomsa.inventory.config.BootstrapConfig;
 import com.firomsa.inventory.exception.AuthenticationException;
 import com.firomsa.inventory.exception.InvalidOtpException;
 import com.firomsa.inventory.exception.ResourceNotFoundException;
@@ -7,6 +8,7 @@ import com.firomsa.inventory.exception.UserAlreadyExistsException;
 import com.firomsa.inventory.model.ConfirmationOTP;
 import com.firomsa.inventory.model.RefreshToken;
 import com.firomsa.inventory.model.Role;
+import com.firomsa.inventory.model.Roles;
 import com.firomsa.inventory.model.User;
 import com.firomsa.inventory.repository.ConfirmationOtpRepository;
 import com.firomsa.inventory.repository.RefreshTokenRepository;
@@ -19,13 +21,18 @@ import com.firomsa.inventory.v1.dto.LoginResponseDTO;
 import com.firomsa.inventory.v1.dto.LogoutRequestDTO;
 import com.firomsa.inventory.v1.dto.LogoutResponseDTO;
 import com.firomsa.inventory.v1.dto.RefreshTokenRequestDTO;
+import com.firomsa.inventory.v1.dto.RegisterAdminRequestDTO;
 import com.firomsa.inventory.v1.dto.RegisterRequestDTO;
 import com.firomsa.inventory.v1.dto.RegisterResponseDTO;
 import com.firomsa.inventory.v1.dto.ResendOtpRequestDTO;
 import com.firomsa.inventory.v1.dto.ResendOtpResponseDTO;
 import com.firomsa.inventory.v1.mapper.UserMapper;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.time.LocalDateTime;
 import java.util.Random;
+
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -35,6 +42,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class AuthService {
 
     private final PasswordEncoder passwordEncoder;
@@ -46,30 +54,9 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final JWTAuthService jwtAuthService;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final BootstrapConfig bootstrapConfig;
     private final int OTP_DURATION = 6;
     private final int REFRESH_TOKEN_DURATION = 15;
-
-    public AuthService(
-        PasswordEncoder passwordEncoder,
-        UserRepository userRepository,
-        RoleRepository roleRepository,
-        UserMapper userMapper,
-        EmailService emailService,
-        ConfirmationOtpRepository confirmationOtpRepository,
-        AuthenticationManager authenticationManager,
-        JWTAuthService jwtAuthService,
-        RefreshTokenRepository refreshTokenRepository
-    ) {
-        this.passwordEncoder = passwordEncoder;
-        this.emailService = emailService;
-        this.userRepository = userRepository;
-        this.roleRepository = roleRepository;
-        this.userMapper = userMapper;
-        this.confirmationOtpRepository = confirmationOtpRepository;
-        this.authenticationManager = authenticationManager;
-        this.jwtAuthService = jwtAuthService;
-        this.refreshTokenRepository = refreshTokenRepository;
-    }
 
     @Transactional
     public RegisterResponseDTO create(RegisterRequestDTO registerRequestDTO) {
@@ -81,11 +68,8 @@ public class AuthService {
             throw new UserAlreadyExistsException(registerRequestDTO.email());
         }
 
-        Role role = roleRepository
-            .findByName(registerRequestDTO.role())
-            .orElseThrow(() ->
-                new ResourceNotFoundException("Role: " + registerRequestDTO.role().name())
-            );
+        Role role = roleRepository.findByName(registerRequestDTO.role()).orElseThrow(
+                () -> new ResourceNotFoundException("Role: " + registerRequestDTO.role().name()));
 
         User user = userMapper.toModel(registerRequestDTO);
         user.setRole(role);
@@ -93,36 +77,73 @@ public class AuthService {
 
         var registeredUser = userRepository.save(user);
         var otp = generateOtp();
-        confirmationOtpRepository.save(
-            ConfirmationOTP.builder()
-                .otp(otp)
-                .user(registeredUser)
-                .expiresAt(LocalDateTime.now().plusMinutes(OTP_DURATION))
-                .build()
-        );
+        confirmationOtpRepository.save(ConfirmationOTP.builder().otp(otp).user(registeredUser)
+                .expiresAt(LocalDateTime.now().plusMinutes(OTP_DURATION)).build());
         emailService.sendOtp(otp, user.getEmail());
-        var response = new RegisterResponseDTO(
-            userMapper.toDTO(registeredUser),
-            "You have successfully registered, confirm the OTP sent to your email"
-        );
+        var response = new RegisterResponseDTO(userMapper.toDTO(registeredUser),
+                "You have successfully registered, confirm the OTP sent to your email");
+        return response;
+    }
+
+    @Transactional
+    public RegisterResponseDTO createAdmin(RegisterAdminRequestDTO registerAdminRequestDTO) {
+        // Validate bootstrap token configuration first to avoid revealing deployment state
+        if (bootstrapConfig.getToken() == null || bootstrapConfig.getToken().isBlank()) {
+            throw new AuthenticationException(
+                    "Bootstrap token is not configured. Please set APP_BOOTSTRAP_TOKEN environment variable to enable admin registration.");
+        }
+
+        // Validate that request contains a bootstrap token
+        if (registerAdminRequestDTO.bootstrapToken() == null || registerAdminRequestDTO.bootstrapToken().isBlank()) {
+            throw new AuthenticationException("Authentication failed");
+        }
+
+        // Use constant-time comparison to prevent timing attacks
+        if (!constantTimeEquals(bootstrapConfig.getToken(), registerAdminRequestDTO.bootstrapToken())) {
+            throw new AuthenticationException("Authentication failed");
+        }
+
+        // Check if admin already exists
+        if (userRepository.count() > 0) {
+            throw new AuthenticationException(
+                    "Only one admin can be registered, if you want to create more admins please ask the existing admin to create them");
+        }
+
+        Role role = roleRepository.findByName(Roles.ADMIN).orElseThrow(
+                () -> new ResourceNotFoundException("Role: ADMIN"));
+
+        RegisterRequestDTO registerRequestDTO = new RegisterRequestDTO(
+                registerAdminRequestDTO.firstName(),
+                registerAdminRequestDTO.lastName(),
+                registerAdminRequestDTO.username(),
+                registerAdminRequestDTO.password(),
+                registerAdminRequestDTO.email(),
+                Roles.ADMIN,
+                registerAdminRequestDTO.phone());
+
+        User user = userMapper.toModel(registerRequestDTO);
+        user.setRole(role);
+        user.setPassword(passwordEncoder.encode(registerRequestDTO.password()));
+
+        var registeredUser = userRepository.save(user);
+        var otp = generateOtp();
+        confirmationOtpRepository.save(ConfirmationOTP.builder().otp(otp).user(registeredUser)
+                .expiresAt(LocalDateTime.now().plusMinutes(OTP_DURATION)).build());
+        emailService.sendOtp(otp, user.getEmail());
+        var response = new RegisterResponseDTO(userMapper.toDTO(registeredUser),
+                "You have successfully registered, confirm the OTP sent to your email");
         return response;
     }
 
     @Transactional
     public ConfirmOtpResponseDTO confirmOtp(ConfirmOtpRequestDTO confirmOtpRequestDTO) {
-        User user = userRepository
-            .findByEmail(confirmOtpRequestDTO.email())
-            .orElseThrow(() -> new ResourceNotFoundException(confirmOtpRequestDTO.email()));
+        User user = userRepository.findByEmail(confirmOtpRequestDTO.email())
+                .orElseThrow(() -> new ResourceNotFoundException(confirmOtpRequestDTO.email()));
         var otp = confirmationOtpRepository
-            .findByOtpAndExpiresAtAfterAndConfirmedFalse(
-                confirmOtpRequestDTO.otp(),
-                LocalDateTime.now()
-            )
-            .orElseThrow(() ->
-                new InvalidOtpException(
-                    "Wrong otp, please use the correct OTP code or ask for a resend"
-                )
-            );
+                .findByOtpAndExpiresAtAfterAndConfirmedFalse(confirmOtpRequestDTO.otp(),
+                        LocalDateTime.now())
+                .orElseThrow(() -> new InvalidOtpException(
+                        "Wrong otp, please use the correct OTP code or ask for a resend"));
 
         user.setEnabled(true);
         otp.setConfirmed(true);
@@ -130,8 +151,7 @@ public class AuthService {
         confirmationOtpRepository.save(otp);
         confirmationOtpRepository.deleteAllByUser(user);
         return new ConfirmOtpResponseDTO(
-            "Successfully confirmed OTP, please login using your email and password"
-        );
+                "Successfully confirmed OTP, please login using your email and password");
     }
 
     public String generateOtp() {
@@ -146,31 +166,20 @@ public class AuthService {
     }
 
     public ResendOtpResponseDTO resendOtp(ResendOtpRequestDTO resendOtpRequestDTO) {
-        User user = userRepository
-            .findByEmail(resendOtpRequestDTO.email())
-            .orElseThrow(() -> new ResourceNotFoundException(resendOtpRequestDTO.email()));
+        User user = userRepository.findByEmail(resendOtpRequestDTO.email())
+                .orElseThrow(() -> new ResourceNotFoundException(resendOtpRequestDTO.email()));
         var otp = generateOtp();
-        confirmationOtpRepository.save(
-            ConfirmationOTP.builder()
-                .otp(otp)
-                .user(user)
-                .expiresAt(LocalDateTime.now().plusMinutes(OTP_DURATION))
-                .build()
-        );
+        confirmationOtpRepository.save(ConfirmationOTP.builder().otp(otp).user(user)
+                .expiresAt(LocalDateTime.now().plusMinutes(OTP_DURATION)).build());
         emailService.sendOtp(otp, user.getEmail());
         return new ResendOtpResponseDTO("Successfully resent OTP, check your inbox");
     }
 
     public LoginResponseDTO login(LoginRequestDTO loginRequestDTO) {
-        User user = userRepository
-            .findByEmail(loginRequestDTO.email())
-            .orElseThrow(() -> new ResourceNotFoundException(loginRequestDTO.email()));
-        authenticationManager.authenticate(
-            new UsernamePasswordAuthenticationToken(
-                loginRequestDTO.email(),
-                loginRequestDTO.password()
-            )
-        );
+        User user = userRepository.findByEmail(loginRequestDTO.email())
+                .orElseThrow(() -> new ResourceNotFoundException(loginRequestDTO.email()));
+        authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
+                loginRequestDTO.email(), loginRequestDTO.password()));
 
         String accessToken = jwtAuthService.generateToken(loginRequestDTO.email());
 
@@ -179,47 +188,49 @@ public class AuthService {
         refreshToken.setExpiresAt(LocalDateTime.now().plusDays(REFRESH_TOKEN_DURATION));
         var savedRefreshToken = refreshTokenRepository.save(refreshToken);
 
-        return new LoginResponseDTO(
-            user.getRole().getName(),
-            accessToken,
-            savedRefreshToken.getId().toString(),
-            user.getUsername(),
-            user.getEmail()
-        );
+        return new LoginResponseDTO(user.getRole().getName(), accessToken,
+                savedRefreshToken.getId().toString(), user.getUsername(), user.getEmail());
     }
 
     public LoginResponseDTO refreshAccessToken(RefreshTokenRequestDTO refreshTokenRequestDTO) {
-        User user = userRepository
-            .findByEmail(refreshTokenRequestDTO.email())
-            .orElseThrow(() -> new ResourceNotFoundException(refreshTokenRequestDTO.email()));
+        User user = userRepository.findByEmail(refreshTokenRequestDTO.email())
+                .orElseThrow(() -> new ResourceNotFoundException(refreshTokenRequestDTO.email()));
         var refreshToken = refreshTokenRepository
-            .findByIdAndExpiresAtAfter(refreshTokenRequestDTO.refreshToken(), LocalDateTime.now())
-            .orElseThrow(() ->
-                new AuthenticationException("Refresh token is invalid, please login")
-            );
+                .findByIdAndExpiresAtAfter(refreshTokenRequestDTO.refreshToken(),
+                        LocalDateTime.now())
+                .orElseThrow(() -> new AuthenticationException(
+                        "Refresh token is invalid, please login"));
         String accessToken = jwtAuthService.generateToken(refreshTokenRequestDTO.email());
 
-        return new LoginResponseDTO(
-            user.getRole().getName(),
-            accessToken,
-            refreshToken.getId().toString(),
-            user.getUsername(),
-            user.getEmail()
-        );
+        return new LoginResponseDTO(user.getRole().getName(), accessToken,
+                refreshToken.getId().toString(), user.getUsername(), user.getEmail());
     }
 
     @Transactional
     public LogoutResponseDTO logoutUser(LogoutRequestDTO logoutRequestDTO) {
-        User user = userRepository
-            .findByEmail(logoutRequestDTO.email())
-            .orElseThrow(() -> new ResourceNotFoundException(logoutRequestDTO.email()));
+        User user = userRepository.findByEmail(logoutRequestDTO.email())
+                .orElseThrow(() -> new ResourceNotFoundException(logoutRequestDTO.email()));
         refreshTokenRepository
-            .findByIdAndExpiresAtAfter(logoutRequestDTO.refreshToken(), LocalDateTime.now())
-            .orElseThrow(() ->
-                new AuthenticationException("Refresh token is invalid, please login")
-            );
+                .findByIdAndExpiresAtAfter(logoutRequestDTO.refreshToken(), LocalDateTime.now())
+                .orElseThrow(() -> new AuthenticationException(
+                        "Refresh token is invalid, please login"));
 
         refreshTokenRepository.deleteAllByUser(user);
         return new LogoutResponseDTO("Successfully logged out");
+    }
+
+    /**
+     * Performs constant-time string comparison to prevent timing attacks.
+     * This method ensures that the comparison time is independent of the input values.
+     * Uses MessageDigest.isEqual() which performs constant-time byte array comparison.
+     */
+    private boolean constantTimeEquals(String expected, String actual) {
+        // Convert nulls to empty strings to maintain constant-time behavior
+        String expectedStr = (expected == null) ? "" : expected;
+        String actualStr = (actual == null) ? "" : actual;
+        
+        byte[] expectedBytes = expectedStr.getBytes(StandardCharsets.UTF_8);
+        byte[] actualBytes = actualStr.getBytes(StandardCharsets.UTF_8);
+        return MessageDigest.isEqual(expectedBytes, actualBytes);
     }
 }
