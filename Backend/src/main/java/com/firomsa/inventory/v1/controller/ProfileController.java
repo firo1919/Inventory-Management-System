@@ -47,7 +47,7 @@ public class ProfileController {
     @Operation(summary = "For adding/updating user profile picture")
     @PostMapping("/profile-picture")
     @ResponseStatus(HttpStatus.OK)
-    public UserResponseDTO addProductImage(@AuthenticationPrincipal UserDetails userDetails,
+    public UserResponseDTO addUserProfilePicture(@AuthenticationPrincipal UserDetails userDetails,
             @Valid @RequestBody FileDTO profileImageDTO) {
         var response = userService.addProfilePicture(userDetails.getUsername(),
                 profileImageDTO.getObjectKey());
