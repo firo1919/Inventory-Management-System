@@ -1,5 +1,6 @@
 package com.firomsa.inventory.v1.service;
 
+import com.firomsa.inventory.config.BootstrapConfig;
 import com.firomsa.inventory.exception.AuthenticationException;
 import com.firomsa.inventory.exception.InvalidOtpException;
 import com.firomsa.inventory.exception.ResourceNotFoundException;
@@ -20,11 +21,14 @@ import com.firomsa.inventory.v1.dto.LoginResponseDTO;
 import com.firomsa.inventory.v1.dto.LogoutRequestDTO;
 import com.firomsa.inventory.v1.dto.LogoutResponseDTO;
 import com.firomsa.inventory.v1.dto.RefreshTokenRequestDTO;
+import com.firomsa.inventory.v1.dto.RegisterAdminRequestDTO;
 import com.firomsa.inventory.v1.dto.RegisterRequestDTO;
 import com.firomsa.inventory.v1.dto.RegisterResponseDTO;
 import com.firomsa.inventory.v1.dto.ResendOtpRequestDTO;
 import com.firomsa.inventory.v1.dto.ResendOtpResponseDTO;
 import com.firomsa.inventory.v1.mapper.UserMapper;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.time.LocalDateTime;
 import java.util.Random;
 
@@ -50,6 +54,7 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final JWTAuthService jwtAuthService;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final BootstrapConfig bootstrapConfig;
     private final int OTP_DURATION = 6;
     private final int REFRESH_TOKEN_DURATION = 15;
 
@@ -81,14 +86,40 @@ public class AuthService {
     }
 
     @Transactional
-    public RegisterResponseDTO createAdmin(RegisterRequestDTO registerRequestDTO) {
+    public RegisterResponseDTO createAdmin(RegisterAdminRequestDTO registerAdminRequestDTO) {
+        // Validate bootstrap token configuration first to avoid revealing deployment state
+        if (bootstrapConfig.getToken() == null || bootstrapConfig.getToken().isBlank()) {
+            throw new AuthenticationException(
+                    "Bootstrap token is not configured. Please set APP_BOOTSTRAP_TOKEN environment variable to enable admin registration.");
+        }
+
+        // Validate that request contains a bootstrap token
+        if (registerAdminRequestDTO.bootstrapToken() == null || registerAdminRequestDTO.bootstrapToken().isBlank()) {
+            throw new AuthenticationException("Authentication failed");
+        }
+
+        // Use constant-time comparison to prevent timing attacks
+        if (!constantTimeEquals(bootstrapConfig.getToken(), registerAdminRequestDTO.bootstrapToken())) {
+            throw new AuthenticationException("Authentication failed");
+        }
+
+        // Check if admin already exists
         if (userRepository.count() > 0) {
             throw new AuthenticationException(
                     "Only one admin can be registered, if you want to create more admins please ask the existing admin to create them");
         }
 
-        Role role = roleRepository.findByName(Roles.ADMIN)
-                .orElseThrow(() -> new ResourceNotFoundException("Role: ADMIN"));
+        Role role = roleRepository.findByName(Roles.ADMIN).orElseThrow(
+                () -> new ResourceNotFoundException("Role: ADMIN"));
+
+        RegisterRequestDTO registerRequestDTO = new RegisterRequestDTO(
+                registerAdminRequestDTO.firstName(),
+                registerAdminRequestDTO.lastName(),
+                registerAdminRequestDTO.username(),
+                registerAdminRequestDTO.password(),
+                registerAdminRequestDTO.email(),
+                Roles.ADMIN,
+                registerAdminRequestDTO.phone());
 
         User user = userMapper.toModel(registerRequestDTO);
         user.setRole(role);
@@ -186,5 +217,20 @@ public class AuthService {
 
         refreshTokenRepository.deleteAllByUser(user);
         return new LogoutResponseDTO("Successfully logged out");
+    }
+
+    /**
+     * Performs constant-time string comparison to prevent timing attacks.
+     * This method ensures that the comparison time is independent of the input values.
+     * Uses MessageDigest.isEqual() which performs constant-time byte array comparison.
+     */
+    private boolean constantTimeEquals(String expected, String actual) {
+        // Convert nulls to empty strings to maintain constant-time behavior
+        String expectedStr = (expected == null) ? "" : expected;
+        String actualStr = (actual == null) ? "" : actual;
+        
+        byte[] expectedBytes = expectedStr.getBytes(StandardCharsets.UTF_8);
+        byte[] actualBytes = actualStr.getBytes(StandardCharsets.UTF_8);
+        return MessageDigest.isEqual(expectedBytes, actualBytes);
     }
 }
