@@ -3,6 +3,7 @@ package com.firomsa.inventory.v1.controller;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -63,7 +64,9 @@ class AuthControllerIntegrationTest {
                 .andExpect(jsonPath("$.username").value("employee-user"))
                 .andExpect(jsonPath("$.email").value("employee@example.com"));
 
-        verify(authService).login(request);
+        verify(authService).login(argThat(loginRequest ->
+                "password123".equals(loginRequest.password())
+                        && "employee@example.com".equals(loginRequest.email())));
     }
 
     @Test
