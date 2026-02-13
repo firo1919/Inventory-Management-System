@@ -1,40 +1,4 @@
 services:
-    app:
-        build:
-            context: ./
-            dockerfile: Dockerfile.dev
-        environment:
-            - SPRING_DATASOURCE_PASSWORD
-            - SPRING_DATASOURCE_URL
-            - SPRING_DATASOURCE_USERNAME
-            - SPRING_MAIL_USERNAME
-            - SPRING_MAIL_PASSWORD
-            - SPRING_MAIL_HOST
-            - SPRING_MAIL_PORT
-            - SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH
-            - SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE
-            - ADMIN_EMAIL
-            - ADMIN_PHONE
-            - AUTH_SECRET
-            - AWS_ACCESS_KEY
-            - AWS_SECRET_KEY
-            - AWS_REGION
-            - AWS_S3_ENDPOINT
-            - SPRING_CLOUD_AWS_S3_PATHSTYLEACCESSENABLED
-            - CORS_ORIGINS
-        ports:
-            - 8080:8080
-        container_name: inventory_app
-        image: inventory:dev
-        volumes:
-            - ./src:/app/src
-            - ./pom.xml:/app/pom.xml
-        restart: unless-stopped
-        depends_on:
-            - mailhog
-            - sql-studio
-            - rustfs
-    
     sql-studio:
         image: frectonz/sql-studio:latest
         container_name: sqlstudio_app
@@ -60,7 +24,7 @@ services:
         volumes:
             - inventory_db_data:/var/lib/postgresql/18/data
         ports:
-            - 5432
+            - 5432:5432
         container_name: inventory_postgres_db
         healthcheck:
             test:

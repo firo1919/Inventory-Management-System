@@ -24,11 +24,7 @@ public class UserService {
     public UserResponseDTO updateProfile(String username, ProfileUpdateDTO profileUpdateDTO) {
         var user = userRepository.findByEmail(username)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-        user.setFirstName(profileUpdateDTO.firstName());
-        user.setLastName(profileUpdateDTO.lastName());
-        user.setUsername(profileUpdateDTO.username());
-        user.setEmail(profileUpdateDTO.email());
-        user.setPhone(profileUpdateDTO.phone());
+        userMapper.updateModelFromDTO(user, profileUpdateDTO);
         user.setPassword(passwordEncoder.encode(profileUpdateDTO.password()));
         userRepository.save(user);
         var response = userMapper.toDTO(user);

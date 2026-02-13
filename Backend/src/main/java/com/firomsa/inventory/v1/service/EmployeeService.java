@@ -73,11 +73,7 @@ public class EmployeeService {
                 () -> new ResourceNotFoundException(id.toString() + " User not found"));
         Role role = roleRepository.findByName(userUpdateRequestDTO.role()).orElseThrow(
                 () -> new ResourceNotFoundException("Role: " + userUpdateRequestDTO.role().name()));
-        user.setFirstName(userUpdateRequestDTO.firstName());
-        user.setLastName(userUpdateRequestDTO.lastName());
-        user.setEmail(userUpdateRequestDTO.email());
-        user.setPhone(userUpdateRequestDTO.phone());
-        user.setUsername(userUpdateRequestDTO.username());
+        userMapper.updateModelFromDTO(user, userUpdateRequestDTO);
         user.setPassword(passwordEncoder.encode(userUpdateRequestDTO.password()));
         user.setRole(role);
         userRepository.save(user);

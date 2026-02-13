@@ -22,6 +22,9 @@ services:
             - AWS_S3_ENDPOINT
             - SPRING_CLOUD_AWS_S3_PATHSTYLEACCESSENABLED
             - CORS_ORIGINS
+            - S3_BUCKET_NAME
+            - S3_EXPIRY_DAYS
+            - APP_BOOTSTRAP_TOKEN
         ports:
             - 8080:8080
         container_name: inventory_app
