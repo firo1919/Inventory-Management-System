@@ -23,7 +23,8 @@ services:
             - SPRING_CLOUD_AWS_S3_PATHSTYLEACCESSENABLED
             - CORS_ORIGINS
             - S3_BUCKET_NAME
-            - S3_EXPIRY_DAYS
+            - S3_GET_LINK_EXPIRY_MINUTES
+            - S3_UPLOAD_LINK_EXPIRY_MINUTES
             - APP_BOOTSTRAP_TOKEN
         ports:
             - 8080:8080

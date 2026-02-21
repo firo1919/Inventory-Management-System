@@ -23,9 +23,11 @@ public class StorageService {
     public UploadResponseDTO createUploadPresignTicket(UploadRequestDTO file) {
         log.info("Generating presigned upload URL for file");
         String key = System.currentTimeMillis() + "_" + file.getFilename();
-        return new UploadResponseDTO(key, s3Template.createSignedPutURL(s3Config.getBucketName(), key,
-                Duration.ofDays(s3Config.getExpiryDays()), null, file.getContentType()).toString(),
-                String.valueOf(s3Config.getExpiryDays()));
+        return new UploadResponseDTO(key,
+                s3Template.createSignedPutURL(s3Config.getBucketName(), key,
+                        Duration.ofMinutes(s3Config.getUploadLinkExpiryMinutes()), null,
+                        file.getContentType()).toString(),
+                String.valueOf(s3Config.getUploadLinkExpiryMinutes()));
     }
 
     public boolean exists(String key) {
@@ -33,7 +35,7 @@ public class StorageService {
     }
 
     public String getUrl(String key) {
-        return s3Template.createSignedGetURL(s3Config.getBucketName(), key, Duration.ofDays(s3Config.getExpiryDays()))
-                .toString();
+        return s3Template.createSignedGetURL(s3Config.getBucketName(), key,
+                Duration.ofMinutes(s3Config.getGetLinkExpiryMinutes())).toString();
     }
 }
