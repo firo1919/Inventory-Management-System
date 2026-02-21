@@ -44,6 +44,6 @@ public class RefreshToken {
     private LocalDateTime createdAt;
 
     @NotNull
-    private LocalDateTime expiresAt;
+    private String token;
 
 }

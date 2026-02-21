@@ -1,57 +1,48 @@
 package com.firomsa.inventory.v1.service;
 
-import com.firomsa.inventory.config.AuthSecret;
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
-import lombok.RequiredArgsConstructor;
-
-import java.util.Date;
-import java.util.Random;
-import java.util.concurrent.TimeUnit;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.stream.Collectors;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.oauth2.jose.jws.JwsAlgorithms;
+import org.springframework.security.oauth2.jwt.JwsHeader;
+import org.springframework.security.oauth2.jwt.JwtClaimsSet;
+import org.springframework.security.oauth2.jwt.JwtEncoder;
+import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.stereotype.Service;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
 public class JWTAuthService {
 
     private final int JWT_DURATION = 15;
-    private final AuthSecret authSecret;
-    private final Random random = new Random();
+    private final int REFRESH_TOKEN_DURATION = 15;
+    private final JwtEncoder encoder;
 
-    public String generateToken(String subject) {
-        String tokenId = String.valueOf(random.nextInt(10000));
-        var now = new Date(System.currentTimeMillis());
+    public String generateToken(Authentication authentication) {
+        Instant now = Instant.now();
+        String scope = authentication.getAuthorities().stream().map(GrantedAuthority::getAuthority)
+                .collect(Collectors.joining(" "));
 
-        return Jwts.builder().header().keyId(tokenId).and().subject(subject).issuedAt(now)
-                .expiration(new Date(now.getTime() + TimeUnit.MINUTES.toMillis(JWT_DURATION)))
-                .signWith(Keys.hmacShaKeyFor(authSecret.getSecret().getBytes())).compact();
+        JwtClaimsSet claims = JwtClaimsSet.builder().issuer("self").issuedAt(now)
+                .expiresAt(now.plus(JWT_DURATION, ChronoUnit.MINUTES))
+                .subject(authentication.getName()).claim("scope", scope).build();
+
+        JwsHeader jwsHeader = JwsHeader.with(() -> JwsAlgorithms.HS256).build();
+
+        return this.encoder.encode(JwtEncoderParameters.from(jwsHeader, claims)).getTokenValue();
     }
 
-    public Claims getClaims(String token) {
-        return Jwts.parser().verifyWith(Keys.hmacShaKeyFor(authSecret.getSecret().getBytes()))
-                .build().parseSignedClaims(token).getPayload();
-    }
+    public String generateRefreshToken(Authentication authentication) {
+        Instant now = Instant.now();
+        JwtClaimsSet claims = JwtClaimsSet.builder().issuer("self").issuedAt(now)
+                .expiresAt(now.plus(REFRESH_TOKEN_DURATION, ChronoUnit.DAYS))
+                .subject(authentication.getName()).claim("type", "REFRESH").build();
 
-    public boolean isValidToken(String token) {
-        return getExpirationDate(token).after(new Date(System.currentTimeMillis()));
-    }
+        JwsHeader jwsHeader = JwsHeader.with(() -> JwsAlgorithms.HS256).build();
 
-    public boolean isValidToken(String token, String username) {
-        String tokenUserName = getSubject(token);
-
-        return (username.equals(tokenUserName) && !isTokenExpired(token));
-    }
-
-    public boolean isTokenExpired(String token) {
-        return getExpirationDate(token).before(new Date(System.currentTimeMillis()));
-    }
-
-    public Date getExpirationDate(String token) {
-        return getClaims(token).getExpiration();
-    }
-
-    public String getSubject(String token) {
-        return getClaims(token).getSubject();
+        return this.encoder.encode(JwtEncoderParameters.from(jwsHeader, claims)).getTokenValue();
     }
 }
