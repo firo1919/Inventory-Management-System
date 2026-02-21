@@ -208,7 +208,7 @@ public class AuthService {
         String username = jwt.getSubject();
         UserDetails userDetails = userDetailsService.loadUserByUsername(username);
         Authentication authentication = new UsernamePasswordAuthenticationToken(userDetails,
-                userDetails.getPassword(), userDetails.getAuthorities());
+                null, userDetails.getAuthorities());
         String newAccessToken = jwtAuthService.generateToken(authentication);
 
         return new LoginResponseDTO(user.getRole().getName(), newAccessToken,
