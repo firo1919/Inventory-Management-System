@@ -207,8 +207,8 @@ public class AuthService {
                 () -> new AuthenticationException("Refresh token is invalid, please login"));
         String username = jwt.getSubject();
         UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-        Authentication authentication = new UsernamePasswordAuthenticationToken(userDetails,
-                null, userDetails.getAuthorities());
+        Authentication authentication = new UsernamePasswordAuthenticationToken(userDetails, null,
+                userDetails.getAuthorities());
         String newAccessToken = jwtAuthService.generateToken(authentication);
 
         return new LoginResponseDTO(user.getRole().getName(), newAccessToken,
@@ -223,8 +223,9 @@ public class AuthService {
         if (!"REFRESH".equals(jwt.getClaim("type"))) {
             throw new AuthenticationException("Invalid token type");
         }
-        refreshTokenRepository.findByToken(logoutRequestDTO.refreshToken()).orElseThrow(
-                () -> new AuthenticationException("Refresh token is invalid, please login"));
+        refreshTokenRepository.findByTokenAndUser(logoutRequestDTO.refreshToken(), user)
+                .orElseThrow(() -> new AuthenticationException(
+                        "Refresh token is invalid, please login"));
 
         refreshTokenRepository.deleteAllByUser(user);
         return new LogoutResponseDTO("Successfully logged out");
