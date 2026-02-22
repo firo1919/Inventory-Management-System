@@ -19,6 +19,31 @@
             "name": "s3.get-link-expiry-minutes",
             "type": "java.lang.String",
             "description": "A description for 's3.get-link-expiry-minutes'"
+        },
+        {
+            "name": "auth.secret",
+            "type": "java.lang.String",
+            "description": "A description for 'auth.secret'"
+        },
+        {
+            "name": "cors.origins",
+            "type": "java.lang.String",
+            "description": "A description for 'cors.origins'"
+        },
+        {
+            "name": "app.bootstrap.token",
+            "type": "java.lang.String",
+            "description": "A description for 'app.bootstrap.token'"
+        },
+        {
+            "name": "admin.email",
+            "type": "java.lang.String",
+            "description": "A description for 'admin.email'"
+        },
+        {
+            "name": "admin.phone",
+            "type": "java.lang.String",
+            "description": "A description for 'admin.phone'"
         }
     ]
 }
