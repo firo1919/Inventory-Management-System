@@ -3,7 +3,7 @@ package com.firomsa.inventory.v1.service;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.LocalDateTime;
-import java.util.Random;
+import java.security.SecureRandom;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -158,8 +158,8 @@ public class AuthService {
     }
 
     public String generateOtp() {
-        var random = new Random();
-        var numbers = new StringBuffer();
+        var random = new SecureRandom();
+        var numbers = new StringBuilder();
 
         for (int i = 0; i < 5; i++) {
             numbers.append(random.nextInt(10));
@@ -196,16 +196,25 @@ public class AuthService {
                 user.getUsername(), user.getEmail());
     }
 
+    @Transactional
     public LoginResponseDTO refreshAccessToken(RefreshTokenRequestDTO refreshTokenRequestDTO) {
         User user = userRepository.findByEmail(refreshTokenRequestDTO.email())
                 .orElseThrow(() -> new ResourceNotFoundException(refreshTokenRequestDTO.email()));
+
         Jwt jwt = jwtDecoder.decode(refreshTokenRequestDTO.refreshToken());
         if (!"REFRESH".equals(jwt.getClaim("type"))) {
             throw new AuthenticationException("Invalid token type");
         }
-        refreshTokenRepository.findByToken(refreshTokenRequestDTO.refreshToken()).orElseThrow(
-                () -> new AuthenticationException("Refresh token is invalid, please login"));
+
+        refreshTokenRepository.findByTokenAndUser(refreshTokenRequestDTO.refreshToken(), user)
+                .orElseThrow(() -> new AuthenticationException(
+                        "Refresh token is invalid, please login"));
+
         String username = jwt.getSubject();
+        if (!user.getUsername().equals(username)) {
+            throw new AuthenticationException("Token subject does not match provided user");
+        }
+
         UserDetails userDetails = userDetailsService.loadUserByUsername(username);
         Authentication authentication = new UsernamePasswordAuthenticationToken(userDetails, null,
                 userDetails.getAuthorities());
@@ -223,11 +232,11 @@ public class AuthService {
         if (!"REFRESH".equals(jwt.getClaim("type"))) {
             throw new AuthenticationException("Invalid token type");
         }
-        refreshTokenRepository.findByTokenAndUser(logoutRequestDTO.refreshToken(), user)
+        var token = refreshTokenRepository.findByTokenAndUser(logoutRequestDTO.refreshToken(), user)
                 .orElseThrow(() -> new AuthenticationException(
                         "Refresh token is invalid, please login"));
 
-        refreshTokenRepository.deleteAllByUser(user);
+        refreshTokenRepository.delete(token);
         return new LogoutResponseDTO("Successfully logged out");
     }
 
