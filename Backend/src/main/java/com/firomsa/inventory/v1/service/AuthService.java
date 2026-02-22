@@ -211,7 +211,7 @@ public class AuthService {
                         "Refresh token is invalid, please login"));
 
         String username = jwt.getSubject();
-        if (!user.getUsername().equals(username)) {
+        if (!user.getEmail().equals(username)) {
             throw new AuthenticationException("Token subject does not match provided user");
         }
 
