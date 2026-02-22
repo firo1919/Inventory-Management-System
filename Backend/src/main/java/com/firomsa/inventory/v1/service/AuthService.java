@@ -1,5 +1,19 @@
 package com.firomsa.inventory.v1.service;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.time.LocalDateTime;
+import java.security.SecureRandom;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import com.firomsa.inventory.config.BootstrapConfig;
 import com.firomsa.inventory.exception.AuthenticationException;
 import com.firomsa.inventory.exception.InvalidOtpException;
@@ -27,18 +41,8 @@ import com.firomsa.inventory.v1.dto.RegisterResponseDTO;
 import com.firomsa.inventory.v1.dto.ResendOtpRequestDTO;
 import com.firomsa.inventory.v1.dto.ResendOtpResponseDTO;
 import com.firomsa.inventory.v1.mapper.UserMapper;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.time.LocalDateTime;
-import java.util.Random;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j
@@ -50,13 +54,14 @@ public class AuthService {
     private final RoleRepository roleRepository;
     private final UserMapper userMapper;
     private final EmailService emailService;
-    private final ConfirmationOtpRepository confirmationOtpRepository;
+    private final UserDetailsService userDetailsService;
     private final AuthenticationManager authenticationManager;
+    private final ConfirmationOtpRepository confirmationOtpRepository;
     private final JWTAuthService jwtAuthService;
     private final RefreshTokenRepository refreshTokenRepository;
     private final BootstrapConfig bootstrapConfig;
     private final int OTP_DURATION = 6;
-    private final int REFRESH_TOKEN_DURATION = 15;
+    private final JwtDecoder jwtDecoder;
 
     @Transactional
     public RegisterResponseDTO create(RegisterRequestDTO registerRequestDTO) {
@@ -94,12 +99,14 @@ public class AuthService {
         }
 
         // Validate that request contains a bootstrap token
-        if (registerAdminRequestDTO.bootstrapToken() == null || registerAdminRequestDTO.bootstrapToken().isBlank()) {
+        if (registerAdminRequestDTO.bootstrapToken() == null
+                || registerAdminRequestDTO.bootstrapToken().isBlank()) {
             throw new AuthenticationException("Authentication failed");
         }
 
         // Use constant-time comparison to prevent timing attacks
-        if (!constantTimeEquals(bootstrapConfig.getToken(), registerAdminRequestDTO.bootstrapToken())) {
+        if (!constantTimeEquals(bootstrapConfig.getToken(),
+                registerAdminRequestDTO.bootstrapToken())) {
             throw new AuthenticationException("Authentication failed");
         }
 
@@ -109,17 +116,13 @@ public class AuthService {
                     "Only one admin can be registered, if you want to create more admins please ask the existing admin to create them");
         }
 
-        Role role = roleRepository.findByName(Roles.ADMIN).orElseThrow(
-                () -> new ResourceNotFoundException("Role: ADMIN"));
+        Role role = roleRepository.findByName(Roles.ADMIN)
+                .orElseThrow(() -> new ResourceNotFoundException("Role: ADMIN"));
 
         RegisterRequestDTO registerRequestDTO = new RegisterRequestDTO(
-                registerAdminRequestDTO.firstName(),
-                registerAdminRequestDTO.lastName(),
-                registerAdminRequestDTO.username(),
-                registerAdminRequestDTO.password(),
-                registerAdminRequestDTO.email(),
-                Roles.ADMIN,
-                registerAdminRequestDTO.phone());
+                registerAdminRequestDTO.firstName(), registerAdminRequestDTO.lastName(),
+                registerAdminRequestDTO.username(), registerAdminRequestDTO.password(),
+                registerAdminRequestDTO.email(), Roles.ADMIN, registerAdminRequestDTO.phone());
 
         User user = userMapper.toModel(registerRequestDTO);
         user.setRole(role);
@@ -155,8 +158,8 @@ public class AuthService {
     }
 
     public String generateOtp() {
-        var random = new Random();
-        var numbers = new StringBuffer();
+        var random = new SecureRandom();
+        var numbers = new StringBuilder();
 
         for (int i = 0; i < 5; i++) {
             numbers.append(random.nextInt(10));
@@ -176,59 +179,72 @@ public class AuthService {
     }
 
     public LoginResponseDTO login(LoginRequestDTO loginRequestDTO) {
-        User user = userRepository.findByEmail(loginRequestDTO.email())
-                .orElseThrow(() -> new ResourceNotFoundException(loginRequestDTO.email()));
-        authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
-                loginRequestDTO.email(), loginRequestDTO.password()));
+        Authentication authentication =
+                authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
+                        loginRequestDTO.email(), loginRequestDTO.password()));
+        String accessToken = jwtAuthService.generateToken(authentication);
+        String refreshToken = jwtAuthService.generateRefreshToken(authentication);
+        User user = userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new ResourceNotFoundException(authentication.getName()));
+        RefreshToken refreshTokenEntity = new RefreshToken();
+        refreshTokenEntity.setUser(user);
+        refreshTokenEntity.setToken(refreshToken);
 
-        String accessToken = jwtAuthService.generateToken(loginRequestDTO.email());
+        refreshTokenRepository.save(refreshTokenEntity);
 
-        RefreshToken refreshToken = new RefreshToken();
-        refreshToken.setUser(user);
-        refreshToken.setExpiresAt(LocalDateTime.now().plusDays(REFRESH_TOKEN_DURATION));
-        var savedRefreshToken = refreshTokenRepository.save(refreshToken);
-
-        return new LoginResponseDTO(user.getRole().getName(), accessToken,
-                savedRefreshToken.getId().toString(), user.getUsername(), user.getEmail());
+        return new LoginResponseDTO(user.getRole().getName(), accessToken, refreshToken,
+                user.getUsername(), user.getEmail());
     }
 
+    @Transactional
     public LoginResponseDTO refreshAccessToken(RefreshTokenRequestDTO refreshTokenRequestDTO) {
         User user = userRepository.findByEmail(refreshTokenRequestDTO.email())
                 .orElseThrow(() -> new ResourceNotFoundException(refreshTokenRequestDTO.email()));
-        var refreshToken = refreshTokenRepository
-                .findByIdAndExpiresAtAfter(refreshTokenRequestDTO.refreshToken(),
-                        LocalDateTime.now())
+
+        Jwt jwt = jwtDecoder.decode(refreshTokenRequestDTO.refreshToken());
+        if (!"REFRESH".equals(jwt.getClaim("type"))) {
+            throw new AuthenticationException("Invalid token type");
+        }
+
+        refreshTokenRepository.findByTokenAndUser(refreshTokenRequestDTO.refreshToken(), user)
                 .orElseThrow(() -> new AuthenticationException(
                         "Refresh token is invalid, please login"));
-        String accessToken = jwtAuthService.generateToken(refreshTokenRequestDTO.email());
 
-        return new LoginResponseDTO(user.getRole().getName(), accessToken,
-                refreshToken.getId().toString(), user.getUsername(), user.getEmail());
+        String username = jwt.getSubject();
+        if (!user.getUsername().equals(username)) {
+            throw new AuthenticationException("Token subject does not match provided user");
+        }
+
+        UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+        Authentication authentication = new UsernamePasswordAuthenticationToken(userDetails, null,
+                userDetails.getAuthorities());
+        String newAccessToken = jwtAuthService.generateToken(authentication);
+
+        return new LoginResponseDTO(user.getRole().getName(), newAccessToken,
+                refreshTokenRequestDTO.refreshToken(), user.getUsername(), user.getEmail());
     }
 
     @Transactional
     public LogoutResponseDTO logoutUser(LogoutRequestDTO logoutRequestDTO) {
         User user = userRepository.findByEmail(logoutRequestDTO.email())
                 .orElseThrow(() -> new ResourceNotFoundException(logoutRequestDTO.email()));
-        refreshTokenRepository
-                .findByIdAndExpiresAtAfter(logoutRequestDTO.refreshToken(), LocalDateTime.now())
+        Jwt jwt = jwtDecoder.decode(logoutRequestDTO.refreshToken());
+        if (!"REFRESH".equals(jwt.getClaim("type"))) {
+            throw new AuthenticationException("Invalid token type");
+        }
+        var token = refreshTokenRepository.findByTokenAndUser(logoutRequestDTO.refreshToken(), user)
                 .orElseThrow(() -> new AuthenticationException(
                         "Refresh token is invalid, please login"));
 
-        refreshTokenRepository.deleteAllByUser(user);
+        refreshTokenRepository.delete(token);
         return new LogoutResponseDTO("Successfully logged out");
     }
 
-    /**
-     * Performs constant-time string comparison to prevent timing attacks.
-     * This method ensures that the comparison time is independent of the input values.
-     * Uses MessageDigest.isEqual() which performs constant-time byte array comparison.
-     */
     private boolean constantTimeEquals(String expected, String actual) {
         // Convert nulls to empty strings to maintain constant-time behavior
         String expectedStr = (expected == null) ? "" : expected;
         String actualStr = (actual == null) ? "" : actual;
-        
+
         byte[] expectedBytes = expectedStr.getBytes(StandardCharsets.UTF_8);
         byte[] actualBytes = actualStr.getBytes(StandardCharsets.UTF_8);
         return MessageDigest.isEqual(expectedBytes, actualBytes);

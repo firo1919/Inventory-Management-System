@@ -2,25 +2,35 @@ package com.firomsa.inventory.security;
 
 import java.util.Arrays;
 import java.util.List;
-
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.config.Customizer;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtEncoder;
+import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
+import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-
 import com.firomsa.inventory.config.AllowedOrigins;
+import com.firomsa.inventory.config.AuthSecret;
 import com.firomsa.inventory.model.Roles;
-
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.jwk.JWKSet;
+import com.nimbusds.jose.jwk.KeyUse;
+import com.nimbusds.jose.jwk.OctetSequenceKey;
+import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
+import com.nimbusds.jose.jwk.source.JWKSource;
+import com.nimbusds.jose.proc.SecurityContext;
+import io.jsonwebtoken.security.Keys;
 import lombok.RequiredArgsConstructor;
 
 @Configuration
@@ -29,9 +39,23 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final JWTSecurityFilter jwtSecurityFilter;
+    private final AuthSecret authSecret;
     private final AllowedOrigins allowedOrigins;
-    private final UnAuthorizedUserAuthenticationEntryPoint unAuthorizedUserAuthenticationEntryPoint;
+
+    @Bean
+    JwtDecoder jwtDecoder() {
+        return NimbusJwtDecoder.withSecretKey(Keys.hmacShaKeyFor(authSecret.getSecret().getBytes()))
+                .macAlgorithm(MacAlgorithm.HS256).build();
+    }
+
+    @Bean
+    JwtEncoder jwtEncoder() {
+        OctetSequenceKey jwk =
+                new OctetSequenceKey.Builder(Keys.hmacShaKeyFor(authSecret.getSecret().getBytes()))
+                        .algorithm(JWSAlgorithm.HS256).keyUse(KeyUse.SIGNATURE).build();
+        JWKSource<SecurityContext> jwks = new ImmutableJWKSet<>(new JWKSet(jwk));
+        return new NimbusJwtEncoder(jwks);
+    }
 
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
@@ -52,14 +76,14 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/auth/**", "/docs", "/v3/api-docs",
                                 "/v3/api-docs/**", "/swagger-resources/**", "/swagger-ui.html",
                                 "/swagger-ui/**")
-                        .permitAll().requestMatchers("/api/v1/admin/**").hasRole(Roles.ADMIN.name())
-                        .requestMatchers("/api/v1/employee/**").hasRole(Roles.EMPLOYEE.name())
-                        .anyRequest().authenticated())
-                .exceptionHandling(exception -> exception
-                        .authenticationEntryPoint(unAuthorizedUserAuthenticationEntryPoint))
+                        .permitAll().requestMatchers("/api/v1/admin/**")
+                        .hasAuthority("SCOPE_" + Roles.ADMIN.name())
+                        .requestMatchers("/api/v1/employee/**")
+                        .hasAuthority("SCOPE_" + Roles.EMPLOYEE.name()).anyRequest()
+                        .authenticated())
+                .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()))
                 .sessionManagement(
                         session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .addFilterBefore(jwtSecurityFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
 

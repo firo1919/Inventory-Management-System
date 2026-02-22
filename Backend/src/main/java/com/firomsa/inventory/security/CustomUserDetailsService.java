@@ -25,8 +25,7 @@ public class CustomUserDetailsService implements UserDetailsService {
                 .orElseThrow(() -> new UsernameNotFoundException("USER: " + email));
         return User.builder().username(user.getEmail()).password(user.getPassword())
                 .disabled(!user.isActive() || !user.isEnabled())
-                .authorities(List
-                        .of(new SimpleGrantedAuthority("ROLE_" + user.getRole().getName().name())))
+                .authorities(List.of(new SimpleGrantedAuthority(user.getRole().getName().name())))
                 .build();
     }
 }

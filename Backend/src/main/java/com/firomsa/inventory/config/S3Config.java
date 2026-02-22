@@ -16,5 +16,7 @@ public class S3Config {
     @NotBlank
     private String bucketName;
     @Positive
-    private int expiryDays;
+    private int getLinkExpiryMinutes;
+    @Positive
+    private int uploadLinkExpiryMinutes;
 }

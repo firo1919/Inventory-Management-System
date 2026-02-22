@@ -10,8 +10,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -32,24 +31,24 @@ public class ProfileController {
     @Operation(summary = "For getting user profile")
     @GetMapping("")
     @ResponseStatus(HttpStatus.OK)
-    public UserResponseDTO getProfile(@AuthenticationPrincipal UserDetails userDetails) {
-        return userService.getProfile(userDetails.getUsername());
+    public UserResponseDTO getProfile(Authentication authentication) {
+        return userService.getProfile(authentication.getName());
     }
 
     @Operation(summary = "For updating user profile")
     @PutMapping("")
     @ResponseStatus(HttpStatus.OK)
-    public UserResponseDTO updateProfile(@AuthenticationPrincipal UserDetails userDetails,
+    public UserResponseDTO updateProfile(Authentication authentication,
             @Valid @RequestBody ProfileUpdateDTO profileUpdateDTO) {
-        return userService.updateProfile(userDetails.getUsername(), profileUpdateDTO);
+        return userService.updateProfile(authentication.getName(), profileUpdateDTO);
     }
 
     @Operation(summary = "For adding/updating user profile picture")
     @PostMapping("/profile-picture")
     @ResponseStatus(HttpStatus.OK)
-    public UserResponseDTO addUserProfilePicture(@AuthenticationPrincipal UserDetails userDetails,
+    public UserResponseDTO addUserProfilePicture(Authentication authentication,
             @Valid @RequestBody FileDTO profileImageDTO) {
-        var response = userService.addProfilePicture(userDetails.getUsername(),
+        var response = userService.addProfilePicture(authentication.getName(),
                 profileImageDTO.getObjectKey());
         return response;
     }
