@@ -11,8 +11,9 @@
             "installOhMyZsh": true,
             "configureZshAsDefaultShell": true
         },
-        "ghcr.io/devcontainers/features/docker-in-docker:2": {
-            "moby": false
+        "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {
+            "moby": false,
+            "installDockerBuildx": true
         }
     },
     "customizations": {
@@ -27,5 +28,8 @@
             ]
         }
     },
-    "forwardPorts": [8080]
+    "forwardPorts": [8080],
+    "runArgs": ["--network=inventory_network"],
+    "initializeCommand": "docker network create inventory_network || true",
+    "postCreateCommand": "mvn clean install -DskipTests"
 }
