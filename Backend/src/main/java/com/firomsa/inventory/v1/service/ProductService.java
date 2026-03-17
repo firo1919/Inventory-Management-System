@@ -4,10 +4,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import com.firomsa.inventory.exception.ResourceNotFoundException;
 import com.firomsa.inventory.model.Category;
 import com.firomsa.inventory.model.Product;
@@ -17,9 +15,6 @@ import com.firomsa.inventory.v1.dto.ProductRequestDTO;
 import com.firomsa.inventory.v1.dto.ProductResponseDTO;
 import com.firomsa.inventory.v1.dto.ProductUpdateRequestDTO;
 import com.firomsa.inventory.v1.mapper.ProductMapper;
-
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -48,7 +43,7 @@ public class ProductService {
     }
 
     @Transactional(readOnly = true)
-    public ProductResponseDTO getById(@NotNull UUID id) {
+    public ProductResponseDTO getById(UUID id) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + id));
         var response = productMapper.toDTO(product);
@@ -58,7 +53,7 @@ public class ProductService {
         return response;
     }
 
-    public ProductResponseDTO create(@Valid @NotNull ProductRequestDTO request) {
+    public ProductResponseDTO create(ProductRequestDTO request) {
         Product product = productMapper.toModel(request);
         if (request.getCategoryIds() != null) {
             Set<Category> categories = categoryRepository.findAllById(request.getCategoryIds())
@@ -73,8 +68,8 @@ public class ProductService {
         return response;
     }
 
-    public ProductResponseDTO update(@NotNull UUID id,
-            @Valid @NotNull ProductUpdateRequestDTO request) {
+    public ProductResponseDTO update(UUID id,
+            ProductUpdateRequestDTO request) {
         Product existing = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + id));
 
@@ -93,28 +88,28 @@ public class ProductService {
         return response;
     }
 
-    public void delete(@NotNull UUID id) {
+    public void delete(UUID id) {
         if (!productRepository.existsById(id)) {
             throw new ResourceNotFoundException("Product not found: " + id);
         }
         productRepository.deleteById(id);
     }
 
-    public void activate(@NotNull UUID id) {
+    public void activate(UUID id) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + id));
         product.setActive(true);
         productRepository.save(product);
     }
 
-    public void deactivate(@NotNull UUID id) {
+    public void deactivate(UUID id) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + id));
         product.setActive(false);
         productRepository.save(product);
     }
 
-    public ProductResponseDTO addImageToProduct(@NotNull UUID id, @NotNull String objectKey) {
+    public ProductResponseDTO addImageToProduct(UUID id, String objectKey) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + id));
         if (storageService.exists(objectKey)) {
