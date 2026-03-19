@@ -12,7 +12,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.annotation.Rollback;
 import com.firomsa.inventory.repository.ConfirmationOtpRepository;
 import com.firomsa.inventory.v1.dto.ConfirmOtpRequestDTO;
 import com.firomsa.inventory.v1.dto.ConfirmOtpResponseDTO;
@@ -84,7 +83,6 @@ public class AuthControllerIntTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @Rollback
     void shouldRegisterAdminWhenRequestIsValid() {
         // Arrange
         RegisterAdminRequestDTO request = validRegisterAdminRequest();
@@ -108,7 +106,6 @@ public class AuthControllerIntTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @Rollback
     void shouldConfirmOtpWhenOtpIsValid() {
         registerAdmin();
         String otp = latestOtpForEmail("john.doe@example.com");
@@ -125,7 +122,6 @@ public class AuthControllerIntTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @Rollback
     void shouldLoginRefreshAndLogoutWhenFlowIsValid() {
         registerAndConfirmAdmin();
 
@@ -163,7 +159,6 @@ public class AuthControllerIntTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @Rollback
     void shouldReturnBadRequestWhenBootstrapTokenIsInvalid() {
         RegisterAdminRequestDTO request = new RegisterAdminRequestDTO("John", "Doe", "john_doe",
                 "password123", "john.doe@example.com", "+251900000001",
@@ -176,7 +171,6 @@ public class AuthControllerIntTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @Rollback
     void shouldReturnBadRequestWhenConfirmOtpPayloadIsInvalid() {
         ConfirmOtpRequestDTO request = new ConfirmOtpRequestDTO("", "");
 
@@ -186,20 +180,19 @@ public class AuthControllerIntTest extends AbstractIntegrationTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     }
 
-        @Test
-        @Rollback
-        void shouldReturnBadRequestWhenConfirmOtpCodeIsInvalid() {
-                registerAdmin();
-                ConfirmOtpRequestDTO request = new ConfirmOtpRequestDTO("00000", "john.doe@example.com");
+    @Test
 
-                ResponseEntity<String> response = restTemplate.exchange(baseUrl() + "/confirm-otp",
-                                HttpMethod.POST, jsonBody(request), String.class);
+    void shouldReturnBadRequestWhenConfirmOtpCodeIsInvalid() {
+        registerAdmin();
+        ConfirmOtpRequestDTO request = new ConfirmOtpRequestDTO("00000", "john.doe@example.com");
 
-                assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        }
+        ResponseEntity<String> response = restTemplate.exchange(baseUrl() + "/confirm-otp",
+                HttpMethod.POST, jsonBody(request), String.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    }
 
     @Test
-    @Rollback
     void shouldReturnBadRequestWhenResendOtpPayloadIsInvalid() {
         ResendOtpRequestDTO request = new ResendOtpRequestDTO("invalid-email");
 
@@ -209,45 +202,45 @@ public class AuthControllerIntTest extends AbstractIntegrationTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     }
 
-        @Test
-        @Rollback
-        void shouldResendOtpWhenEmailExists() {
-                registerAdmin();
-                ResendOtpRequestDTO request = new ResendOtpRequestDTO("john.doe@example.com");
+    @Test
 
-                ResponseEntity<ResendOtpResponseDTO> response =
-                                restTemplate.exchange(baseUrl() + "/resend-otp", HttpMethod.POST,
-                                                jsonBody(request), ResendOtpResponseDTO.class);
+    void shouldResendOtpWhenEmailExists() {
+        registerAdmin();
+        ResendOtpRequestDTO request = new ResendOtpRequestDTO("john.doe@example.com");
 
-                assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-                assertThat(response.getBody()).isNotNull();
-                assertThat(response.getBody().message()).isEqualTo("Successfully resent OTP, check your inbox");
-        }
+        ResponseEntity<ResendOtpResponseDTO> response =
+                restTemplate.exchange(baseUrl() + "/resend-otp", HttpMethod.POST, jsonBody(request),
+                        ResendOtpResponseDTO.class);
 
-        @Test
-        @Rollback
-        void shouldReturnNotFoundWhenResendOtpEmailDoesNotExist() {
-                ResendOtpRequestDTO request = new ResendOtpRequestDTO("unknown.user@example.com");
-
-                ResponseEntity<String> response = restTemplate.exchange(baseUrl() + "/resend-otp",
-                                HttpMethod.POST, jsonBody(request), String.class);
-
-                assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
-        }
-
-        @Test
-        @Rollback
-        void shouldReturnBadRequestWhenSecondAdminRegistrationAttempted() {
-                registerAdmin();
-
-                ResponseEntity<String> response = restTemplate.exchange(baseUrl() + "/admins",
-                                HttpMethod.POST, jsonBody(validRegisterAdminRequest()), String.class);
-
-                assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        }
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().message())
+                .isEqualTo("Successfully resent OTP, check your inbox");
+    }
 
     @Test
-    @Rollback
+
+    void shouldReturnNotFoundWhenResendOtpEmailDoesNotExist() {
+        ResendOtpRequestDTO request = new ResendOtpRequestDTO("unknown.user@example.com");
+
+        ResponseEntity<String> response = restTemplate.exchange(baseUrl() + "/resend-otp",
+                HttpMethod.POST, jsonBody(request), String.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    }
+
+    @Test
+
+    void shouldReturnBadRequestWhenSecondAdminRegistrationAttempted() {
+        registerAdmin();
+
+        ResponseEntity<String> response = restTemplate.exchange(baseUrl() + "/admins",
+                HttpMethod.POST, jsonBody(validRegisterAdminRequest()), String.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
     void shouldReturnBadRequestWhenLoginPayloadIsInvalid() {
         LoginRequestDTO request = new LoginRequestDTO("short", "invalid-email");
 
@@ -258,7 +251,6 @@ public class AuthControllerIntTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @Rollback
     void shouldReturnBadRequestWhenRefreshPayloadIsInvalid() {
         RefreshTokenRequestDTO request = new RefreshTokenRequestDTO(null, "invalid-email");
 
@@ -269,7 +261,6 @@ public class AuthControllerIntTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @Rollback
     void shouldReturnBadRequestWhenLogoutPayloadIsInvalid() {
         LogoutRequestDTO request = new LogoutRequestDTO(null, "invalid-email");
 

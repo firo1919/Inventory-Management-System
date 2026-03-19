@@ -1,0 +1,56 @@
+package com.firomsa.inventory.repository;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertAll;
+import java.util.Optional;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
+import com.firomsa.inventory.model.User;
+
+@DataJpaTest
+public class UserRepositoryUnitTest {
+    @Autowired
+    private UserRepository userRepository;
+    private final User user = User.builder().firstName("John").lastName("Doe").username("john_doe")
+            .password("password123").email("john.doe@example.com").phone("1234567890").build();
+
+
+    @Test
+    void shouldFindUserByEmail() {
+        // Arrange
+        userRepository.save(user);
+        // Act
+        Optional<User> foundUser = userRepository.findByEmail("john.doe@example.com");
+        // Assert
+        assertThat(foundUser).isNotNull();
+        assertAll(() -> {
+            assertThat(foundUser.get().getEmail()).isEqualTo("john.doe@example.com");
+            assertThat(foundUser.get().getFirstName()).isEqualTo("John");
+            assertThat(foundUser.get().getLastName()).isEqualTo("Doe");
+            assertThat(foundUser.get().getUsername()).isEqualTo("john_doe");
+            assertThat(foundUser.get().getPassword()).isEqualTo("password123");
+            assertThat(foundUser.get().getPhone()).isEqualTo("1234567890");
+        });
+
+    }
+
+    @Test
+    void shouldFindUserByUsername() {
+        // Arrange
+        userRepository.save(user);
+        // Act
+        Optional<User> foundUser = userRepository.findByUsername("john_doe");
+        // Assert
+        assertThat(foundUser).isNotNull();
+        assertAll(() -> {
+            assertThat(foundUser.get().getEmail()).isEqualTo("john.doe@example.com");
+            assertThat(foundUser.get().getFirstName()).isEqualTo("John");
+            assertThat(foundUser.get().getLastName()).isEqualTo("Doe");
+            assertThat(foundUser.get().getUsername()).isEqualTo("john_doe");
+            assertThat(foundUser.get().getPassword()).isEqualTo("password123");
+            assertThat(foundUser.get().getPhone()).isEqualTo("1234567890");
+        });
+    }
+
+}
