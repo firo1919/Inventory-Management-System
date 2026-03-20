@@ -1,6 +1,7 @@
 package com.firomsa.inventory.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -13,6 +14,7 @@ public class RoleRepositoryUnitTest {
     private RoleRepository roleRepository;
 
     @Test
+    @DisplayName("should find role by name")
     void shouldFindRoleByName() {
         // Arrange
         Role role = new Role();

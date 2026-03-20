@@ -3,6 +3,7 @@ package com.firomsa.inventory.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 import java.time.LocalDateTime;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -29,6 +30,7 @@ public class ConfirmationOtpRepositoryUnitTest {
     }
 
     @Test
+    @DisplayName("should delete all confirmation otps for a given user")
     void shouldDeleteAllByUser() {
         // Arrange
         var user = userRepository.findByUsername("john_doe");
@@ -40,6 +42,7 @@ public class ConfirmationOtpRepositoryUnitTest {
     }
 
     @Test
+    @DisplayName("should find confirmation otp by otp and expiresAt after and confirmed false")
     void shouldFindByOtpAndExpiresAtAfterAndConfirmedFalse() {
         // Act
         var confirmationOtp = confirmationOtpRepository
@@ -50,6 +53,7 @@ public class ConfirmationOtpRepositoryUnitTest {
     }
 
     @Test
+    @DisplayName("should not find confirmation otp by otp and expiresAt after and confirmed false")
     void shouldNotFindByOtpAndExpiresAtAfterAndConfirmedFalse() {
         // Act
         var confirmationOtp = confirmationOtpRepository.findByOtpAndExpiresAtAfterAndConfirmedFalse(
@@ -59,6 +63,7 @@ public class ConfirmationOtpRepositoryUnitTest {
     }
 
     @Test
+    @DisplayName("should not find confirmation otp by otp and expiresAt after and confirmed true")
     void shouldNotFindByOtpAndExpiresAtAfterAndConfirmedTrue() {
         // Arrange
         var confirmationOtp = confirmationOtpRepository

@@ -3,6 +3,7 @@ package com.firomsa.inventory.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import java.util.Optional;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -17,6 +18,7 @@ public class UserRepositoryUnitTest {
 
 
     @Test
+    @DisplayName("should find user by email")
     void shouldFindUserByEmail() {
         // Arrange
         userRepository.save(user);
@@ -36,6 +38,7 @@ public class UserRepositoryUnitTest {
     }
 
     @Test
+    @DisplayName("should find user by username")
     void shouldFindUserByUsername() {
         // Arrange
         userRepository.save(user);
