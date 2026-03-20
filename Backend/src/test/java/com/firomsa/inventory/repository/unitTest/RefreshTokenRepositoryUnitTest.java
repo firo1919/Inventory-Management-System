@@ -1,4 +1,4 @@
-package com.firomsa.inventory.repository;
+package com.firomsa.inventory.repository.unitTest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.BeforeEach;
@@ -8,6 +8,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import com.firomsa.inventory.model.RefreshToken;
 import com.firomsa.inventory.model.User;
+import com.firomsa.inventory.repository.RefreshTokenRepository;
+import com.firomsa.inventory.repository.UserRepository;
 
 @DataJpaTest
 public class RefreshTokenRepositoryUnitTest {

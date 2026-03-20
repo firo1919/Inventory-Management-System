@@ -1,4 +1,4 @@
-package com.firomsa.inventory.repository;
+package com.firomsa.inventory.repository.integrationTest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
@@ -7,10 +7,21 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
+import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.postgresql.PostgreSQLContainer;
 import com.firomsa.inventory.model.User;
+import com.firomsa.inventory.repository.UserRepository;
 
 @DataJpaTest
-public class UserRepositoryUnitTest {
+@Testcontainers
+public class UserRepositoryIntegrationTest {
+
+    @Container
+    @ServiceConnection
+    static PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18-alpine");
+
     @Autowired
     private UserRepository userRepository;
     private final User user = User.builder().firstName("John").lastName("Doe").username("john_doe")

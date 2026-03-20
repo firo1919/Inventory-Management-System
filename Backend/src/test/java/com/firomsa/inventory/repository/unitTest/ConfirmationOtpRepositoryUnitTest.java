@@ -1,4 +1,4 @@
-package com.firomsa.inventory.repository;
+package com.firomsa.inventory.repository.unitTest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import java.time.LocalDateTime;
@@ -9,6 +9,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import com.firomsa.inventory.model.ConfirmationOTP;
 import com.firomsa.inventory.model.User;
+import com.firomsa.inventory.repository.ConfirmationOtpRepository;
+import com.firomsa.inventory.repository.UserRepository;
 
 @DataJpaTest
 public class ConfirmationOtpRepositoryUnitTest {
