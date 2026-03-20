@@ -1,34 +1,38 @@
 package com.firomsa.inventory.v1.controller.unitTest;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.assertj.MockMvcTester;
+import org.springframework.test.web.servlet.assertj.MvcTestResult;
+
 import com.firomsa.inventory.v1.controller.ProductController;
 import com.firomsa.inventory.v1.dto.ProductResponseDTO;
 import com.firomsa.inventory.v1.service.ProductService;
 
 @WebMvcTest(ProductController.class)
-@AutoConfigureMockMvc(addFilters = false)
+@AutoConfigureMockMvc
+@WithMockUser
 public class ProductControllerUnitTest {
 
     @MockitoBean
     private ProductService productService;
 
     @Autowired
-    private MockMvc mockMvc;
+    private MockMvcTester mockMvc;
 
     private static final String BASE_URL = "/api/v1/products";
 
@@ -42,28 +46,30 @@ public class ProductControllerUnitTest {
     }
 
     @Test
-    void shouldGetAllProducts() throws Exception {
+    void shouldGetAllProducts() {
         ProductResponseDTO first = sampleProduct(UUID.randomUUID(), "Coffee");
         ProductResponseDTO second = sampleProduct(UUID.randomUUID(), "Tea");
         when(productService.getAll()).thenReturn(List.of(first, second));
 
-        mockMvc.perform(get(BASE_URL)).andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(2))
-                .andExpect(jsonPath("$[0].name").value("Coffee"))
-                .andExpect(jsonPath("$[1].name").value("Tea"));
+        MvcTestResult result = mockMvc.get().uri(BASE_URL).exchange();
+        assertThat(result).hasStatusOk();
+        assertThat(result).bodyJson().extractingPath("$[0].name").asString().isEqualTo("Coffee");
+        assertThat(result).bodyJson().extractingPath("$[1].name").asString().isEqualTo("Tea");
 
         verify(productService).getAll();
     }
 
     @Test
-    void shouldGetProductById() throws Exception {
+    void shouldGetProductById() {
         UUID productId = UUID.randomUUID();
         ProductResponseDTO response = sampleProduct(productId, "Coffee");
         when(productService.getById(productId)).thenReturn(response);
 
-        mockMvc.perform(get(BASE_URL + "/{id}", productId)).andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(productId.toString()))
-                .andExpect(jsonPath("$.name").value("Coffee"));
+        MvcTestResult result = mockMvc.get().uri(BASE_URL + "/{id}", productId).exchange();
+        assertThat(result).hasStatusOk();
+        assertThat(result).bodyJson().extractingPath("$.id").asString()
+                .isEqualTo(productId.toString());
+        assertThat(result).bodyJson().extractingPath("$.name").asString().isEqualTo("Coffee");
 
         verify(productService).getById(productId);
     }

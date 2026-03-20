@@ -1,19 +1,23 @@
 package com.firomsa.inventory.v1.controller.unitTest;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+
 import java.util.UUID;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.assertj.MockMvcTester;
+import org.springframework.test.web.servlet.assertj.MvcTestResult;
+
 import com.firomsa.inventory.model.Roles;
 import com.firomsa.inventory.v1.controller.AuthController;
 import com.firomsa.inventory.v1.dto.ConfirmOtpRequestDTO;
@@ -31,14 +35,15 @@ import com.firomsa.inventory.v1.dto.UserResponseDTO;
 import com.firomsa.inventory.v1.service.AuthService;
 
 @WebMvcTest(AuthController.class)
-@AutoConfigureMockMvc(addFilters = false)
+@AutoConfigureMockMvc
+@WithMockUser
 public class AuthControllerUnitTest {
 
     @MockitoBean
     private AuthService authService;
 
     @Autowired
-    private MockMvc mockMvc;
+    private MockMvcTester mockMvc;
 
     private static final String BASE_URL = "/api/v1/auth";
 
@@ -62,100 +67,121 @@ public class AuthControllerUnitTest {
     }
 
     @Test
-    void shouldRegisterAdmin() throws Exception {
+    void shouldRegisterAdmin() {
         UserResponseDTO user = sampleUser(UUID.randomUUID(), "admin.user");
         RegisterResponseDTO response =
                 new RegisterResponseDTO(user, "You have successfully registered");
         when(authService.createAdmin(any(RegisterAdminRequestDTO.class))).thenReturn(response);
 
-        mockMvc.perform(post(BASE_URL + "/admins").contentType(APPLICATION_JSON)
-                .content(registerAdminRequestJson())).andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.id").value(user.getId().toString()))
-                .andExpect(jsonPath("$.message").value("You have successfully registered"));
+        MvcTestResult result = mockMvc.post().uri(BASE_URL + "/admins").with(csrf())
+                .contentType(APPLICATION_JSON).content(registerAdminRequestJson()).exchange();
+        assertThat(result).hasStatusOk();
+        assertThat(result).bodyJson().extractingPath("$.data.id").asString()
+                .isEqualTo(user.getId().toString());
+        assertThat(result).bodyJson().extractingPath("$.message").asString()
+                .isEqualTo("You have successfully registered");
 
         verify(authService).createAdmin(any(RegisterAdminRequestDTO.class));
     }
 
     @Test
-    void shouldConfirmOtp() throws Exception {
+    void shouldConfirmOtp() {
         ConfirmOtpResponseDTO response = new ConfirmOtpResponseDTO("Successfully confirmed OTP");
         when(authService.confirmOtp(any(ConfirmOtpRequestDTO.class))).thenReturn(response);
 
-        mockMvc.perform(post(BASE_URL + "/confirm-otp").contentType(APPLICATION_JSON).content("""
-                {
-                    "otp": "12345",
-                    "email": "admin@example.com"
-                }
-                """)).andExpect(status().isOk())
-                .andExpect(jsonPath("$.message").value("Successfully confirmed OTP"));
+        MvcTestResult result = mockMvc.post().uri(BASE_URL + "/confirm-otp").with(csrf())
+                .contentType(APPLICATION_JSON).content("""
+                            {
+                                "otp": "12345",
+                                "email": "admin@example.com"
+                            }
+                        """).exchange();
+        assertThat(result).hasStatusOk();
+        assertThat(result).bodyJson().extractingPath("$.message").asString()
+                .isEqualTo("Successfully confirmed OTP");
 
         verify(authService).confirmOtp(any(ConfirmOtpRequestDTO.class));
     }
 
     @Test
-    void shouldResendOtp() throws Exception {
+    void shouldResendOtp() {
         ResendOtpResponseDTO response = new ResendOtpResponseDTO("Successfully resent OTP");
         when(authService.resendOtp(any(ResendOtpRequestDTO.class))).thenReturn(response);
 
-        mockMvc.perform(post(BASE_URL + "/resend-otp").contentType(APPLICATION_JSON).content("""
-                {
-                    "email": "admin@example.com"
-                }
-                """)).andExpect(status().isOk())
-                .andExpect(jsonPath("$.message").value("Successfully resent OTP"));
+        MvcTestResult result = mockMvc.post().uri(BASE_URL + "/resend-otp").with(csrf())
+                .contentType(APPLICATION_JSON).content("""
+                            {
+                                "email": "admin@example.com"
+                            }
+                        """).exchange();
+        assertThat(result).hasStatusOk();
+        assertThat(result).bodyJson().extractingPath("$.message").asString()
+                .isEqualTo("Successfully resent OTP");
 
         verify(authService).resendOtp(any(ResendOtpRequestDTO.class));
     }
 
     @Test
-    void shouldLoginUser() throws Exception {
+    void shouldLoginUser() {
         LoginResponseDTO response = new LoginResponseDTO(Roles.ADMIN, "access-token",
                 "refresh-token", "admin.user", "admin@example.com");
         when(authService.login(any(LoginRequestDTO.class))).thenReturn(response);
 
-        mockMvc.perform(post(BASE_URL + "/login").contentType(APPLICATION_JSON).content("""
-                {
-                    "password": "password123",
-                    "email": "admin@example.com"
-                }
-                """)).andExpect(status().isOk()).andExpect(jsonPath("$.role").value("ADMIN"))
-                .andExpect(jsonPath("$.accessToken").value("access-token"))
-                .andExpect(jsonPath("$.refreshToken").value("refresh-token"));
+        MvcTestResult result = mockMvc.post().uri(BASE_URL + "/login").with(csrf())
+                .contentType(APPLICATION_JSON).content("""
+                            {
+                                "password": "password123",
+                                "email": "admin@example.com"
+                            }
+                        """).exchange();
+        assertThat(result).hasStatusOk();
+        assertThat(result).bodyJson().extractingPath("$.role").asString().isEqualTo("ADMIN");
+        assertThat(result).bodyJson().extractingPath("$.accessToken").asString()
+                .isEqualTo("access-token");
+        assertThat(result).bodyJson().extractingPath("$.refreshToken").asString()
+                .isEqualTo("refresh-token");
 
         verify(authService).login(any(LoginRequestDTO.class));
     }
 
     @Test
-    void shouldRefreshToken() throws Exception {
+    void shouldRefreshToken() {
         LoginResponseDTO response = new LoginResponseDTO(Roles.ADMIN, "new-access-token",
                 "refresh-token", "admin.user", "admin@example.com");
         when(authService.refreshAccessToken(any(RefreshTokenRequestDTO.class)))
                 .thenReturn(response);
 
-        mockMvc.perform(post(BASE_URL + "/refresh").contentType(APPLICATION_JSON).content("""
-                {
-                    "refreshToken": "refresh-token",
-                    "email": "admin@example.com"
-                }
-                """)).andExpect(status().isOk())
-                .andExpect(jsonPath("$.accessToken").value("new-access-token"))
-                .andExpect(jsonPath("$.refreshToken").value("refresh-token"));
+        MvcTestResult result = mockMvc.post().uri(BASE_URL + "/refresh").with(csrf())
+                .contentType(APPLICATION_JSON).content("""
+                            {
+                                "refreshToken": "refresh-token",
+                                "email": "admin@example.com"
+                            }
+                        """).exchange();
+        assertThat(result).hasStatusOk();
+        assertThat(result).bodyJson().extractingPath("$.accessToken").asString()
+                .isEqualTo("new-access-token");
+        assertThat(result).bodyJson().extractingPath("$.refreshToken").asString()
+                .isEqualTo("refresh-token");
 
         verify(authService).refreshAccessToken(any(RefreshTokenRequestDTO.class));
     }
 
     @Test
-    void shouldLogoutUser() throws Exception {
+    void shouldLogoutUser() {
         LogoutResponseDTO response = new LogoutResponseDTO("Successfully logged out");
         when(authService.logoutUser(any(LogoutRequestDTO.class))).thenReturn(response);
 
-        mockMvc.perform(post(BASE_URL + "/logout").contentType(APPLICATION_JSON).content("""
-                {
-                    "refreshToken": "refresh-token",
-                    "email": "admin@example.com"
-                }
-                """)).andExpect(status().isOk())
-                .andExpect(jsonPath("$.message").value("Successfully logged out"));
+        MvcTestResult result = mockMvc.post().uri(BASE_URL + "/logout").with(csrf())
+                .contentType(APPLICATION_JSON).content("""
+                            {
+                                "refreshToken": "refresh-token",
+                                "email": "admin@example.com"
+                            }
+                        """).exchange();
+        assertThat(result).hasStatusOk();
+        assertThat(result).bodyJson().extractingPath("$.message").asString()
+                .isEqualTo("Successfully logged out");
 
         verify(authService).logoutUser(any(LogoutRequestDTO.class));
     }

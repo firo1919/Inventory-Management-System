@@ -1,23 +1,24 @@
 package com.firomsa.inventory.v1.controller.unitTest;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+
 import java.util.UUID;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.assertj.MockMvcTester;
+import org.springframework.test.web.servlet.assertj.MvcTestResult;
+
 import com.firomsa.inventory.model.Roles;
 import com.firomsa.inventory.v1.controller.ProfileController;
 import com.firomsa.inventory.v1.dto.ProfileUpdateDTO;
@@ -25,14 +26,15 @@ import com.firomsa.inventory.v1.dto.UserResponseDTO;
 import com.firomsa.inventory.v1.service.UserService;
 
 @WebMvcTest(ProfileController.class)
-@AutoConfigureMockMvc(addFilters = false)
+@AutoConfigureMockMvc
+@WithMockUser(username = "employee.one@example.com")
 public class ProfileControllerUnitTest {
 
     @MockitoBean
     private UserService userService;
 
     @Autowired
-    private MockMvc mockMvc;
+    private MockMvcTester mockMvc;
 
     private static final String BASE_URL = "/api/v1/profile";
 
@@ -43,29 +45,28 @@ public class ProfileControllerUnitTest {
     }
 
     @Test
-    void shouldGetProfile() throws Exception {
+    void shouldGetProfile() {
         String email = "employee.one@example.com";
         UserResponseDTO response = sampleUser(UUID.randomUUID(), email);
         when(userService.getProfile(email)).thenReturn(response);
 
-        mockMvc.perform(get(BASE_URL)
-                .principal(new UsernamePasswordAuthenticationToken(email, "password123")))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.email").value(email))
-                .andExpect(jsonPath("$.role").value("EMPLOYEE"));
+        MvcTestResult result = mockMvc.get().uri(BASE_URL).exchange();
+        assertThat(result).hasStatusOk();
+        assertThat(result).bodyJson().extractingPath("$.email").asString().isEqualTo(email);
+        assertThat(result).bodyJson().extractingPath("$.role").asString().isEqualTo("EMPLOYEE");
 
         verify(userService).getProfile(email);
     }
 
     @Test
-    void shouldUpdateProfile() throws Exception {
+    void shouldUpdateProfile() {
         String email = "employee.one@example.com";
         UserResponseDTO response = sampleUser(UUID.randomUUID(), email);
         when(userService.updateProfile(eq(email), any(ProfileUpdateDTO.class)))
                 .thenReturn(response);
 
-        mockMvc.perform(put(BASE_URL)
-                .principal(new UsernamePasswordAuthenticationToken(email, "password123"))
-                .contentType(APPLICATION_JSON).content("""
+        MvcTestResult result =
+                mockMvc.put().uri(BASE_URL).with(csrf()).contentType(APPLICATION_JSON).content("""
                         {
                             "firstName": "Updated",
                             "lastName": "User",
@@ -74,24 +75,25 @@ public class ProfileControllerUnitTest {
                             "email": "employee.one@example.com",
                             "phone": "+251933333333"
                         }
-                        """)).andExpect(status().isOk())
-                .andExpect(jsonPath("$.email").value(email));
+                            """).exchange();
+        assertThat(result).hasStatusOk();
+        assertThat(result).bodyJson().extractingPath("$.email").asString().isEqualTo(email);
 
         verify(userService).updateProfile(eq(email), any(ProfileUpdateDTO.class));
     }
 
     @Test
-    void shouldAddProfilePicture() throws Exception {
+    void shouldAddProfilePicture() {
         String email = "employee.one@example.com";
         String objectKey = "profiles/employee-one.jpg";
         UserResponseDTO response = sampleUser(UUID.randomUUID(), email);
         when(userService.addProfilePicture(email, objectKey)).thenReturn(response);
 
-        mockMvc.perform(post(BASE_URL + "/profile-picture")
-                .principal(new UsernamePasswordAuthenticationToken(email, "password123"))
-                .contentType(APPLICATION_JSON)
-                .content("{" + "\"objectKey\":\"" + objectKey + "\"}")).andExpect(status().isOk())
-                .andExpect(jsonPath("$.email").value(email));
+        MvcTestResult result = mockMvc.post().uri(BASE_URL + "/profile-picture").with(csrf())
+                .contentType(APPLICATION_JSON).content("{" + "\"objectKey\":\"" + objectKey + "\"}")
+                .exchange();
+        assertThat(result).hasStatusOk();
+        assertThat(result).bodyJson().extractingPath("$.email").asString().isEqualTo(email);
 
         verify(userService).addProfilePicture(email, objectKey);
     }
