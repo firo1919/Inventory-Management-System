@@ -45,6 +45,7 @@ import com.firomsa.inventory.v1.service.ProductService;
 @AutoConfigureMockMvc
 @WithMockUser(authorities = "SCOPE_ADMIN")
 public class AdminControllerUnitTest {
+
     @MockitoBean
     private AuthService authService;
     @MockitoBean

@@ -5,23 +5,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.postgresql.PostgreSQLContainer;
 import com.firomsa.inventory.model.RefreshToken;
 import com.firomsa.inventory.model.User;
 import com.firomsa.inventory.repository.RefreshTokenRepository;
 import com.firomsa.inventory.repository.UserRepository;
 
-@DataJpaTest
-@Testcontainers
-public class RefreshTokenRepositoryIntegrationTest {
-
-    @Container
-    @ServiceConnection
-    static PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18-alpine");
+public class RefreshTokenRepositoryIntegrationTest extends AbstractIntegrationTestRepo {
 
     @Autowired
     private RefreshTokenRepository refreshTokenRepository;
