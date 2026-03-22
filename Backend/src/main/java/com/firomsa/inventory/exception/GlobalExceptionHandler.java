@@ -3,7 +3,6 @@ package com.firomsa.inventory.exception;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mail.MailException;
@@ -15,9 +14,8 @@ import org.springframework.web.HttpMediaTypeException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import com.firomsa.inventory.v1.dto.ErrorResponseDTO;
-
 import jakarta.validation.ValidationException;
 import lombok.extern.slf4j.Slf4j;
 
@@ -35,6 +33,14 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(InvalidOtpException.class)
     public ResponseEntity<ErrorResponseDTO> handleInvalidOtpException(InvalidOtpException ex) {
+        log.warn(ex.getMessage());
+        var response = new ErrorResponseDTO(400, ex.getMessage(), LocalDateTime.now(), null);
+        return ResponseEntity.badRequest().body(response);
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ErrorResponseDTO> handleMethodArgumentTypeMismatchException(
+            MethodArgumentTypeMismatchException ex) {
         log.warn(ex.getMessage());
         var response = new ErrorResponseDTO(400, ex.getMessage(), LocalDateTime.now(), null);
         return ResponseEntity.badRequest().body(response);
