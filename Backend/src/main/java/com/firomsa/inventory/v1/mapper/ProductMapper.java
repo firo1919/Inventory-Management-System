@@ -17,17 +17,8 @@ import org.mapstruct.NullValuePropertyMappingStrategy;
 @Mapper(componentModel = "spring")
 public interface ProductMapper {
     // Entity -> Response DTO
-    @Mapping(target = "id", source = "id")
-    @Mapping(target = "name", source = "name")
-    @Mapping(target = "sku", source = "sku")
-    @Mapping(target = "description", source = "description")
-    @Mapping(target = "sellingPrice", source = "sellingPrice")
-    @Mapping(target = "costPrice", source = "costPrice")
-    @Mapping(target = "quantity", source = "quantity")
-    @Mapping(target = "lowStockThreshold", source = "lowStockThreshold")
-    @Mapping(target = "active", source = "active")
-    @Mapping(target = "createdAt", source = "createdAt")
-    @Mapping(target = "updatedAt", source = "updatedAt")
+    @Mapping(target = "createdAt", dateFormat = "dd.MM.yyyy")
+    @Mapping(target = "updatedAt", dateFormat = "dd.MM.yyyy")
     @Mapping(target = "imageUrls", ignore = true)
     @Mapping(target = "categoryIds", expression = "java(toCategoryIds(product.getCategories()))")
     ProductResponseDTO toDTO(Product product);

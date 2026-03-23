@@ -162,9 +162,8 @@ public class AdminControllerUnitTest {
 
         when(productService.addImageToProduct(productId, objectKey)).thenReturn(response);
 
-        MvcTestResult result =
-                mockMvc.post().uri(BASE_URL + "/products/{id}/images", productId).with(csrf())
-                        .contentType(APPLICATION_JSON).content(fileDtoJson(objectKey)).exchange();
+        MvcTestResult result = mockMvc.post().uri(BASE_URL + "/products/{id}/images", productId).with(csrf())
+                .contentType(APPLICATION_JSON).content(fileDtoJson(objectKey)).exchange();
         assertThat(result).hasStatusOk();
         assertThat(result).bodyJson().extractingPath("$.id").asString()
                 .isEqualTo(productId.toString());
@@ -286,8 +285,7 @@ public class AdminControllerUnitTest {
         UserResponseDTO employee = sampleUser(employeeId, "employee.by.id");
         when(employeeService.getEmployeeById(employeeId)).thenReturn(employee);
 
-        MvcTestResult result =
-                mockMvc.get().uri(BASE_URL + "/employees/{id}", employeeId).exchange();
+        MvcTestResult result = mockMvc.get().uri(BASE_URL + "/employees/{id}", employeeId).exchange();
         assertThat(result).hasStatusOk();
         assertThat(result).bodyJson().extractingPath("$.id").asString()
                 .isEqualTo(employeeId.toString());

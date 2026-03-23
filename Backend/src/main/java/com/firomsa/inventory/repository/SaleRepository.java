@@ -1,0 +1,11 @@
+package com.firomsa.inventory.repository;
+
+import java.util.UUID;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+import com.firomsa.inventory.model.Sale;
+
+@Repository
+public interface SaleRepository extends JpaRepository<Sale, UUID> {
+
+}

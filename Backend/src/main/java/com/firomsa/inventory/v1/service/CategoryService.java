@@ -16,7 +16,6 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
 public class CategoryService {
 
     private final CategoryRepository categoryRepository;

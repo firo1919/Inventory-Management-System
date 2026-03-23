@@ -31,6 +31,14 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
     }
 
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ErrorResponseDTO> handleIllegalArgumentException(
+            IllegalArgumentException ex) {
+        log.warn(ex.getMessage());
+        var response = new ErrorResponseDTO(400, ex.getMessage(), LocalDateTime.now(), null);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    }
+
     @ExceptionHandler(InvalidOtpException.class)
     public ResponseEntity<ErrorResponseDTO> handleInvalidOtpException(InvalidOtpException ex) {
         log.warn(ex.getMessage());
@@ -125,8 +133,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MailException.class)
     public ResponseEntity<ErrorResponseDTO> handleMailException(MailException ex) {
         log.warn("Error when sending mail: {}", ex.getMessage());
-        var response =
-                new ErrorResponseDTO(503, "Error when sending mail", LocalDateTime.now(), null);
+        var response = new ErrorResponseDTO(503, "Error when sending mail", LocalDateTime.now(), null);
         return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(response);
     }
 

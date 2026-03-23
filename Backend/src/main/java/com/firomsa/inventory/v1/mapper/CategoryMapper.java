@@ -18,10 +18,8 @@ import org.mapstruct.NullValuePropertyMappingStrategy;
 public interface CategoryMapper {
 
     // Entity -> Response DTO
-    @Mapping(target = "id", source = "id")
-    @Mapping(target = "name", source = "name")
-    @Mapping(target = "createdAt", source = "createdAt")
-    @Mapping(target = "updatedAt", source = "updatedAt")
+    @Mapping(target = "createdAt", dateFormat = "dd.MM.yyyy")
+    @Mapping(target = "updatedAt", dateFormat = "dd.MM.yyyy")
     @Mapping(target = "productIds", expression = "java(toProductIds(category.getProducts()))")
     CategoryResponseDTO toDTO(Category category);
 
