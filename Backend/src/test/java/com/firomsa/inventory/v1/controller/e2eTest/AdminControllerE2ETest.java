@@ -6,102 +6,16 @@ import static org.springframework.http.MediaType.APPLICATION_JSON;
 import java.util.UUID;
 import java.util.function.Consumer;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpHeaders;
-import org.springframework.test.web.servlet.client.RestTestClient;
-import com.firomsa.inventory.repository.CategoryRepository;
-import com.firomsa.inventory.repository.ConfirmationOtpRepository;
-import com.firomsa.inventory.repository.ProductRepository;
-import com.firomsa.inventory.repository.RefreshTokenRepository;
-import com.firomsa.inventory.repository.UserRepository;
 
 public class AdminControllerE2ETest extends AbstractE2ETest {
 
-    private static final String AUTH_BASE_URL = "/api/v1/auth";
-    private static final String ADMIN_BASE_URL = "/api/v1/admin";
-    private static final String BOOTSTRAP_TOKEN = "test-bootstrap-token-12345678901234";
-    private static final String DEFAULT_PASSWORD = "password123";
     private static String registeredAdminEmail;
     private static String registeredAdminAccessToken;
 
-    private RestTestClient client;
-
-    @Autowired
-    private ConfirmationOtpRepository confirmationOtpRepository;
-
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private ProductRepository productRepository;
-
-    @Autowired
-    private CategoryRepository categoryRepository;
-
-    @Autowired
-    private RefreshTokenRepository refreshTokenRepository;
-
-    @LocalServerPort
-    private Integer port;
-
-    @BeforeEach
-    void setUpClient() {
-        this.client = RestTestClient.bindToServer().baseUrl("http://localhost:" + port).build();
-    }
-
-    @AfterEach
-    void tearDown() {
-        refreshTokenRepository.deleteAllInBatch();
-        confirmationOtpRepository.deleteAllInBatch();
-        productRepository.deleteAllInBatch();
-        categoryRepository.deleteAllInBatch();
-        userRepository.deleteAllInBatch();
-    }
-
-    private String randomSuffix() {
-        return UUID.randomUUID().toString().replace("-", "").substring(0, 8);
-    }
-
     private UUID randomId() {
         return UUID.randomUUID();
-    }
-
-    private String authorizationHeader(String accessToken) {
-        return "Bearer " + accessToken;
-    }
-
-    private String registerAdminPayload(String suffix) {
-        return """
-                {
-                    "firstName": "Admin",
-                    "lastName": "User",
-                    "username": "admin_%s",
-                    "password": "%s",
-                    "email": "admin.%s@example.com",
-                    "phone": "+251900%s",
-                    "bootstrapToken": "%s"
-                }
-                """.formatted(suffix, DEFAULT_PASSWORD, suffix, suffix.substring(0, 6),
-                BOOTSTRAP_TOKEN);
-    }
-
-    private String registerEmployeePayload(String suffix) {
-        return """
-                {
-                    "firstName": "EmpFirst%s",
-                    "lastName": "EmpLast%s",
-                    "username": "employee_%s",
-                    "password": "%s",
-                    "email": "employee_%s@example.com",
-                    "role": "EMPLOYEE",
-                    "phone": "+251911%s"
-                }
-                """.formatted(suffix, suffix, suffix, DEFAULT_PASSWORD, suffix,
-                suffix.substring(0, 6));
     }
 
     private String updateEmployeePayload(String suffix) {
@@ -164,24 +78,8 @@ public class AdminControllerE2ETest extends AbstractE2ETest {
                 """.formatted(suffix, categoryId);
     }
 
-    private String adminEmailForSuffix(String suffix) {
-        return "admin." + suffix + "@example.com";
-    }
-
-    private String employeeEmailForSuffix(String suffix) {
-        return "employee_" + suffix + "@example.com";
-    }
-
     private String updatedEmployeeEmailForSuffix(String suffix) {
         return "updated.employee_" + suffix + "@example.com";
-    }
-
-    private String latestOtpForEmail(String email) {
-        UUID userId = userRepository.findByEmail(email).orElseThrow().getId();
-        return confirmationOtpRepository.findAll().stream()
-                .filter(otp -> otp.getUser() != null && userId.equals(otp.getUser().getId()))
-                .map(otp -> otp.getOtp()).reduce((first, second) -> second)
-                .orElseThrow(() -> new IllegalStateException("No OTP found for user " + email));
     }
 
     private void registerAndConfirmAdmin(String suffix) {
@@ -222,33 +120,13 @@ public class AdminControllerE2ETest extends AbstractE2ETest {
     }
 
     private void registerEmployee(String accessToken, String suffix) {
-        var employeeResponse =
-                client.post().uri(ADMIN_BASE_URL + "/employees").contentType(APPLICATION_JSON)
-                        .header(HttpHeaders.AUTHORIZATION, authorizationHeader(accessToken))
-                        .body(registerEmployeePayload(suffix)).exchange();
+        var employeeResponse = client.post().uri(ADMIN_BASE_URL + "/employees").contentType(APPLICATION_JSON)
+                .header(HttpHeaders.AUTHORIZATION, authorizationHeader(accessToken))
+                .body(registerEmployeePayload(suffix)).exchange();
 
         employeeResponse.expectStatus().isOk();
         String employeeBody = employeeResponse.returnResult(String.class).getResponseBody();
         assertThat(employeeBody).contains(employeeEmailForSuffix(suffix));
-    }
-
-    private String loginByEmail(String email) {
-        String loginPayload =
-                "{\"password\":\"" + DEFAULT_PASSWORD + "\",\"email\":\"" + email + "\"}";
-
-        var loginResponse = client.post().uri(AUTH_BASE_URL + "/login")
-                .contentType(APPLICATION_JSON).body(loginPayload).exchange();
-
-        loginResponse.expectStatus().isOk();
-        String body = loginResponse.returnResult(String.class).getResponseBody();
-        assertThat(body).contains("\"accessToken\":");
-        String tokenMarker = "\"accessToken\":\"";
-        int start = body.indexOf(tokenMarker);
-        assertThat(start).isGreaterThanOrEqualTo(0);
-        int from = start + tokenMarker.length();
-        int end = body.indexOf('"', from);
-        assertThat(end).isGreaterThan(from);
-        return body.substring(from, end);
     }
 
     private UUID employeeIdByEmail(String email) {
@@ -431,8 +309,7 @@ public class AdminControllerE2ETest extends AbstractE2ETest {
             var getAfterDeactivate = client.get().uri(ADMIN_BASE_URL + "/employees/" + employeeId)
                     .header(HttpHeaders.AUTHORIZATION, authorizationHeader(accessToken)).exchange();
             getAfterDeactivate.expectStatus().isOk();
-            String deactivatedBody =
-                    getAfterDeactivate.returnResult(String.class).getResponseBody();
+            String deactivatedBody = getAfterDeactivate.returnResult(String.class).getResponseBody();
             assertThat(deactivatedBody).contains("\"active\":false");
 
             var activateResponse = client.post()
@@ -553,8 +430,7 @@ public class AdminControllerE2ETest extends AbstractE2ETest {
             var getAfterDeactivate = client.get().uri("/api/v1/products/" + productId)
                     .header(HttpHeaders.AUTHORIZATION, authorizationHeader(accessToken)).exchange();
             getAfterDeactivate.expectStatus().isOk();
-            String deactivatedProductBody =
-                    getAfterDeactivate.returnResult(String.class).getResponseBody();
+            String deactivatedProductBody = getAfterDeactivate.returnResult(String.class).getResponseBody();
             assertThat(deactivatedProductBody).contains("\"active\":false");
 
             var activateResponse = client.post()
@@ -565,8 +441,7 @@ public class AdminControllerE2ETest extends AbstractE2ETest {
             var getAfterActivate = client.get().uri("/api/v1/products/" + productId)
                     .header(HttpHeaders.AUTHORIZATION, authorizationHeader(accessToken)).exchange();
             getAfterActivate.expectStatus().isOk();
-            String activatedProductBody =
-                    getAfterActivate.returnResult(String.class).getResponseBody();
+            String activatedProductBody = getAfterActivate.returnResult(String.class).getResponseBody();
             assertThat(activatedProductBody).contains("\"active\":true");
 
             var deleteResponse = client.delete().uri(ADMIN_BASE_URL + "/products/" + productId)
@@ -618,10 +493,9 @@ public class AdminControllerE2ETest extends AbstractE2ETest {
             UUID missingProductId = randomId();
             String payload = "{\"objectKey\":\"missing-image-key\"}";
 
-            var response =
-                    client.post().uri(ADMIN_BASE_URL + "/products/" + missingProductId + "/images")
-                            .header(HttpHeaders.AUTHORIZATION, authorizationHeader(accessToken))
-                            .contentType(APPLICATION_JSON).body(payload).exchange();
+            var response = client.post().uri(ADMIN_BASE_URL + "/products/" + missingProductId + "/images")
+                    .header(HttpHeaders.AUTHORIZATION, authorizationHeader(accessToken))
+                    .contentType(APPLICATION_JSON).body(payload).exchange();
 
             response.expectStatus().isNotFound();
         });

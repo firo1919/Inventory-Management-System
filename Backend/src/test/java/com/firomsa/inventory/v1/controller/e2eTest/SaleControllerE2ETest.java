@@ -8,9 +8,9 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
 
-public class ProductControllerE2ETest extends AbstractE2ETest {
+public class SaleControllerE2ETest extends AbstractE2ETest {
 
-    private static final String PRODUCT_BASE_URL = "/api/v1/products";
+    private static final String SALES_BASE_URL = "/api/v1/sales";
 
     private static String adminAccessToken;
 
@@ -21,14 +21,14 @@ public class ProductControllerE2ETest extends AbstractE2ETest {
     private String createProductPayload(String suffix, UUID categoryId) {
         return """
                 {
-                    "name": "Product-%s",
-                    "sku": "SKU-%s",
-                    "description": "E2E product",
-                    "sellingPrice": 120.50,
-                    "costPrice": 90.00,
-                    "quantity": 25,
-                    "lowStockThreshold": 5,
-                    "categoryIds": ["%s"]
+                	"name": "Product-%s",
+                	"sku": "SKU-%s",
+                	"description": "E2E product",
+                	"sellingPrice": 120.50,
+                	"costPrice": 90.00,
+                	"quantity": 25,
+                	"lowStockThreshold": 5,
+                	"categoryIds": ["%s"]
                 }
                 """.formatted(suffix, suffix, categoryId);
     }
@@ -93,65 +93,105 @@ public class ProductControllerE2ETest extends AbstractE2ETest {
         return loginByEmail(employeeEmail);
     }
 
+    private String createSalePayload(UUID productId, Integer quantity, Double salePrice) {
+        return "{\"productId\":\"" + productId + "\",\"quantity\":" + quantity
+                + ",\"salePrice\":" + salePrice + "}";
+    }
+
     @Test
     void shouldReturnUnauthorizedWhenMissingToken() {
-        var response = client.get().uri(PRODUCT_BASE_URL).exchange();
+        var response = client.post().uri(SALES_BASE_URL).contentType(APPLICATION_JSON)
+                .body("{\"quantity\":1,\"salePrice\":10.0,\"productId\":\""
+                        + UUID.randomUUID() + "\"}")
+                .exchange();
+
         response.expectStatus().isUnauthorized();
     }
 
     @Test
-    void shouldReturnAllProductsForAuthenticatedUser() {
-        registerAndConfirmAdminIfNeeded();
-        UUID categoryId = createCategory(adminAccessToken, randomSuffix());
-        String suffix = randomSuffix();
-        createProduct(adminAccessToken, suffix, categoryId);
-
-        var response = client.get().uri(PRODUCT_BASE_URL)
-                .header(HttpHeaders.AUTHORIZATION, authorizationHeader(adminAccessToken))
-                .exchange();
-
-        response.expectStatus().isOk();
-        String body = response.returnResult(String.class).getResponseBody();
-        assertThat(body).contains("SKU-" + suffix);
-    }
-
-    @Test
-    void shouldReturnProductByIdForAuthenticatedUser() {
+    void shouldCreateSaleForAuthenticatedAdmin() {
         registerAndConfirmAdminIfNeeded();
         UUID categoryId = createCategory(adminAccessToken, randomSuffix());
         String suffix = randomSuffix();
         UUID productId = createProduct(adminAccessToken, suffix, categoryId);
+        String payload = createSalePayload(productId, 5, 10.0);
 
-        var response = client.get().uri(PRODUCT_BASE_URL + "/" + productId)
+        var response = client.post().uri(SALES_BASE_URL)
                 .header(HttpHeaders.AUTHORIZATION, authorizationHeader(adminAccessToken))
+                .contentType(APPLICATION_JSON).body(payload).exchange();
+
+        response.expectStatus().isOk();
+        String body = response.returnResult(String.class).getResponseBody();
+        assertThat(body).contains("Sale recorded successfully");
+        assertThat(body).contains("\"quantity\":5");
+        assertThat(body).contains("\"salePrice\":10.0");
+        assertThat(body).contains(productId.toString());
+    }
+
+    @Test
+    void shouldCreateSaleForAuthenticatedEmployee() {
+        registerAndConfirmAdminIfNeeded();
+        UUID categoryId = createCategory(adminAccessToken, randomSuffix());
+        UUID productId = createProduct(adminAccessToken, randomSuffix(), categoryId);
+        String employeeToken = registerAndLoginEmployee(adminAccessToken, randomSuffix());
+
+        var response = client.post().uri(SALES_BASE_URL)
+                .header(HttpHeaders.AUTHORIZATION, authorizationHeader(employeeToken))
+                .contentType(APPLICATION_JSON).body(createSalePayload(productId, 3, 11.5))
                 .exchange();
 
         response.expectStatus().isOk();
         String body = response.returnResult(String.class).getResponseBody();
-        assertThat(body).contains("SKU-" + suffix);
+        assertThat(body).contains("Sale recorded successfully");
+        assertThat(body).contains("\"quantity\":3");
     }
 
     @Test
-    void shouldReturnNotFoundForUnknownProductId() {
+    void shouldReturnNotFoundWhenProductDoesNotExist() {
         registerAndConfirmAdminIfNeeded();
 
-        var response = client.get().uri(PRODUCT_BASE_URL + "/" + UUID.randomUUID())
+        var response = client.post().uri(SALES_BASE_URL)
                 .header(HttpHeaders.AUTHORIZATION, authorizationHeader(adminAccessToken))
-                .exchange();
+                .contentType(APPLICATION_JSON)
+                .body(createSalePayload(UUID.randomUUID(), 5, 10.0)).exchange();
 
         response.expectStatus().isNotFound();
+        String body = response.returnResult(String.class).getResponseBody();
+        assertThat(body).contains("Product not found with id");
     }
 
     @Test
-    void shouldAllowEmployeeToReadProducts() {
+    void shouldReturnBadRequestWhenStockIsInsufficient() {
         registerAndConfirmAdminIfNeeded();
         UUID categoryId = createCategory(adminAccessToken, randomSuffix());
-        createProduct(adminAccessToken, randomSuffix(), categoryId);
-        String employeeToken = registerAndLoginEmployee(adminAccessToken, randomSuffix());
+        UUID productId = createProduct(adminAccessToken, randomSuffix(), categoryId);
 
-        var response = client.get().uri(PRODUCT_BASE_URL)
-                .header(HttpHeaders.AUTHORIZATION, authorizationHeader(employeeToken)).exchange();
+        var response = client.post().uri(SALES_BASE_URL)
+                .header(HttpHeaders.AUTHORIZATION, authorizationHeader(adminAccessToken))
+                .contentType(APPLICATION_JSON).body(createSalePayload(productId, 30, 10.0))
+                .exchange();
 
-        response.expectStatus().isOk();
+        response.expectStatus().isBadRequest();
+        String body = response.returnResult(String.class).getResponseBody();
+        assertThat(body).contains("Insufficient stock for product");
     }
+
+    @Test
+    void shouldReturnBadRequestWhenPayloadIsInvalid() {
+        registerAndConfirmAdminIfNeeded();
+        UUID categoryId = createCategory(adminAccessToken, randomSuffix());
+        UUID productId = createProduct(adminAccessToken, randomSuffix(), categoryId);
+
+        var response = client.post().uri(SALES_BASE_URL)
+                .header(HttpHeaders.AUTHORIZATION, authorizationHeader(adminAccessToken))
+                .contentType(APPLICATION_JSON)
+                .body("{\"productId\":\"" + productId + "\",\"salePrice\":10.0}")
+                .exchange();
+
+        response.expectStatus().isBadRequest();
+        String body = response.returnResult(String.class).getResponseBody();
+        assertThat(body).contains("Validation failed for fields");
+        assertThat(body).contains("quantity");
+    }
+
 }
