@@ -34,12 +34,14 @@ import com.firomsa.inventory.v1.dto.ProductResponseDTO;
 import com.firomsa.inventory.v1.dto.ProductUpdateRequestDTO;
 import com.firomsa.inventory.v1.dto.RegisterRequestDTO;
 import com.firomsa.inventory.v1.dto.RegisterResponseDTO;
+import com.firomsa.inventory.v1.dto.SaleResponseDTO;
 import com.firomsa.inventory.v1.dto.UserResponseDTO;
 import com.firomsa.inventory.v1.dto.UserUpdateRequestDTO;
 import com.firomsa.inventory.v1.service.AuthService;
 import com.firomsa.inventory.v1.service.CategoryService;
 import com.firomsa.inventory.v1.service.EmployeeService;
 import com.firomsa.inventory.v1.service.ProductService;
+import com.firomsa.inventory.v1.service.SaleService;
 
 @WebMvcTest(AdminController.class)
 @AutoConfigureMockMvc
@@ -54,6 +56,8 @@ public class AdminControllerUnitTest {
     private ProductService productService;
     @MockitoBean
     private CategoryService categoryService;
+    @MockitoBean
+    private SaleService saleService;
 
     @Autowired
     private MockMvcTester mockMvc;
@@ -125,6 +129,22 @@ public class AdminControllerUnitTest {
 
     private String fileDtoJson(String objectKey) {
         return "{\"objectKey\":\"" + objectKey + "\"}";
+    }
+
+    @Test
+    void shouldReturnAllSales() {
+        UUID productId = UUID.randomUUID();
+        SaleResponseDTO sale = SaleResponseDTO.builder().productId(productId).quantity(2)
+                .salePrice(15.0).message("Sale recorded successfully").build();
+        when(saleService.getAllSales()).thenReturn(List.of(sale));
+
+        MvcTestResult result = mockMvc.get().uri(BASE_URL + "/sales").exchange();
+        assertThat(result).hasStatusOk();
+        assertThat(result).bodyJson().extractingPath("$[0].productId").asString()
+                .isEqualTo(productId.toString());
+        assertThat(result).bodyJson().extractingPath("$[0].quantity").isEqualTo(2);
+
+        verify(saleService).getAllSales();
     }
 
     @Test

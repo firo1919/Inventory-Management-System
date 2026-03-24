@@ -87,6 +87,27 @@ public class SaleControllerUnitTest {
     }
 
     @Test
+    @WithMockUser(username = "user@example.com", authorities = { "SCOPE_EMPLOYEE", "SCOPE_ADMIN" })
+    void shouldGetSaleById() {
+        // Arrange
+        UUID saleId = UUID.randomUUID();
+        UUID productId = UUID.randomUUID();
+        var response = SaleResponseDTO.builder().productId(productId).quantity(3)
+                .salePrice(12.5).build();
+        when(saleService.getSaleById(saleId)).thenReturn(response);
+
+        // Act
+        MvcTestResult result = mockMvc.get().uri(BASE_URL + "/{id}", saleId).exchange();
+
+        // Assert
+        assertThat(result).hasStatusOk();
+        assertThat(result).bodyJson().extractingPath("$.productId")
+                .isEqualTo(productId.toString());
+        assertThat(result).bodyJson().extractingPath("$.quantity").isEqualTo(3);
+        assertThat(result).bodyJson().extractingPath("$.salePrice").isEqualTo(12.5);
+    }
+
+    @Test
     void shouldReturnForbiddenWhenUserNotAuthenticated() throws JsonProcessingException {
         // Arrange
         var request = SaleRequestDTO.builder().productId(UUID.randomUUID()).quantity(5)

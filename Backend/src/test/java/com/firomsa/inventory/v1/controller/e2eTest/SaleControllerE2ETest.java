@@ -194,4 +194,45 @@ public class SaleControllerE2ETest extends AbstractE2ETest {
         assertThat(body).contains("quantity");
     }
 
+    @Test
+    void shouldGetSaleByIdForAuthenticatedEmployee() {
+        registerAndConfirmAdminIfNeeded();
+        UUID categoryId = createCategory(adminAccessToken, randomSuffix());
+        UUID productId = createProduct(adminAccessToken, randomSuffix(), categoryId);
+        String employeeToken = registerAndLoginEmployee(adminAccessToken, randomSuffix());
+
+        var createSaleResponse = client.post().uri(SALES_BASE_URL)
+                .header(HttpHeaders.AUTHORIZATION, authorizationHeader(employeeToken))
+                .contentType(APPLICATION_JSON).body(createSalePayload(productId, 3, 22.0))
+                .exchange();
+        createSaleResponse.expectStatus().isOk();
+
+        UUID saleId = saleRepository.findAll().stream()
+                .filter(sale -> sale.getProduct() != null
+                        && productId.equals(sale.getProduct().getId()))
+                .map(sale -> sale.getId()).reduce((first, second) -> second).orElseThrow();
+
+        var getResponse = client.get().uri(SALES_BASE_URL + "/" + saleId)
+                .header(HttpHeaders.AUTHORIZATION, authorizationHeader(employeeToken)).exchange();
+
+        getResponse.expectStatus().isOk();
+        String body = getResponse.returnResult(String.class).getResponseBody();
+        assertThat(body).contains(productId.toString());
+        assertThat(body).contains("\"quantity\":3");
+        assertThat(body).contains("\"salePrice\":22.0");
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenSaleIdDoesNotExist() {
+        registerAndConfirmAdminIfNeeded();
+
+        var response = client.get().uri(SALES_BASE_URL + "/" + UUID.randomUUID())
+                .header(HttpHeaders.AUTHORIZATION, authorizationHeader(adminAccessToken))
+                .exchange();
+
+        response.expectStatus().isNotFound();
+        String body = response.returnResult(String.class).getResponseBody();
+        assertThat(body).contains("Sale not found with id");
+    }
+
 }

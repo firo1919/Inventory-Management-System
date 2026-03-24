@@ -15,6 +15,7 @@ import org.springframework.test.web.servlet.assertj.MockMvcTester;
 import com.firomsa.inventory.model.Product;
 import com.firomsa.inventory.model.Role;
 import com.firomsa.inventory.model.Roles;
+import com.firomsa.inventory.model.Sale;
 import com.firomsa.inventory.model.User;
 import com.firomsa.inventory.repository.ProductRepository;
 import com.firomsa.inventory.repository.RoleRepository;
@@ -66,6 +67,11 @@ public class SaleControllerIntTest extends AbstractIntegrationTest {
         return userRepository.save(
                 User.builder().firstName("joe").lastName("doe").username("joedoe").email("user@example.com")
                         .password("password").phone("1234567").role(getRole()).build());
+    }
+
+    Sale createSale(Product product, User user, int quantity, double salePrice) {
+        return saleRepository.save(Sale.builder().product(product).soldBy(user).quantity(quantity)
+                .salePrice(salePrice).build());
     }
 
     @Test
@@ -145,6 +151,48 @@ public class SaleControllerIntTest extends AbstractIntegrationTest {
         // Act
         var result = mockMvc.post().uri(BASE_URL).contentType(APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)).exchange();
+        // Assert
+        assertThat(result).hasStatus(401);
+    }
+
+    @Test
+    @WithMockUser(username = "user@example.com", authorities = { "SCOPE_EMPLOYEE", "SCOPE_ADMIN" })
+    void shouldGetSaleById() {
+        // Arrange
+        var product = getProduct();
+        var user = getUser();
+        var sale = createSale(product, user, 4, 13.5);
+
+        // Act
+        var result = mockMvc.get().uri(BASE_URL + "/{id}", sale.getId()).exchange();
+
+        // Assert
+        assertThat(result).hasStatusOk();
+        assertThat(result).bodyJson().extractingPath("$.productId")
+                .isEqualTo(product.getId().toString());
+        assertThat(result).bodyJson().extractingPath("$.quantity").isEqualTo(4);
+        assertThat(result).bodyJson().extractingPath("$.salePrice").isEqualTo(13.5);
+    }
+
+    @Test
+    @WithMockUser(username = "user@example.com", authorities = { "SCOPE_EMPLOYEE", "SCOPE_ADMIN" })
+    void shouldReturnNotFoundWhenSaleIdDoesNotExist() {
+        // Arrange
+        getUser();
+
+        // Act
+        var result = mockMvc.get().uri(BASE_URL + "/{id}", UUID.randomUUID()).exchange();
+
+        // Assert
+        assertThat(result).hasStatus(404);
+        assertThat(result).bodyText().contains("Sale not found with id");
+    }
+
+    @Test
+    void shouldReturnUnauthorizedWhenGetSaleByIdAndUserNotAuthenticated() {
+        // Act
+        var result = mockMvc.get().uri(BASE_URL + "/{id}", UUID.randomUUID()).exchange();
+
         // Assert
         assertThat(result).hasStatus(401);
     }

@@ -1,5 +1,8 @@
 package com.firomsa.inventory.v1.service;
 
+import java.util.List;
+import java.util.UUID;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,6 +44,23 @@ public class SaleService {
         var response = saleMapper.toDTO(savedSale);
         response.setMessage("Sale recorded successfully");
         return response;
+    }
+
+    @Transactional(readOnly = true)
+    public List<SaleResponseDTO> getAllSales() {
+        return saleRepository.findAll().stream().map(saleMapper::toDTO).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public SaleResponseDTO getSaleById(UUID saleId) {
+        var sale = saleRepository.findById(saleId)
+                .orElseThrow(() -> new ResourceNotFoundException("Sale not found with id: " + saleId));
+        return saleMapper.toDTO(sale);
+    }
+
+    @Transactional(readOnly = true)
+    public List<SaleResponseDTO> getSalesByEmployee(String email) {
+        return saleRepository.findBySoldByEmail(email).stream().map(saleMapper::toDTO).toList();
     }
 
 }

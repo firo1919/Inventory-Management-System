@@ -501,4 +501,37 @@ public class AdminControllerE2ETest extends AbstractE2ETest {
         });
     }
 
+    @Test
+    void shouldReturnAllSalesForAdmin() {
+        String categorySuffix = randomSuffix();
+        String productSuffix = randomSuffix();
+
+        withAuthenticatedAdmin(accessToken -> {
+            UUID categoryId = UUID.fromString(createCategoryAndGetId(accessToken, categorySuffix));
+
+            var createProductResponse = client.post().uri(ADMIN_BASE_URL + "/products")
+                    .header(HttpHeaders.AUTHORIZATION, authorizationHeader(accessToken))
+                    .contentType(APPLICATION_JSON)
+                    .body(createProductPayload(productSuffix, categoryId)).exchange();
+            createProductResponse.expectStatus().isOk();
+            UUID productId = productIdBySku("SKU-" + productSuffix);
+
+            String salePayload = "{\"productId\":\"" + productId
+                    + "\",\"quantity\":3,\"salePrice\":12.5}";
+            var createSaleResponse = client.post().uri("/api/v1/sales")
+                    .header(HttpHeaders.AUTHORIZATION, authorizationHeader(accessToken))
+                    .contentType(APPLICATION_JSON).body(salePayload).exchange();
+            createSaleResponse.expectStatus().isOk();
+
+            var response = client.get().uri(ADMIN_BASE_URL + "/sales")
+                    .header(HttpHeaders.AUTHORIZATION, authorizationHeader(accessToken))
+                    .exchange();
+
+            response.expectStatus().isOk();
+            String body = response.returnResult(String.class).getResponseBody();
+            assertThat(body).contains(productId.toString());
+            assertThat(body).contains("\"quantity\":3");
+        });
+    }
+
 }

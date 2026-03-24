@@ -3,8 +3,10 @@ package com.firomsa.inventory.v1.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -106,5 +108,90 @@ public class SaleServiceUnitTest {
             saleService.createSale(request, "user@example.com");
         });
         assertThat(exception.getMessage()).contains("Insufficient stock for product: " + product.getName());
+    }
+
+    @Test
+    void shouldReturnAllSales() {
+        // Arrange
+        var product = getProduct();
+        var user = getUser();
+        var firstSale = Sale.builder().id(UUID.randomUUID()).product(product).soldBy(user)
+                .quantity(2).salePrice(12.0).build();
+        var secondSale = Sale.builder().id(UUID.randomUUID()).product(product).soldBy(user)
+                .quantity(4).salePrice(15.0).build();
+
+        var firstResponse = SaleResponseDTO.builder().productId(product.getId()).quantity(2)
+                .salePrice(12.0).build();
+        var secondResponse = SaleResponseDTO.builder().productId(product.getId()).quantity(4)
+                .salePrice(15.0).build();
+
+        when(saleRepository.findAll()).thenReturn(List.of(firstSale, secondSale));
+        when(saleMapper.toDTO(eq(firstSale))).thenReturn(firstResponse);
+        when(saleMapper.toDTO(eq(secondSale))).thenReturn(secondResponse);
+
+        // Act
+        var result = saleService.getAllSales();
+
+        // Assert
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0).getQuantity()).isEqualTo(2);
+        assertThat(result.get(1).getQuantity()).isEqualTo(4);
+    }
+
+    @Test
+    void shouldReturnSaleById() {
+        // Arrange
+        var saleId = UUID.randomUUID();
+        var product = getProduct();
+        var user = getUser();
+        var sale = Sale.builder().id(saleId).product(product).soldBy(user).quantity(3)
+                .salePrice(11.0).build();
+        var response = SaleResponseDTO.builder().productId(product.getId()).quantity(3)
+                .salePrice(11.0).build();
+
+        when(saleRepository.findById(saleId)).thenReturn(Optional.of(sale));
+        when(saleMapper.toDTO(sale)).thenReturn(response);
+
+        // Act
+        var result = saleService.getSaleById(saleId);
+
+        // Assert
+        assertThat(result.getQuantity()).isEqualTo(3);
+        assertThat(result.getSalePrice()).isEqualTo(11.0);
+    }
+
+    @Test
+    void shouldThrowExceptionWhenSaleNotFoundById() {
+        // Arrange
+        var saleId = UUID.randomUUID();
+        when(saleRepository.findById(saleId)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        var exception = assertThrows(ResourceNotFoundException.class, () -> {
+            saleService.getSaleById(saleId);
+        });
+        assertThat(exception.getMessage()).contains("Sale not found with id: " + saleId);
+    }
+
+    @Test
+    void shouldReturnSalesByEmployeeEmail() {
+        // Arrange
+        var email = "employee@example.com";
+        var product = getProduct();
+        var user = getUser();
+        var sale = Sale.builder().id(UUID.randomUUID()).product(product).soldBy(user).quantity(6)
+                .salePrice(20.0).build();
+        var response = SaleResponseDTO.builder().productId(product.getId()).quantity(6)
+                .salePrice(20.0).build();
+
+        when(saleRepository.findBySoldByEmail(email)).thenReturn(List.of(sale));
+        when(saleMapper.toDTO(sale)).thenReturn(response);
+
+        // Act
+        var result = saleService.getSalesByEmployee(email);
+
+        // Assert
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getQuantity()).isEqualTo(6);
     }
 }

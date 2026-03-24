@@ -2,6 +2,8 @@ package com.firomsa.inventory.v1.controller;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,6 +20,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.UUID;
+
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/sales")
@@ -32,6 +36,13 @@ public class SaleController {
     public SaleResponseDTO createSale(@Valid @RequestBody SaleRequestDTO saleRequestDTO,
             Authentication authentication) {
         return saleService.createSale(saleRequestDTO, authentication.getName());
+    }
+
+    @Operation(summary = "For getting a sale record by id")
+    @GetMapping("/{id}")
+    @ResponseStatus(HttpStatus.OK)
+    public SaleResponseDTO getSaleById(@PathVariable UUID id) {
+        return saleService.getSaleById(id);
     }
 
 }
