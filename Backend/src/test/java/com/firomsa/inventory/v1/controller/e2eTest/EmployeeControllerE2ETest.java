@@ -12,6 +12,7 @@ public class EmployeeControllerE2ETest extends AbstractE2ETest {
 
     private static final String EMPLOYEE_BASE_URL = "/api/v1/employee";
     private static final String SALES_BASE_URL = "/api/v1/sales";
+    private static final String RESTOCKS_BASE_URL = "/api/v1/restocks";
 
     private static String adminAccessToken;
 
@@ -37,6 +38,10 @@ public class EmployeeControllerE2ETest extends AbstractE2ETest {
     private String createSalePayload(UUID productId, int quantity, double salePrice) {
         return "{\"productId\":\"" + productId + "\",\"quantity\":" + quantity
                 + ",\"salePrice\":" + salePrice + "}";
+    }
+
+    private String createRestockPayload(UUID productId, int quantity) {
+        return "{\"productId\":\"" + productId + "\",\"quantity\":" + quantity + "}";
     }
 
     private UUID createCategory(String accessToken, String suffix) {
@@ -142,6 +147,41 @@ public class EmployeeControllerE2ETest extends AbstractE2ETest {
         secondSaleResponse.expectStatus().isOk();
 
         var response = client.get().uri(EMPLOYEE_BASE_URL + "/sales")
+                .header(HttpHeaders.AUTHORIZATION, authorizationHeader(firstEmployeeToken))
+                .exchange();
+
+        response.expectStatus().isOk();
+        String body = response.returnResult(String.class).getResponseBody();
+        assertThat(body).contains(firstProductId.toString());
+        assertThat(body).doesNotContain(secondProductId.toString());
+    }
+
+    @Test
+    void shouldReturnOnlyOwnRestocksForAuthenticatedEmployee() {
+        registerAndConfirmAdminIfNeeded();
+        UUID categoryId = createCategory(adminAccessToken, randomSuffix());
+
+        String firstSuffix = randomSuffix();
+        String secondSuffix = randomSuffix();
+        UUID firstProductId = createProduct(adminAccessToken, firstSuffix, categoryId);
+        UUID secondProductId = createProduct(adminAccessToken, secondSuffix, categoryId);
+
+        String firstEmployeeToken = registerAndLoginEmployee(adminAccessToken, randomSuffix());
+        String secondEmployeeToken = registerAndLoginEmployee(adminAccessToken, randomSuffix());
+
+        var firstRestockResponse = client.post().uri(RESTOCKS_BASE_URL)
+                .header(HttpHeaders.AUTHORIZATION, authorizationHeader(firstEmployeeToken))
+                .contentType(APPLICATION_JSON).body(createRestockPayload(firstProductId, 6))
+                .exchange();
+        firstRestockResponse.expectStatus().isOk();
+
+        var secondRestockResponse = client.post().uri(RESTOCKS_BASE_URL)
+                .header(HttpHeaders.AUTHORIZATION, authorizationHeader(secondEmployeeToken))
+                .contentType(APPLICATION_JSON).body(createRestockPayload(secondProductId, 9))
+                .exchange();
+        secondRestockResponse.expectStatus().isOk();
+
+        var response = client.get().uri(EMPLOYEE_BASE_URL + "/restocks")
                 .header(HttpHeaders.AUTHORIZATION, authorizationHeader(firstEmployeeToken))
                 .exchange();
 

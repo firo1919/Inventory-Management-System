@@ -18,10 +18,12 @@ import com.firomsa.inventory.repository.CategoryRepository;
 import com.firomsa.inventory.repository.ConfirmationOtpRepository;
 import com.firomsa.inventory.repository.ProductRepository;
 import com.firomsa.inventory.repository.RoleRepository;
+import com.firomsa.inventory.repository.RestockRepository;
 import com.firomsa.inventory.repository.SaleRepository;
 import com.firomsa.inventory.repository.UserRepository;
 import com.firomsa.inventory.model.Product;
 import com.firomsa.inventory.model.Role;
+import com.firomsa.inventory.model.Restock;
 import com.firomsa.inventory.model.Roles;
 import com.firomsa.inventory.model.Sale;
 import com.firomsa.inventory.model.User;
@@ -49,10 +51,14 @@ public class AdminControllerIntTest extends AbstractIntegrationTest {
     @Autowired
     private SaleRepository saleRepository;
 
+    @Autowired
+    private RestockRepository restockRepository;
+
     private static final String BASE_URL = "/api/v1/admin";
 
     @AfterEach
     void tearDown() {
+        restockRepository.deleteAll();
         saleRepository.deleteAll();
         confirmationOtpRepository.deleteAll();
         userRepository.deleteAll();
@@ -204,6 +210,11 @@ public class AdminControllerIntTest extends AbstractIntegrationTest {
                 .salePrice(salePrice).build());
     }
 
+    private Restock createRestock(User user, Product product, int quantity) {
+        return restockRepository
+                .save(Restock.builder().restockedBy(user).product(product).quantity(quantity).build());
+    }
+
     @Test
     void shouldRejectUnauthorizedRegisterEmployee() {
         assertThat(mockMvc.post().uri(BASE_URL + "/employees").contentType(APPLICATION_JSON)
@@ -306,6 +317,11 @@ public class AdminControllerIntTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void shouldRejectUnauthorizedGetAllRestocks() {
+        assertThat(mockMvc.get().uri(BASE_URL + "/restocks").exchange()).hasStatus(401);
+    }
+
+    @Test
     @WithMockUser(authorities = "SCOPE_ADMIN")
     void shouldReturnBadRequestWhenCreateEmployeePayloadIsInvalid() {
         assertThat(mockMvc.post().uri(BASE_URL + "/employees").contentType(APPLICATION_JSON)
@@ -345,6 +361,21 @@ public class AdminControllerIntTest extends AbstractIntegrationTest {
         assertThat(result).hasStatusOk();
         assertThat(result).bodyText().contains(product.getId().toString());
         assertThat(result).bodyText().contains("\"quantity\":3");
+    }
+
+    @Test
+    @WithMockUser(authorities = "SCOPE_ADMIN")
+    void shouldAllowAuthorizedGetAllRestocks() {
+        String suffix = randomSuffix();
+        var employee = createEmployeeUser(suffix);
+        var product = createProductForSale(suffix);
+        createRestock(employee, product, 11);
+
+        var result = mockMvc.get().uri(BASE_URL + "/restocks").exchange();
+
+        assertThat(result).hasStatusOk();
+        assertThat(result).bodyText().contains(product.getId().toString());
+        assertThat(result).bodyText().contains("\"quantity\":11");
     }
 
     @Test

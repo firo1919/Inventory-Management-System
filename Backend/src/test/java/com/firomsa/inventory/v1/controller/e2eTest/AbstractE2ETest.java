@@ -30,6 +30,7 @@ import com.firomsa.inventory.repository.CategoryRepository;
 import com.firomsa.inventory.repository.ConfirmationOtpRepository;
 import com.firomsa.inventory.repository.ProductRepository;
 import com.firomsa.inventory.repository.RefreshTokenRepository;
+import com.firomsa.inventory.repository.RestockRepository;
 import com.firomsa.inventory.repository.SaleRepository;
 import com.firomsa.inventory.repository.UserRepository;
 
@@ -92,6 +93,9 @@ public abstract class AbstractE2ETest {
     @Autowired
     protected SaleRepository saleRepository;
 
+    @Autowired
+    protected RestockRepository restockRepository;
+
     private static void ensureBucketExists() {
         URI endpoint = URI.create("http://" + s3.getHost() + ":" + s3.getMappedPort(9000));
 
@@ -136,6 +140,7 @@ public abstract class AbstractE2ETest {
 
     @AfterEach
     void tearDownBaseData() {
+        restockRepository.deleteAllInBatch();
         saleRepository.deleteAllInBatch();
         refreshTokenRepository.deleteAllInBatch();
         confirmationOtpRepository.deleteAllInBatch();

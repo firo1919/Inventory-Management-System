@@ -34,6 +34,7 @@ import com.firomsa.inventory.v1.dto.ProductResponseDTO;
 import com.firomsa.inventory.v1.dto.ProductUpdateRequestDTO;
 import com.firomsa.inventory.v1.dto.RegisterRequestDTO;
 import com.firomsa.inventory.v1.dto.RegisterResponseDTO;
+import com.firomsa.inventory.v1.dto.RestockResponseDTO;
 import com.firomsa.inventory.v1.dto.SaleResponseDTO;
 import com.firomsa.inventory.v1.dto.UserResponseDTO;
 import com.firomsa.inventory.v1.dto.UserUpdateRequestDTO;
@@ -41,6 +42,7 @@ import com.firomsa.inventory.v1.service.AuthService;
 import com.firomsa.inventory.v1.service.CategoryService;
 import com.firomsa.inventory.v1.service.EmployeeService;
 import com.firomsa.inventory.v1.service.ProductService;
+import com.firomsa.inventory.v1.service.RestockService;
 import com.firomsa.inventory.v1.service.SaleService;
 
 @WebMvcTest(AdminController.class)
@@ -56,6 +58,8 @@ public class AdminControllerUnitTest {
     private ProductService productService;
     @MockitoBean
     private CategoryService categoryService;
+    @MockitoBean
+    private RestockService restockService;
     @MockitoBean
     private SaleService saleService;
 
@@ -145,6 +149,22 @@ public class AdminControllerUnitTest {
         assertThat(result).bodyJson().extractingPath("$[0].quantity").isEqualTo(2);
 
         verify(saleService).getAllSales();
+    }
+
+    @Test
+    void shouldReturnAllRestocks() {
+        UUID productId = UUID.randomUUID();
+        RestockResponseDTO restock = RestockResponseDTO.builder().productId(productId)
+                .quantity(12).message("Restock recorded successfully").build();
+        when(restockService.getAllRestocks()).thenReturn(List.of(restock));
+
+        MvcTestResult result = mockMvc.get().uri(BASE_URL + "/restocks").exchange();
+        assertThat(result).hasStatusOk();
+        assertThat(result).bodyJson().extractingPath("$[0].productId").asString()
+                .isEqualTo(productId.toString());
+        assertThat(result).bodyJson().extractingPath("$[0].quantity").isEqualTo(12);
+
+        verify(restockService).getAllRestocks();
     }
 
     @Test

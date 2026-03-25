@@ -12,10 +12,12 @@ import org.springframework.test.web.servlet.assertj.MockMvcTester;
 
 import com.firomsa.inventory.model.Product;
 import com.firomsa.inventory.model.Role;
+import com.firomsa.inventory.model.Restock;
 import com.firomsa.inventory.model.Roles;
 import com.firomsa.inventory.model.Sale;
 import com.firomsa.inventory.model.User;
 import com.firomsa.inventory.repository.ProductRepository;
+import com.firomsa.inventory.repository.RestockRepository;
 import com.firomsa.inventory.repository.RoleRepository;
 import com.firomsa.inventory.repository.SaleRepository;
 import com.firomsa.inventory.repository.UserRepository;
@@ -37,10 +39,14 @@ public class EmployeeControllerIntTest extends AbstractIntegrationTest {
     @Autowired
     private SaleRepository saleRepository;
 
+    @Autowired
+    private RestockRepository restockRepository;
+
     private static final String BASE_URL = "/api/v1/employee";
 
     @AfterEach
     void tearDown() {
+        restockRepository.deleteAll();
         saleRepository.deleteAll();
         productRepository.deleteAll();
         userRepository.deleteAll();
@@ -67,6 +73,11 @@ public class EmployeeControllerIntTest extends AbstractIntegrationTest {
                 .salePrice(salePrice).build());
     }
 
+    private Restock createRestock(User user, Product product, int quantity) {
+        return restockRepository
+                .save(Restock.builder().restockedBy(user).product(product).quantity(quantity).build());
+    }
+
     @Test
     void shouldReturnUnauthorizedWhenMissingTokenForEmployeeSales() {
         assertThat(mockMvc.get().uri(BASE_URL + "/sales").exchange()).hasStatus(401);
@@ -90,6 +101,35 @@ public class EmployeeControllerIntTest extends AbstractIntegrationTest {
         createSale(employeeTwo, productTwo, 5, 30.0);
 
         var result = mockMvc.get().uri(BASE_URL + "/sales").exchange();
+
+        assertThat(result).hasStatusOk();
+        assertThat(result).bodyText().contains(productOne.getId().toString());
+        assertThat(result).bodyText().doesNotContain(productTwo.getId().toString());
+    }
+
+    @Test
+    void shouldReturnUnauthorizedWhenMissingTokenForEmployeeRestocks() {
+        assertThat(mockMvc.get().uri(BASE_URL + "/restocks").exchange()).hasStatus(401);
+    }
+
+    @Test
+    @WithMockUser(username = "admin@example.com", authorities = "SCOPE_ADMIN")
+    void shouldReturnForbiddenWhenAdminRequestsEmployeeRestocks() {
+        assertThat(mockMvc.get().uri(BASE_URL + "/restocks").exchange()).hasStatus(403);
+    }
+
+    @Test
+    @WithMockUser(username = "employee.one@example.com", authorities = "SCOPE_EMPLOYEE")
+    void shouldReturnOnlyAuthenticatedEmployeeRestocks() {
+        var employeeOne = createEmployee("employee.one@example.com", "employee.one");
+        var employeeTwo = createEmployee("employee.two@example.com", "employee.two");
+        var productOne = createProduct("Restock Product One", "SKU-RESTOCK-1");
+        var productTwo = createProduct("Restock Product Two", "SKU-RESTOCK-2");
+
+        createRestock(employeeOne, productOne, 8);
+        createRestock(employeeTwo, productTwo, 10);
+
+        var result = mockMvc.get().uri(BASE_URL + "/restocks").exchange();
 
         assertThat(result).hasStatusOk();
         assertThat(result).bodyText().contains(productOne.getId().toString());

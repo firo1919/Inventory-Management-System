@@ -17,7 +17,9 @@ import org.springframework.test.web.servlet.assertj.MockMvcTester;
 import org.springframework.test.web.servlet.assertj.MvcTestResult;
 
 import com.firomsa.inventory.v1.controller.EmployeeController;
+import com.firomsa.inventory.v1.dto.RestockResponseDTO;
 import com.firomsa.inventory.v1.dto.SaleResponseDTO;
+import com.firomsa.inventory.v1.service.RestockService;
 import com.firomsa.inventory.v1.service.SaleService;
 
 @WebMvcTest(EmployeeController.class)
@@ -26,6 +28,9 @@ public class EmployeeControllerUnitTest {
 
     @MockitoBean
     private SaleService saleService;
+
+    @MockitoBean
+    private RestockService restockService;
 
     @Autowired
     private MockMvcTester mockMvc;
@@ -52,6 +57,25 @@ public class EmployeeControllerUnitTest {
     }
 
     @Test
+    @WithMockUser(username = "employee.one@example.com", authorities = "SCOPE_EMPLOYEE")
+    void shouldReturnOwnRestocksForEmployee() {
+        UUID productId = UUID.randomUUID();
+        RestockResponseDTO restock = RestockResponseDTO.builder().productId(productId)
+                .quantity(9).build();
+        when(restockService.getRestocksByEmployee("employee.one@example.com"))
+                .thenReturn(List.of(restock));
+
+        MvcTestResult result = mockMvc.get().uri(BASE_URL + "/restocks").exchange();
+
+        assertThat(result).hasStatusOk();
+        assertThat(result).bodyJson().extractingPath("$[0].productId").asString()
+                .isEqualTo(productId.toString());
+        assertThat(result).bodyJson().extractingPath("$[0].quantity").isEqualTo(9);
+
+        verify(restockService).getRestocksByEmployee("employee.one@example.com");
+    }
+
+    @Test
     @WithMockUser(username = "admin@example.com", authorities = "SCOPE_ADMIN")
     void shouldDelegateForAuthenticatedAdminInWebMvcSlice() {
         when(saleService.getSalesByEmployee("admin@example.com")).thenReturn(List.of());
@@ -65,6 +89,13 @@ public class EmployeeControllerUnitTest {
     @Test
     void shouldReturnUnauthorizedWhenMissingAuthentication() {
         MvcTestResult result = mockMvc.get().uri(BASE_URL + "/sales").exchange();
+
+        assertThat(result).hasStatus(401);
+    }
+
+    @Test
+    void shouldReturnUnauthorizedWhenMissingAuthenticationForRestocks() {
+        MvcTestResult result = mockMvc.get().uri(BASE_URL + "/restocks").exchange();
 
         assertThat(result).hasStatus(401);
     }
