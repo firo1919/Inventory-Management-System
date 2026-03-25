@@ -63,4 +63,11 @@ public class SaleService {
         return saleRepository.findBySoldByEmail(email).stream().map(saleMapper::toDTO).toList();
     }
 
+    @Transactional
+    public void deleteSaleById(UUID saleId) {
+        var sale = saleRepository.findById(saleId)
+                .orElseThrow(() -> new ResourceNotFoundException("Sale not found with id: " + saleId));
+        saleRepository.delete(sale);
+    }
+
 }

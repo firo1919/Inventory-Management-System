@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
@@ -193,5 +194,29 @@ public class SaleServiceUnitTest {
         // Assert
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getQuantity()).isEqualTo(6);
+    }
+
+    @Test
+    void shouldDeleteSaleById() {
+        var saleId = UUID.randomUUID();
+        var sale = Sale.builder().id(saleId).build();
+        when(saleRepository.findById(saleId)).thenReturn(Optional.of(sale));
+        doNothing().when(saleRepository).delete(sale);
+
+        saleService.deleteSaleById(saleId);
+
+        assertThat(saleRepository.findById(saleId)).isPresent();
+    }
+
+    @Test
+    void shouldThrowExceptionWhenDeletingUnknownSale() {
+        var saleId = UUID.randomUUID();
+        when(saleRepository.findById(saleId)).thenReturn(Optional.empty());
+
+        var exception = assertThrows(ResourceNotFoundException.class, () -> {
+            saleService.deleteSaleById(saleId);
+        });
+
+        assertThat(exception.getMessage()).contains("Sale not found with id: " + saleId);
     }
 }

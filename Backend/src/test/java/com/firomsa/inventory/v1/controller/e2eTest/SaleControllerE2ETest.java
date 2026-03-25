@@ -235,4 +235,42 @@ public class SaleControllerE2ETest extends AbstractE2ETest {
         assertThat(body).contains("Sale not found with id");
     }
 
+    @Test
+    void shouldDeleteSaleByIdForAuthenticatedEmployee() {
+        registerAndConfirmAdminIfNeeded();
+        UUID categoryId = createCategory(adminAccessToken, randomSuffix());
+        UUID productId = createProduct(adminAccessToken, randomSuffix(), categoryId);
+        String employeeToken = registerAndLoginEmployee(adminAccessToken, randomSuffix());
+
+        var createSaleResponse = client.post().uri(SALES_BASE_URL)
+                .header(HttpHeaders.AUTHORIZATION, authorizationHeader(employeeToken))
+                .contentType(APPLICATION_JSON).body(createSalePayload(productId, 3, 22.0))
+                .exchange();
+        createSaleResponse.expectStatus().isOk();
+
+        UUID saleId = saleRepository.findAll().stream()
+                .filter(sale -> sale.getProduct() != null
+                        && productId.equals(sale.getProduct().getId()))
+                .map(sale -> sale.getId()).reduce((first, second) -> second).orElseThrow();
+
+        var deleteResponse = client.delete().uri(SALES_BASE_URL + "/" + saleId)
+                .header(HttpHeaders.AUTHORIZATION, authorizationHeader(employeeToken)).exchange();
+
+        deleteResponse.expectStatus().isOk();
+        assertThat(saleRepository.existsById(saleId)).isFalse();
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenDeletingUnknownSaleId() {
+        registerAndConfirmAdminIfNeeded();
+
+        var response = client.delete().uri(SALES_BASE_URL + "/" + UUID.randomUUID())
+                .header(HttpHeaders.AUTHORIZATION, authorizationHeader(adminAccessToken))
+                .exchange();
+
+        response.expectStatus().isNotFound();
+        String body = response.returnResult(String.class).getResponseBody();
+        assertThat(body).contains("Sale not found with id");
+    }
+
 }

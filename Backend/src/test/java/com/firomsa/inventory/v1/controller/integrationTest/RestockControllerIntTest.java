@@ -151,4 +151,35 @@ public class RestockControllerIntTest extends AbstractIntegrationTest {
 
         assertThat(result).hasStatus(401);
     }
+
+    @Test
+    @WithMockUser(username = "user@example.com", authorities = { "SCOPE_EMPLOYEE", "SCOPE_ADMIN" })
+    void shouldDeleteRestockById() {
+        var product = getProduct();
+        var user = getUser();
+        var restock = createRestock(product, user, 4);
+
+        var result = mockMvc.delete().uri(BASE_URL + "/{id}", restock.getId()).exchange();
+
+        assertThat(result).hasStatusOk();
+        assertThat(restockRepository.existsById(restock.getId())).isFalse();
+    }
+
+    @Test
+    @WithMockUser(username = "user@example.com", authorities = { "SCOPE_EMPLOYEE", "SCOPE_ADMIN" })
+    void shouldReturnNotFoundWhenDeletingUnknownRestock() {
+        getUser();
+
+        var result = mockMvc.delete().uri(BASE_URL + "/{id}", UUID.randomUUID()).exchange();
+
+        assertThat(result).hasStatus(404);
+        assertThat(result).bodyText().contains("Restock not found with id");
+    }
+
+    @Test
+    void shouldReturnUnauthorizedWhenDeleteRestockByIdAndUserNotAuthenticated() {
+        var result = mockMvc.delete().uri(BASE_URL + "/{id}", UUID.randomUUID()).exchange();
+
+        assertThat(result).hasStatus(401);
+    }
 }

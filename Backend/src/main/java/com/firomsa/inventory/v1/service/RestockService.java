@@ -63,4 +63,11 @@ public class RestockService {
         return restockRepository.findByRestockedByEmail(email).stream().map(restockMapper::toDTO)
                 .toList();
     }
+
+    @Transactional
+    public void deleteRestockById(UUID restockId) {
+        var restock = restockRepository.findById(restockId)
+                .orElseThrow(() -> new ResourceNotFoundException("Restock not found with id: " + restockId));
+        restockRepository.delete(restock);
+    }
 }

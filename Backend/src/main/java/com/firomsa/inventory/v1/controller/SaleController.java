@@ -2,6 +2,7 @@ package com.firomsa.inventory.v1.controller;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -43,6 +44,13 @@ public class SaleController {
     @ResponseStatus(HttpStatus.OK)
     public SaleResponseDTO getSaleById(@PathVariable UUID id) {
         return saleService.getSaleById(id);
+    }
+
+    @Operation(summary = "For deleting a sale record by id")
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.OK)
+    public void deleteSaleById(@PathVariable UUID id) {
+        saleService.deleteSaleById(id);
     }
 
 }

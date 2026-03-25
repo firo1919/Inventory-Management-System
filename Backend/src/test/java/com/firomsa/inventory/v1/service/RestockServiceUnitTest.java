@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
@@ -158,5 +159,29 @@ public class RestockServiceUnitTest {
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getQuantity()).isEqualTo(6);
+    }
+
+    @Test
+    void shouldDeleteRestockById() {
+        var restockId = UUID.randomUUID();
+        var restock = Restock.builder().id(restockId).build();
+        when(restockRepository.findById(restockId)).thenReturn(Optional.of(restock));
+        doNothing().when(restockRepository).delete(restock);
+
+        restockService.deleteRestockById(restockId);
+
+        assertThat(restockRepository.findById(restockId)).isPresent();
+    }
+
+    @Test
+    void shouldThrowExceptionWhenDeletingUnknownRestock() {
+        var restockId = UUID.randomUUID();
+        when(restockRepository.findById(restockId)).thenReturn(Optional.empty());
+
+        var exception = assertThrows(ResourceNotFoundException.class, () -> {
+            restockService.deleteRestockById(restockId);
+        });
+
+        assertThat(exception.getMessage()).contains("Restock not found with id: " + restockId);
     }
 }

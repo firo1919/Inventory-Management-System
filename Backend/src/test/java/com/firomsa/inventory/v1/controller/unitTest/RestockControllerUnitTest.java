@@ -1,6 +1,7 @@
 package com.firomsa.inventory.v1.controller.unitTest;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
@@ -70,6 +71,18 @@ public class RestockControllerUnitTest {
         assertThat(result).bodyJson().extractingPath("$.productId")
                 .isEqualTo(productId.toString());
         assertThat(result).bodyJson().extractingPath("$.quantity").isEqualTo(3);
+    }
+
+    @Test
+    @WithMockUser(username = "user@example.com", authorities = { "SCOPE_EMPLOYEE", "SCOPE_ADMIN" })
+    void shouldDeleteRestockById() {
+        UUID restockId = UUID.randomUUID();
+        doNothing().when(restockService).deleteRestockById(restockId);
+
+        MvcTestResult result = mockMvc.delete().uri(BASE_URL + "/{id}", restockId)
+                .with(csrf()).exchange();
+
+        assertThat(result).hasStatusOk();
     }
 
     @Test

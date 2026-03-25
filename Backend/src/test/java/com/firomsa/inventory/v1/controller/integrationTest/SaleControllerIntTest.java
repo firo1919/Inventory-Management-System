@@ -197,4 +197,35 @@ public class SaleControllerIntTest extends AbstractIntegrationTest {
         assertThat(result).hasStatus(401);
     }
 
+    @Test
+    @WithMockUser(username = "user@example.com", authorities = { "SCOPE_EMPLOYEE", "SCOPE_ADMIN" })
+    void shouldDeleteSaleById() {
+        var product = getProduct();
+        var user = getUser();
+        var sale = createSale(product, user, 4, 13.5);
+
+        var result = mockMvc.delete().uri(BASE_URL + "/{id}", sale.getId()).exchange();
+
+        assertThat(result).hasStatusOk();
+        assertThat(saleRepository.existsById(sale.getId())).isFalse();
+    }
+
+    @Test
+    @WithMockUser(username = "user@example.com", authorities = { "SCOPE_EMPLOYEE", "SCOPE_ADMIN" })
+    void shouldReturnNotFoundWhenDeletingUnknownSale() {
+        getUser();
+
+        var result = mockMvc.delete().uri(BASE_URL + "/{id}", UUID.randomUUID()).exchange();
+
+        assertThat(result).hasStatus(404);
+        assertThat(result).bodyText().contains("Sale not found with id");
+    }
+
+    @Test
+    void shouldReturnUnauthorizedWhenDeleteSaleByIdAndUserNotAuthenticated() {
+        var result = mockMvc.delete().uri(BASE_URL + "/{id}", UUID.randomUUID()).exchange();
+
+        assertThat(result).hasStatus(401);
+    }
+
 }
