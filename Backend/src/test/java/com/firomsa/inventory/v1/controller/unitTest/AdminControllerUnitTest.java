@@ -304,6 +304,30 @@ public class AdminControllerUnitTest {
     }
 
     @Test
+    void shouldDeleteSaleById() {
+        UUID saleId = UUID.randomUUID();
+        doNothing().when(saleService).deleteSaleById(saleId);
+
+        MvcTestResult result = mockMvc.delete().uri(BASE_URL + "/sales/{id}", saleId)
+                .with(csrf()).exchange();
+        assertThat(result).hasStatusOk();
+
+        verify(saleService).deleteSaleById(saleId);
+    }
+
+    @Test
+    void shouldDeleteRestockById() {
+        UUID restockId = UUID.randomUUID();
+        doNothing().when(restockService).deleteRestockById(restockId);
+
+        MvcTestResult result = mockMvc.delete().uri(BASE_URL + "/restocks/{id}", restockId)
+                .with(csrf()).exchange();
+        assertThat(result).hasStatusOk();
+
+        verify(restockService).deleteRestockById(restockId);
+    }
+
+    @Test
     void shouldGetAllEmployees() {
         UserResponseDTO first = sampleUser(UUID.randomUUID(), "employee.one");
         UserResponseDTO second = sampleUser(UUID.randomUUID(), "employee.two");

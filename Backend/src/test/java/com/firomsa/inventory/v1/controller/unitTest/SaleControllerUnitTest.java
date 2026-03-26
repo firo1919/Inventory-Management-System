@@ -1,7 +1,6 @@
 package com.firomsa.inventory.v1.controller.unitTest;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
@@ -106,18 +105,6 @@ public class SaleControllerUnitTest {
                 .isEqualTo(productId.toString());
         assertThat(result).bodyJson().extractingPath("$.quantity").isEqualTo(3);
         assertThat(result).bodyJson().extractingPath("$.salePrice").isEqualTo(12.5);
-    }
-
-    @Test
-    @WithMockUser(username = "user@example.com", authorities = { "SCOPE_EMPLOYEE", "SCOPE_ADMIN" })
-    void shouldDeleteSaleById() {
-        UUID saleId = UUID.randomUUID();
-        doNothing().when(saleService).deleteSaleById(saleId);
-
-        MvcTestResult result = mockMvc.delete().uri(BASE_URL + "/{id}", saleId).with(csrf())
-                .exchange();
-
-        assertThat(result).hasStatusOk();
     }
 
     @Test

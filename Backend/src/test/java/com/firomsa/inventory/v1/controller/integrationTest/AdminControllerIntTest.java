@@ -317,8 +317,20 @@ public class AdminControllerIntTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void shouldRejectUnauthorizedDeleteSaleById() {
+        assertThat(mockMvc.delete().uri(BASE_URL + "/sales/{id}", UUID.randomUUID()).exchange())
+                .hasStatus(401);
+    }
+
+    @Test
     void shouldRejectUnauthorizedGetAllRestocks() {
         assertThat(mockMvc.get().uri(BASE_URL + "/restocks").exchange()).hasStatus(401);
+    }
+
+    @Test
+    void shouldRejectUnauthorizedDeleteRestockById() {
+        assertThat(mockMvc.delete().uri(BASE_URL + "/restocks/{id}", UUID.randomUUID()).exchange())
+                .hasStatus(401);
     }
 
     @Test
@@ -593,5 +605,52 @@ public class AdminControllerIntTest extends AbstractIntegrationTest {
                 .hasStatusOk();
 
         assertThat(categoryRepository.existsById(categoryId)).isFalse();
+    }
+
+    @Test
+    @WithMockUser(authorities = "SCOPE_ADMIN")
+    void shouldAllowAuthorizedDeleteSaleById() {
+        String suffix = randomSuffix();
+        var employee = createEmployeeUser(suffix);
+        var product = createProductForSale(suffix);
+        var sale = createSale(employee, product, 3, 18.5);
+
+        assertThat(mockMvc.delete().uri(BASE_URL + "/sales/{id}", sale.getId()).exchange())
+                .hasStatusOk();
+
+        assertThat(saleRepository.existsById(sale.getId())).isFalse();
+    }
+
+    @Test
+    @WithMockUser(authorities = "SCOPE_ADMIN")
+    void shouldReturnNotFoundWhenDeletingUnknownSale() {
+        var result = mockMvc.delete().uri(BASE_URL + "/sales/{id}", UUID.randomUUID()).exchange();
+
+        assertThat(result).hasStatus(404);
+        assertThat(result).bodyText().contains("Sale not found with id");
+    }
+
+    @Test
+    @WithMockUser(authorities = "SCOPE_ADMIN")
+    void shouldAllowAuthorizedDeleteRestockById() {
+        String suffix = randomSuffix();
+        var employee = createEmployeeUser(suffix);
+        var product = createProductForSale(suffix);
+        var restock = createRestock(employee, product, 11);
+
+        assertThat(mockMvc.delete().uri(BASE_URL + "/restocks/{id}", restock.getId()).exchange())
+                .hasStatusOk();
+
+        assertThat(restockRepository.existsById(restock.getId())).isFalse();
+    }
+
+    @Test
+    @WithMockUser(authorities = "SCOPE_ADMIN")
+    void shouldReturnNotFoundWhenDeletingUnknownRestock() {
+        var result = mockMvc.delete().uri(BASE_URL + "/restocks/{id}", UUID.randomUUID())
+                .exchange();
+
+        assertThat(result).hasStatus(404);
+        assertThat(result).bodyText().contains("Restock not found with id");
     }
 }

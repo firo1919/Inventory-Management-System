@@ -1,8 +1,9 @@
 package com.firomsa.inventory.v1.controller;
 
+import java.util.UUID;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -20,8 +21,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
-import java.util.UUID;
 
 @RestController
 @RequiredArgsConstructor
@@ -44,13 +43,6 @@ public class SaleController {
     @ResponseStatus(HttpStatus.OK)
     public SaleResponseDTO getSaleById(@PathVariable UUID id) {
         return saleService.getSaleById(id);
-    }
-
-    @Operation(summary = "For deleting a sale record by id")
-    @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.OK)
-    public void deleteSaleById(@PathVariable UUID id) {
-        saleService.deleteSaleById(id);
     }
 
 }

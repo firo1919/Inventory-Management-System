@@ -566,4 +566,99 @@ public class AdminControllerE2ETest extends AbstractE2ETest {
         });
     }
 
+    @Test
+    void shouldDeleteSaleByIdForAuthenticatedAdmin() {
+        String categorySuffix = randomSuffix();
+        String productSuffix = randomSuffix();
+
+        withAuthenticatedAdmin(accessToken -> {
+            UUID categoryId = UUID.fromString(createCategoryAndGetId(accessToken, categorySuffix));
+
+            var createProductResponse = client.post().uri(ADMIN_BASE_URL + "/products")
+                    .header(HttpHeaders.AUTHORIZATION, authorizationHeader(accessToken))
+                    .contentType(APPLICATION_JSON)
+                    .body(createProductPayload(productSuffix, categoryId)).exchange();
+            createProductResponse.expectStatus().isOk();
+            UUID productId = productIdBySku("SKU-" + productSuffix);
+
+            String salePayload = "{\"productId\":\"" + productId
+                    + "\",\"quantity\":3,\"salePrice\":22.0}";
+            var createSaleResponse = client.post().uri("/api/v1/sales")
+                    .header(HttpHeaders.AUTHORIZATION, authorizationHeader(accessToken))
+                    .contentType(APPLICATION_JSON).body(salePayload).exchange();
+            createSaleResponse.expectStatus().isOk();
+
+            UUID saleId = saleRepository.findAll().stream()
+                    .filter(sale -> sale.getProduct() != null
+                            && productId.equals(sale.getProduct().getId()))
+                    .map(sale -> sale.getId()).reduce((first, second) -> second).orElseThrow();
+
+            var deleteResponse = client.delete().uri(ADMIN_BASE_URL + "/sales/" + saleId)
+                    .header(HttpHeaders.AUTHORIZATION, authorizationHeader(accessToken)).exchange();
+
+            deleteResponse.expectStatus().isOk();
+            assertThat(saleRepository.existsById(saleId)).isFalse();
+        });
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenDeletingUnknownSaleIdFromAdminEndpoint() {
+        withAuthenticatedAdmin(accessToken -> {
+            var response = client.delete().uri(ADMIN_BASE_URL + "/sales/" + UUID.randomUUID())
+                    .header(HttpHeaders.AUTHORIZATION, authorizationHeader(accessToken))
+                    .exchange();
+
+            response.expectStatus().isNotFound();
+            String body = response.returnResult(String.class).getResponseBody();
+            assertThat(body).contains("Sale not found with id");
+        });
+    }
+
+    @Test
+    void shouldDeleteRestockByIdForAuthenticatedAdmin() {
+        String categorySuffix = randomSuffix();
+        String productSuffix = randomSuffix();
+
+        withAuthenticatedAdmin(accessToken -> {
+            UUID categoryId = UUID.fromString(createCategoryAndGetId(accessToken, categorySuffix));
+
+            var createProductResponse = client.post().uri(ADMIN_BASE_URL + "/products")
+                    .header(HttpHeaders.AUTHORIZATION, authorizationHeader(accessToken))
+                    .contentType(APPLICATION_JSON)
+                    .body(createProductPayload(productSuffix, categoryId)).exchange();
+            createProductResponse.expectStatus().isOk();
+            UUID productId = productIdBySku("SKU-" + productSuffix);
+
+            String restockPayload = "{\"productId\":\"" + productId + "\",\"quantity\":7}";
+            var createRestockResponse = client.post().uri("/api/v1/restocks")
+                    .header(HttpHeaders.AUTHORIZATION, authorizationHeader(accessToken))
+                    .contentType(APPLICATION_JSON).body(restockPayload).exchange();
+            createRestockResponse.expectStatus().isOk();
+
+            UUID restockId = restockRepository.findAll().stream()
+                    .filter(restock -> restock.getProduct() != null
+                            && productId.equals(restock.getProduct().getId()))
+                    .map(restock -> restock.getId()).reduce((first, second) -> second).orElseThrow();
+
+            var deleteResponse = client.delete().uri(ADMIN_BASE_URL + "/restocks/" + restockId)
+                    .header(HttpHeaders.AUTHORIZATION, authorizationHeader(accessToken)).exchange();
+
+            deleteResponse.expectStatus().isOk();
+            assertThat(restockRepository.existsById(restockId)).isFalse();
+        });
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenDeletingUnknownRestockIdFromAdminEndpoint() {
+        withAuthenticatedAdmin(accessToken -> {
+            var response = client.delete().uri(ADMIN_BASE_URL + "/restocks/" + UUID.randomUUID())
+                    .header(HttpHeaders.AUTHORIZATION, authorizationHeader(accessToken))
+                    .exchange();
+
+            response.expectStatus().isNotFound();
+            String body = response.returnResult(String.class).getResponseBody();
+            assertThat(body).contains("Restock not found with id");
+        });
+    }
+
 }

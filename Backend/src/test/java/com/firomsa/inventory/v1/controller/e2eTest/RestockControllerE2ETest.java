@@ -212,42 +212,4 @@ public class RestockControllerE2ETest extends AbstractE2ETest {
         String body = response.returnResult(String.class).getResponseBody();
         assertThat(body).contains("Restock not found with id");
     }
-
-    @Test
-    void shouldDeleteRestockByIdForAuthenticatedEmployee() {
-        registerAndConfirmAdminIfNeeded();
-        UUID categoryId = createCategory(adminAccessToken, randomSuffix());
-        UUID productId = createProduct(adminAccessToken, randomSuffix(), categoryId);
-        String employeeToken = registerAndLoginEmployee(adminAccessToken, randomSuffix());
-
-        var createRestockResponse = client.post().uri(RESTOCKS_BASE_URL)
-                .header(HttpHeaders.AUTHORIZATION, authorizationHeader(employeeToken))
-                .contentType(APPLICATION_JSON).body(createRestockPayload(productId, 7))
-                .exchange();
-        createRestockResponse.expectStatus().isOk();
-
-        UUID restockId = restockRepository.findAll().stream()
-                .filter(restock -> restock.getProduct() != null
-                        && productId.equals(restock.getProduct().getId()))
-                .map(restock -> restock.getId()).reduce((first, second) -> second).orElseThrow();
-
-        var deleteResponse = client.delete().uri(RESTOCKS_BASE_URL + "/" + restockId)
-                .header(HttpHeaders.AUTHORIZATION, authorizationHeader(employeeToken)).exchange();
-
-        deleteResponse.expectStatus().isOk();
-        assertThat(restockRepository.existsById(restockId)).isFalse();
-    }
-
-    @Test
-    void shouldReturnNotFoundWhenDeletingUnknownRestockId() {
-        registerAndConfirmAdminIfNeeded();
-
-        var response = client.delete().uri(RESTOCKS_BASE_URL + "/" + UUID.randomUUID())
-                .header(HttpHeaders.AUTHORIZATION, authorizationHeader(adminAccessToken))
-                .exchange();
-
-        response.expectStatus().isNotFound();
-        String body = response.returnResult(String.class).getResponseBody();
-        assertThat(body).contains("Restock not found with id");
-    }
 }

@@ -193,10 +193,24 @@ public class AdminController {
         return saleService.getAllSales();
     }
 
+    @Operation(summary = "For deleting a sale record by id")
+    @DeleteMapping("/sales/{id}")
+    @ResponseStatus(HttpStatus.OK)
+    public void deleteSaleById(@PathVariable UUID id) {
+        saleService.deleteSaleById(id);
+    }
+
     @Operation(summary = "For getting all restocks")
     @GetMapping("/restocks")
     @ResponseStatus(HttpStatus.OK)
     public List<RestockResponseDTO> getAllRestocks() {
         return restockService.getAllRestocks();
+    }
+
+    @Operation(summary = "For deleting a restock record by id")
+    @DeleteMapping("/restocks/{id}")
+    @ResponseStatus(HttpStatus.OK)
+    public void deleteRestockById(@PathVariable UUID id) {
+        restockService.deleteRestockById(id);
     }
 }
