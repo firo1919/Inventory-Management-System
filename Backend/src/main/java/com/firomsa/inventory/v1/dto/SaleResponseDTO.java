@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class SaleResponseDTO {
+    private UUID id;
     private Integer quantity;
     private Double salePrice;
     private UUID productId;

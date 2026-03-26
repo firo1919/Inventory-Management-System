@@ -13,6 +13,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class RestockResponseDTO {
+    private UUID id;
     private Integer quantity;
     private UUID productId;
     private LocalDateTime timestamp;
