@@ -19,7 +19,7 @@ public interface RestockMapper {
     Restock toModel(RestockRequestDTO restockRequestDTO);
 
     @Mapping(target = "message", ignore = true)
-    @Mapping(target = "timestamp", dateFormat = "dd.MM.yyyy")
+    @Mapping(target = "timestamp", dateFormat = "yyyy-MM-dd HH:mm:ss")
     @Mapping(target = "productId", expression = "java(mapProductToUUID(restock.getProduct()))")
     RestockResponseDTO toDTO(Restock restock);
 

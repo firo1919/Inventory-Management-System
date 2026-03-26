@@ -1,7 +1,6 @@
 package com.firomsa.inventory.v1.dto;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -34,9 +33,9 @@ public class ProductResponseDTO {
 
     private boolean active;
 
-    private LocalDateTime createdAt;
+    private String createdAt;
 
-    private LocalDateTime updatedAt;
+    private String updatedAt;
 
     private Set<UUID> categoryIds;
 

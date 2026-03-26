@@ -40,8 +40,8 @@ public class ProductControllerUnitTest {
         return ProductResponseDTO.builder().id(id).name(name).sku("SKU-001")
                 .description("Sample product").sellingPrice(new BigDecimal("100.00"))
                 .costPrice(new BigDecimal("80.00")).quantity(20).lowStockThreshold(2).active(true)
-                .createdAt(LocalDateTime.of(2026, 3, 19, 10, 0))
-                .updatedAt(LocalDateTime.of(2026, 3, 19, 10, 30)).categoryIds(Set.of())
+                .createdAt(LocalDateTime.of(2026, 3, 19, 10, 0).toString())
+                .updatedAt(LocalDateTime.of(2026, 3, 19, 10, 30).toString()).categoryIds(Set.of())
                 .imageUrls(List.of("https://cdn.example.com/image-1.jpg")).build();
     }
 

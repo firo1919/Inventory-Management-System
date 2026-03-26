@@ -17,7 +17,7 @@ public interface SaleMapper {
     Sale toModel(SaleRequestDTO saleRequestDTO);
 
     @Mapping(target = "message", ignore = true)
-    @Mapping(target = "timestamp", dateFormat = "dd.MM.yyyy")
+    @Mapping(target = "timestamp", dateFormat = "yyyy-MM-dd HH:mm:ss")
     @Mapping(target = "productId", expression = "java(mapProductToUUID(sale.getProduct()))")
     SaleResponseDTO toDTO(Sale sale);
 

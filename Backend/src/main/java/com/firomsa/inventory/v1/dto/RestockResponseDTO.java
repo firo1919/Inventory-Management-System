@@ -1,6 +1,5 @@
 package com.firomsa.inventory.v1.dto;
 
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 import lombok.AllArgsConstructor;
@@ -16,6 +15,6 @@ public class RestockResponseDTO {
     private UUID id;
     private Integer quantity;
     private UUID productId;
-    private LocalDateTime timestamp;
+    private String timestamp;
     private String message;
 }

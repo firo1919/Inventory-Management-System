@@ -12,7 +12,7 @@ import com.firomsa.inventory.v1.dto.UserUpdateRequestDTO;
 @Mapper(componentModel = "spring")
 public interface UserMapper {
     @Mapping(source = "role.name", target = "role")
-    @Mapping(target = "createdAt", dateFormat = "dd.MM.yyyy")
+    @Mapping(target = "createdAt", dateFormat = "yyyy-MM-dd HH:mm:ss")
     @Mapping(target = "profilePictureUrl", ignore = true)
     UserResponseDTO toDTO(User user);
 

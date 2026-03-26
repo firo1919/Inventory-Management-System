@@ -9,7 +9,6 @@ import static org.mockito.Mockito.when;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -77,15 +76,15 @@ public class AdminControllerUnitTest {
         return ProductResponseDTO.builder().id(id).name(name).sku("SKU-001")
                 .description("Sample product").sellingPrice(new BigDecimal("100.00"))
                 .costPrice(new BigDecimal("80.00")).quantity(20).lowStockThreshold(2).active(true)
-                .createdAt(LocalDateTime.of(2026, 3, 19, 10, 0))
-                .updatedAt(LocalDateTime.of(2026, 3, 19, 10, 30)).categoryIds(Set.of())
+                .createdAt("2026-03-19T10:00:00")
+                .updatedAt("2026-03-19T10:30:00").categoryIds(Set.of())
                 .imageUrls(List.of("https://cdn.example.com/image-1.jpg")).build();
     }
 
     private CategoryResponseDTO sampleCategory(UUID id, String name) {
         return CategoryResponseDTO.builder().id(id).name(name)
-                .createdAt(LocalDateTime.of(2026, 3, 19, 8, 0))
-                .updatedAt(LocalDateTime.of(2026, 3, 19, 9, 0)).productIds(Set.of()).build();
+                .createdAt("2026-03-19T08:00:00")
+                .updatedAt("2026-03-19T09:00:00").productIds(Set.of()).build();
     }
 
     private String registerRequestJson() {

@@ -1,6 +1,5 @@
 package com.firomsa.inventory.v1.dto;
 
-import java.time.LocalDateTime;
 import java.util.Set;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
@@ -18,9 +17,9 @@ public class CategoryResponseDTO {
 
     private String name;
 
-    private LocalDateTime createdAt;
+    private String createdAt;
 
-    private LocalDateTime updatedAt;
+    private String updatedAt;
 
     private Set<UUID> productIds;
 }
