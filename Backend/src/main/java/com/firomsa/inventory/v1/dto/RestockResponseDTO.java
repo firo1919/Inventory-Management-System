@@ -1,7 +1,7 @@
 package com.firomsa.inventory.v1.dto;
 
-import java.util.Set;
 import java.util.UUID;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,15 +11,10 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CategoryResponseDTO {
-
+public class RestockResponseDTO {
     private UUID id;
-
-    private String name;
-
-    private String createdAt;
-
-    private String updatedAt;
-
-    private Set<UUID> productIds;
+    private Integer quantity;
+    private UUID productId;
+    private String timestamp;
+    private String message;
 }

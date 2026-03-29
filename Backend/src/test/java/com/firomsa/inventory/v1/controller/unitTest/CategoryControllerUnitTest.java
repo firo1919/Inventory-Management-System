@@ -37,8 +37,8 @@ public class CategoryControllerUnitTest {
 
     private CategoryResponseDTO sampleCategory(UUID id, String name) {
         return CategoryResponseDTO.builder().id(id).name(name)
-                .createdAt(LocalDateTime.of(2026, 3, 19, 8, 0))
-                .updatedAt(LocalDateTime.of(2026, 3, 19, 9, 0)).productIds(Set.of()).build();
+                .createdAt(LocalDateTime.of(2026, 3, 19, 8, 0).toString())
+                .updatedAt(LocalDateTime.of(2026, 3, 19, 9, 0).toString()).productIds(Set.of()).build();
     }
 
     @Test

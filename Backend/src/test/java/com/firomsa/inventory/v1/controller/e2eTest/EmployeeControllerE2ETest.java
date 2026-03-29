@@ -1,135 +1,70 @@
 package com.firomsa.inventory.v1.controller.e2eTest;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 
 import java.util.UUID;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpHeaders;
-import org.springframework.test.web.servlet.client.RestTestClient;
-
-import com.firomsa.inventory.repository.CategoryRepository;
-import com.firomsa.inventory.repository.ConfirmationOtpRepository;
-import com.firomsa.inventory.repository.ProductRepository;
-import com.firomsa.inventory.repository.RefreshTokenRepository;
-import com.firomsa.inventory.repository.UserRepository;
 
 public class EmployeeControllerE2ETest extends AbstractE2ETest {
 
-    private static final String AUTH_BASE_URL = "/api/v1/auth";
-    private static final String ADMIN_BASE_URL = "/api/v1/admin";
     private static final String EMPLOYEE_BASE_URL = "/api/v1/employee";
-    private static final String BOOTSTRAP_TOKEN = "test-bootstrap-token-12345678901234";
-    private static final String DEFAULT_PASSWORD = "password123";
+    private static final String SALES_BASE_URL = "/api/v1/sales";
+    private static final String RESTOCKS_BASE_URL = "/api/v1/restocks";
 
     private static String adminAccessToken;
 
-    private RestTestClient client;
-
-    @Autowired
-    private ConfirmationOtpRepository confirmationOtpRepository;
-
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private ProductRepository productRepository;
-
-    @Autowired
-    private CategoryRepository categoryRepository;
-
-    @Autowired
-    private RefreshTokenRepository refreshTokenRepository;
-
-    @LocalServerPort
-    private Integer port;
-
-    @BeforeEach
-    void setUpClient() {
-        this.client = RestTestClient.bindToServer().baseUrl("http://localhost:" + port).build();
+    private String createCategoryPayload(String suffix) {
+        return "{\"name\":\"Category-" + suffix + "\"}";
     }
 
-    @AfterEach
-    void tearDown() {
-        refreshTokenRepository.deleteAllInBatch();
-        confirmationOtpRepository.deleteAllInBatch();
-        productRepository.deleteAllInBatch();
-        categoryRepository.deleteAllInBatch();
-        userRepository.deleteAllInBatch();
-    }
-
-    private String randomSuffix() {
-        return UUID.randomUUID().toString().replace("-", "").substring(0, 8);
-    }
-
-    private String authorizationHeader(String accessToken) {
-        return "Bearer " + accessToken;
-    }
-
-    private String adminEmailForSuffix(String suffix) {
-        return "admin." + suffix + "@example.com";
-    }
-
-    private String employeeEmailForSuffix(String suffix) {
-        return "employee_" + suffix + "@example.com";
-    }
-
-    private String registerAdminPayload(String suffix) {
+    private String createProductPayload(String suffix, UUID categoryId) {
         return """
                 {
-                    "firstName": "Admin",
-                    "lastName": "User",
-                    "username": "admin_%s",
-                    "password": "%s",
-                    "email": "admin.%s@example.com",
-                    "phone": "+251900%s",
-                    "bootstrapToken": "%s"
+                    "name": "Product-%s",
+                    "sku": "SKU-%s",
+                    "description": "E2E product",
+                    "sellingPrice": 120.50,
+                    "costPrice": 90.00,
+                    "quantity": 25,
+                    "lowStockThreshold": 5,
+                    "categoryIds": ["%s"]
                 }
-                """.formatted(suffix, DEFAULT_PASSWORD, suffix, suffix.substring(0, 6),
-                BOOTSTRAP_TOKEN);
+                """.formatted(suffix, suffix, categoryId);
     }
 
-    private String registerEmployeePayload(String suffix) {
-        return """
-                {
-                    "firstName": "EmpFirst%s",
-                    "lastName": "EmpLast%s",
-                    "username": "employee_%s",
-                    "password": "%s",
-                    "email": "employee_%s@example.com",
-                    "role": "EMPLOYEE",
-                    "phone": "+251911%s"
-                }
-                """.formatted(suffix, suffix, suffix, DEFAULT_PASSWORD, suffix,
-                suffix.substring(0, 6));
+    private String createSalePayload(UUID productId, int quantity, double salePrice) {
+        return "{\"productId\":\"" + productId + "\",\"quantity\":" + quantity
+                + ",\"salePrice\":" + salePrice + "}";
     }
 
-    private String latestOtpForEmail(String email) {
-        UUID userId = userRepository.findByEmail(email).orElseThrow().getId();
-        return confirmationOtpRepository.findAll().stream()
-                .filter(otp -> otp.getUser() != null && userId.equals(otp.getUser().getId()))
-                .map(otp -> otp.getOtp()).reduce((first, second) -> second)
-                .orElseThrow(() -> new IllegalStateException("No OTP found for user " + email));
+    private String createRestockPayload(UUID productId, int quantity) {
+        return "{\"productId\":\"" + productId + "\",\"quantity\":" + quantity + "}";
     }
 
-    private String extractAccessToken(String body) {
-        String tokenMarker = "\"accessToken\":\"";
-        int start = body.indexOf(tokenMarker);
-        int from = start + tokenMarker.length();
-        int end = body.indexOf('"', from);
-        return body.substring(from, end);
-    }
-
-    private String loginByEmail(String email) {
-        String payload = "{\"password\":\"" + DEFAULT_PASSWORD + "\",\"email\":\"" + email + "\"}";
-        var response = client.post().uri(AUTH_BASE_URL + "/login").contentType(APPLICATION_JSON)
-                .body(payload).exchange();
+    private UUID createCategory(String accessToken, String suffix) {
+        var response = client.post().uri(ADMIN_BASE_URL + "/categories")
+                .header(HttpHeaders.AUTHORIZATION, authorizationHeader(accessToken))
+                .contentType(APPLICATION_JSON).body(createCategoryPayload(suffix)).exchange();
         response.expectStatus().isOk();
-        return extractAccessToken(response.returnResult(String.class).getResponseBody());
+
+        String categoryName = "Category-" + suffix;
+        return categoryRepository.findAll().stream().filter(c -> categoryName.equals(c.getName()))
+                .map(c -> c.getId()).findFirst().orElseThrow();
+    }
+
+    private UUID createProduct(String accessToken, String suffix, UUID categoryId) {
+        var response = client.post().uri(ADMIN_BASE_URL + "/products")
+                .header(HttpHeaders.AUTHORIZATION, authorizationHeader(accessToken))
+                .contentType(APPLICATION_JSON).body(createProductPayload(suffix, categoryId))
+                .exchange();
+        response.expectStatus().isOk();
+
+        String sku = "SKU-" + suffix;
+        return productRepository.findAll().stream().filter(p -> sku.equals(p.getSku()))
+                .map(p -> p.getId()).findFirst().orElseThrow();
     }
 
     private void registerAndConfirmAdminIfNeeded() {
@@ -171,7 +106,7 @@ public class EmployeeControllerE2ETest extends AbstractE2ETest {
 
     @Test
     void shouldReturnUnauthorizedForEmployeeBaseWhenMissingToken() {
-        var response = client.get().uri(EMPLOYEE_BASE_URL).exchange();
+        var response = client.get().uri(EMPLOYEE_BASE_URL + "/sales").exchange();
         response.expectStatus().isUnauthorized();
     }
 
@@ -179,7 +114,7 @@ public class EmployeeControllerE2ETest extends AbstractE2ETest {
     void shouldReturnForbiddenForEmployeeBaseWhenUsingAdminToken() {
         registerAndConfirmAdminIfNeeded();
 
-        var response = client.get().uri(EMPLOYEE_BASE_URL)
+        var response = client.get().uri(EMPLOYEE_BASE_URL + "/sales")
                 .header(HttpHeaders.AUTHORIZATION, authorizationHeader(adminAccessToken))
                 .exchange();
 
@@ -187,13 +122,72 @@ public class EmployeeControllerE2ETest extends AbstractE2ETest {
     }
 
     @Test
-    void shouldReachControllerLayerForEmployeeToken() {
+    void shouldReturnOnlyOwnSalesForAuthenticatedEmployee() {
         registerAndConfirmAdminIfNeeded();
-        String employeeToken = registerAndLoginEmployee(adminAccessToken, randomSuffix());
+        UUID categoryId = createCategory(adminAccessToken, randomSuffix());
 
-        var response = client.get().uri(EMPLOYEE_BASE_URL)
-                .header(HttpHeaders.AUTHORIZATION, authorizationHeader(employeeToken)).exchange();
+        String firstSuffix = randomSuffix();
+        String secondSuffix = randomSuffix();
+        UUID firstProductId = createProduct(adminAccessToken, firstSuffix, categoryId);
+        UUID secondProductId = createProduct(adminAccessToken, secondSuffix, categoryId);
 
-        response.expectStatus().is5xxServerError();
+        String firstEmployeeToken = registerAndLoginEmployee(adminAccessToken, randomSuffix());
+        String secondEmployeeToken = registerAndLoginEmployee(adminAccessToken, randomSuffix());
+
+        var firstSaleResponse = client.post().uri(SALES_BASE_URL)
+                .header(HttpHeaders.AUTHORIZATION, authorizationHeader(firstEmployeeToken))
+                .contentType(APPLICATION_JSON).body(createSalePayload(firstProductId, 2, 12.0))
+                .exchange();
+        firstSaleResponse.expectStatus().isOk();
+
+        var secondSaleResponse = client.post().uri(SALES_BASE_URL)
+                .header(HttpHeaders.AUTHORIZATION, authorizationHeader(secondEmployeeToken))
+                .contentType(APPLICATION_JSON).body(createSalePayload(secondProductId, 4, 13.0))
+                .exchange();
+        secondSaleResponse.expectStatus().isOk();
+
+        var response = client.get().uri(EMPLOYEE_BASE_URL + "/sales")
+                .header(HttpHeaders.AUTHORIZATION, authorizationHeader(firstEmployeeToken))
+                .exchange();
+
+        response.expectStatus().isOk();
+        String body = response.returnResult(String.class).getResponseBody();
+        assertThat(body).contains(firstProductId.toString());
+        assertThat(body).doesNotContain(secondProductId.toString());
+    }
+
+    @Test
+    void shouldReturnOnlyOwnRestocksForAuthenticatedEmployee() {
+        registerAndConfirmAdminIfNeeded();
+        UUID categoryId = createCategory(adminAccessToken, randomSuffix());
+
+        String firstSuffix = randomSuffix();
+        String secondSuffix = randomSuffix();
+        UUID firstProductId = createProduct(adminAccessToken, firstSuffix, categoryId);
+        UUID secondProductId = createProduct(adminAccessToken, secondSuffix, categoryId);
+
+        String firstEmployeeToken = registerAndLoginEmployee(adminAccessToken, randomSuffix());
+        String secondEmployeeToken = registerAndLoginEmployee(adminAccessToken, randomSuffix());
+
+        var firstRestockResponse = client.post().uri(RESTOCKS_BASE_URL)
+                .header(HttpHeaders.AUTHORIZATION, authorizationHeader(firstEmployeeToken))
+                .contentType(APPLICATION_JSON).body(createRestockPayload(firstProductId, 6))
+                .exchange();
+        firstRestockResponse.expectStatus().isOk();
+
+        var secondRestockResponse = client.post().uri(RESTOCKS_BASE_URL)
+                .header(HttpHeaders.AUTHORIZATION, authorizationHeader(secondEmployeeToken))
+                .contentType(APPLICATION_JSON).body(createRestockPayload(secondProductId, 9))
+                .exchange();
+        secondRestockResponse.expectStatus().isOk();
+
+        var response = client.get().uri(EMPLOYEE_BASE_URL + "/restocks")
+                .header(HttpHeaders.AUTHORIZATION, authorizationHeader(firstEmployeeToken))
+                .exchange();
+
+        response.expectStatus().isOk();
+        String body = response.returnResult(String.class).getResponseBody();
+        assertThat(body).contains(firstProductId.toString());
+        assertThat(body).doesNotContain(secondProductId.toString());
     }
 }

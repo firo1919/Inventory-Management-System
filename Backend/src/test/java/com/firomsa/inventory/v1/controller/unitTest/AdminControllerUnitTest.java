@@ -9,7 +9,6 @@ import static org.mockito.Mockito.when;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -34,12 +33,16 @@ import com.firomsa.inventory.v1.dto.ProductResponseDTO;
 import com.firomsa.inventory.v1.dto.ProductUpdateRequestDTO;
 import com.firomsa.inventory.v1.dto.RegisterRequestDTO;
 import com.firomsa.inventory.v1.dto.RegisterResponseDTO;
+import com.firomsa.inventory.v1.dto.RestockResponseDTO;
+import com.firomsa.inventory.v1.dto.SaleResponseDTO;
 import com.firomsa.inventory.v1.dto.UserResponseDTO;
 import com.firomsa.inventory.v1.dto.UserUpdateRequestDTO;
 import com.firomsa.inventory.v1.service.AuthService;
 import com.firomsa.inventory.v1.service.CategoryService;
 import com.firomsa.inventory.v1.service.EmployeeService;
 import com.firomsa.inventory.v1.service.ProductService;
+import com.firomsa.inventory.v1.service.RestockService;
+import com.firomsa.inventory.v1.service.SaleService;
 
 @WebMvcTest(AdminController.class)
 @AutoConfigureMockMvc
@@ -54,6 +57,10 @@ public class AdminControllerUnitTest {
     private ProductService productService;
     @MockitoBean
     private CategoryService categoryService;
+    @MockitoBean
+    private RestockService restockService;
+    @MockitoBean
+    private SaleService saleService;
 
     @Autowired
     private MockMvcTester mockMvc;
@@ -69,15 +76,15 @@ public class AdminControllerUnitTest {
         return ProductResponseDTO.builder().id(id).name(name).sku("SKU-001")
                 .description("Sample product").sellingPrice(new BigDecimal("100.00"))
                 .costPrice(new BigDecimal("80.00")).quantity(20).lowStockThreshold(2).active(true)
-                .createdAt(LocalDateTime.of(2026, 3, 19, 10, 0))
-                .updatedAt(LocalDateTime.of(2026, 3, 19, 10, 30)).categoryIds(Set.of())
+                .createdAt("2026-03-19T10:00:00")
+                .updatedAt("2026-03-19T10:30:00").categoryIds(Set.of())
                 .imageUrls(List.of("https://cdn.example.com/image-1.jpg")).build();
     }
 
     private CategoryResponseDTO sampleCategory(UUID id, String name) {
         return CategoryResponseDTO.builder().id(id).name(name)
-                .createdAt(LocalDateTime.of(2026, 3, 19, 8, 0))
-                .updatedAt(LocalDateTime.of(2026, 3, 19, 9, 0)).productIds(Set.of()).build();
+                .createdAt("2026-03-19T08:00:00")
+                .updatedAt("2026-03-19T09:00:00").productIds(Set.of()).build();
     }
 
     private String registerRequestJson() {
@@ -128,6 +135,38 @@ public class AdminControllerUnitTest {
     }
 
     @Test
+    void shouldReturnAllSales() {
+        UUID productId = UUID.randomUUID();
+        SaleResponseDTO sale = SaleResponseDTO.builder().productId(productId).quantity(2)
+                .salePrice(15.0).message("Sale recorded successfully").build();
+        when(saleService.getAllSales()).thenReturn(List.of(sale));
+
+        MvcTestResult result = mockMvc.get().uri(BASE_URL + "/sales").exchange();
+        assertThat(result).hasStatusOk();
+        assertThat(result).bodyJson().extractingPath("$[0].productId").asString()
+                .isEqualTo(productId.toString());
+        assertThat(result).bodyJson().extractingPath("$[0].quantity").isEqualTo(2);
+
+        verify(saleService).getAllSales();
+    }
+
+    @Test
+    void shouldReturnAllRestocks() {
+        UUID productId = UUID.randomUUID();
+        RestockResponseDTO restock = RestockResponseDTO.builder().productId(productId)
+                .quantity(12).message("Restock recorded successfully").build();
+        when(restockService.getAllRestocks()).thenReturn(List.of(restock));
+
+        MvcTestResult result = mockMvc.get().uri(BASE_URL + "/restocks").exchange();
+        assertThat(result).hasStatusOk();
+        assertThat(result).bodyJson().extractingPath("$[0].productId").asString()
+                .isEqualTo(productId.toString());
+        assertThat(result).bodyJson().extractingPath("$[0].quantity").isEqualTo(12);
+
+        verify(restockService).getAllRestocks();
+    }
+
+    @Test
     void shouldReturnAllEmployees() {
         UserResponseDTO user = sampleUser(UUID.randomUUID(), "employee.one");
         when(employeeService.getEmployees()).thenReturn(List.of(user));
@@ -162,9 +201,8 @@ public class AdminControllerUnitTest {
 
         when(productService.addImageToProduct(productId, objectKey)).thenReturn(response);
 
-        MvcTestResult result =
-                mockMvc.post().uri(BASE_URL + "/products/{id}/images", productId).with(csrf())
-                        .contentType(APPLICATION_JSON).content(fileDtoJson(objectKey)).exchange();
+        MvcTestResult result = mockMvc.post().uri(BASE_URL + "/products/{id}/images", productId).with(csrf())
+                .contentType(APPLICATION_JSON).content(fileDtoJson(objectKey)).exchange();
         assertThat(result).hasStatusOk();
         assertThat(result).bodyJson().extractingPath("$.id").asString()
                 .isEqualTo(productId.toString());
@@ -265,6 +303,30 @@ public class AdminControllerUnitTest {
     }
 
     @Test
+    void shouldDeleteSaleById() {
+        UUID saleId = UUID.randomUUID();
+        doNothing().when(saleService).deleteSaleById(saleId);
+
+        MvcTestResult result = mockMvc.delete().uri(BASE_URL + "/sales/{id}", saleId)
+                .with(csrf()).exchange();
+        assertThat(result).hasStatusOk();
+
+        verify(saleService).deleteSaleById(saleId);
+    }
+
+    @Test
+    void shouldDeleteRestockById() {
+        UUID restockId = UUID.randomUUID();
+        doNothing().when(restockService).deleteRestockById(restockId);
+
+        MvcTestResult result = mockMvc.delete().uri(BASE_URL + "/restocks/{id}", restockId)
+                .with(csrf()).exchange();
+        assertThat(result).hasStatusOk();
+
+        verify(restockService).deleteRestockById(restockId);
+    }
+
+    @Test
     void shouldGetAllEmployees() {
         UserResponseDTO first = sampleUser(UUID.randomUUID(), "employee.one");
         UserResponseDTO second = sampleUser(UUID.randomUUID(), "employee.two");
@@ -286,8 +348,7 @@ public class AdminControllerUnitTest {
         UserResponseDTO employee = sampleUser(employeeId, "employee.by.id");
         when(employeeService.getEmployeeById(employeeId)).thenReturn(employee);
 
-        MvcTestResult result =
-                mockMvc.get().uri(BASE_URL + "/employees/{id}", employeeId).exchange();
+        MvcTestResult result = mockMvc.get().uri(BASE_URL + "/employees/{id}", employeeId).exchange();
         assertThat(result).hasStatusOk();
         assertThat(result).bodyJson().extractingPath("$.id").asString()
                 .isEqualTo(employeeId.toString());

@@ -5,6 +5,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 
 import java.util.UUID;
+import java.math.BigDecimal;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -16,7 +17,16 @@ import org.springframework.test.web.servlet.assertj.MvcTestResult;
 import com.firomsa.inventory.repository.CategoryRepository;
 import com.firomsa.inventory.repository.ConfirmationOtpRepository;
 import com.firomsa.inventory.repository.ProductRepository;
+import com.firomsa.inventory.repository.RoleRepository;
+import com.firomsa.inventory.repository.RestockRepository;
+import com.firomsa.inventory.repository.SaleRepository;
 import com.firomsa.inventory.repository.UserRepository;
+import com.firomsa.inventory.model.Product;
+import com.firomsa.inventory.model.Role;
+import com.firomsa.inventory.model.Restock;
+import com.firomsa.inventory.model.Roles;
+import com.firomsa.inventory.model.Sale;
+import com.firomsa.inventory.model.User;
 
 public class AdminControllerIntTest extends AbstractIntegrationTest {
 
@@ -35,10 +45,21 @@ public class AdminControllerIntTest extends AbstractIntegrationTest {
     @Autowired
     private CategoryRepository categoryRepository;
 
+    @Autowired
+    private RoleRepository roleRepository;
+
+    @Autowired
+    private SaleRepository saleRepository;
+
+    @Autowired
+    private RestockRepository restockRepository;
+
     private static final String BASE_URL = "/api/v1/admin";
 
     @AfterEach
     void tearDown() {
+        restockRepository.deleteAll();
+        saleRepository.deleteAll();
         confirmationOtpRepository.deleteAll();
         userRepository.deleteAll();
         productRepository.deleteAll();
@@ -166,6 +187,34 @@ public class AdminControllerIntTest extends AbstractIntegrationTest {
                 .isEqualTo("Category " + suffix);
     }
 
+    private Role employeeRole() {
+        return roleRepository.findByName(Roles.EMPLOYEE).orElseThrow();
+    }
+
+    private User createEmployeeUser(String suffix) {
+        return userRepository.save(User.builder().firstName("John").lastName("Doe")
+                .username("employee.sales." + suffix).email("employee.sales." + suffix + "@example.com")
+                .password("password").phone("1234567").role(employeeRole()).build());
+    }
+
+    private Product createProductForSale(String suffix) {
+        return productRepository.save(Product.builder().name("Sales Product " + suffix)
+                .quantity(40).sku("SALES-SKU-" + suffix)
+                .description("Sales listing integration product")
+                .sellingPrice(BigDecimal.valueOf(20.0)).lowStockThreshold(5)
+                .costPrice(BigDecimal.valueOf(10.0)).build());
+    }
+
+    private Sale createSale(User user, Product product, int quantity, double salePrice) {
+        return saleRepository.save(Sale.builder().soldBy(user).product(product).quantity(quantity)
+                .salePrice(salePrice).build());
+    }
+
+    private Restock createRestock(User user, Product product, int quantity) {
+        return restockRepository
+                .save(Restock.builder().restockedBy(user).product(product).quantity(quantity).build());
+    }
+
     @Test
     void shouldRejectUnauthorizedRegisterEmployee() {
         assertThat(mockMvc.post().uri(BASE_URL + "/employees").contentType(APPLICATION_JSON)
@@ -259,7 +308,29 @@ public class AdminControllerIntTest extends AbstractIntegrationTest {
     void shouldRejectUnauthorizedDeleteCategory() {
         assertThat(
                 mockMvc.delete().uri(BASE_URL + "/categories/{id}", UUID.randomUUID()).exchange())
-                        .hasStatus(401);
+                .hasStatus(401);
+    }
+
+    @Test
+    void shouldRejectUnauthorizedGetAllSales() {
+        assertThat(mockMvc.get().uri(BASE_URL + "/sales").exchange()).hasStatus(401);
+    }
+
+    @Test
+    void shouldRejectUnauthorizedDeleteSaleById() {
+        assertThat(mockMvc.delete().uri(BASE_URL + "/sales/{id}", UUID.randomUUID()).exchange())
+                .hasStatus(401);
+    }
+
+    @Test
+    void shouldRejectUnauthorizedGetAllRestocks() {
+        assertThat(mockMvc.get().uri(BASE_URL + "/restocks").exchange()).hasStatus(401);
+    }
+
+    @Test
+    void shouldRejectUnauthorizedDeleteRestockById() {
+        assertThat(mockMvc.delete().uri(BASE_URL + "/restocks/{id}", UUID.randomUUID()).exchange())
+                .hasStatus(401);
     }
 
     @Test
@@ -291,6 +362,36 @@ public class AdminControllerIntTest extends AbstractIntegrationTest {
 
     @Test
     @WithMockUser(authorities = "SCOPE_ADMIN")
+    void shouldAllowAuthorizedGetAllSales() {
+        String suffix = randomSuffix();
+        var employee = createEmployeeUser(suffix);
+        var product = createProductForSale(suffix);
+        createSale(employee, product, 3, 18.5);
+
+        var result = mockMvc.get().uri(BASE_URL + "/sales").exchange();
+
+        assertThat(result).hasStatusOk();
+        assertThat(result).bodyText().contains(product.getId().toString());
+        assertThat(result).bodyText().contains("\"quantity\":3");
+    }
+
+    @Test
+    @WithMockUser(authorities = "SCOPE_ADMIN")
+    void shouldAllowAuthorizedGetAllRestocks() {
+        String suffix = randomSuffix();
+        var employee = createEmployeeUser(suffix);
+        var product = createProductForSale(suffix);
+        createRestock(employee, product, 11);
+
+        var result = mockMvc.get().uri(BASE_URL + "/restocks").exchange();
+
+        assertThat(result).hasStatusOk();
+        assertThat(result).bodyText().contains(product.getId().toString());
+        assertThat(result).bodyText().contains("\"quantity\":11");
+    }
+
+    @Test
+    @WithMockUser(authorities = "SCOPE_ADMIN")
     void shouldAllowAuthorizedRegisterEmployee() {
         String suffix = randomSuffix();
         createEmployee(suffix);
@@ -315,8 +416,7 @@ public class AdminControllerIntTest extends AbstractIntegrationTest {
         createEmployee(suffix);
         UUID employeeId = findEmployeeIdBySuffix(suffix);
 
-        MvcTestResult result =
-                mockMvc.get().uri(BASE_URL + "/employees/{id}", employeeId).exchange();
+        MvcTestResult result = mockMvc.get().uri(BASE_URL + "/employees/{id}", employeeId).exchange();
         assertThat(result).hasStatusOk();
         assertThat(result).bodyJson().extractingPath("$.id").asString()
                 .isEqualTo(employeeId.toString());
@@ -346,7 +446,7 @@ public class AdminControllerIntTest extends AbstractIntegrationTest {
 
         assertThat(
                 mockMvc.post().uri(BASE_URL + "/employees/{id}/deactivate", employeeId).exchange())
-                        .hasStatusOk();
+                .hasStatusOk();
 
         assertThat(userRepository.findById(employeeId)).isPresent();
         assertThat(userRepository.findById(employeeId).orElseThrow().isActive()).isFalse();
@@ -361,7 +461,7 @@ public class AdminControllerIntTest extends AbstractIntegrationTest {
 
         assertThat(
                 mockMvc.post().uri(BASE_URL + "/employees/{id}/deactivate", employeeId).exchange())
-                        .hasStatusOk();
+                .hasStatusOk();
 
         assertThat(mockMvc.post().uri(BASE_URL + "/employees/{id}/activate", employeeId).exchange())
                 .hasStatusOk();
@@ -505,5 +605,52 @@ public class AdminControllerIntTest extends AbstractIntegrationTest {
                 .hasStatusOk();
 
         assertThat(categoryRepository.existsById(categoryId)).isFalse();
+    }
+
+    @Test
+    @WithMockUser(authorities = "SCOPE_ADMIN")
+    void shouldAllowAuthorizedDeleteSaleById() {
+        String suffix = randomSuffix();
+        var employee = createEmployeeUser(suffix);
+        var product = createProductForSale(suffix);
+        var sale = createSale(employee, product, 3, 18.5);
+
+        assertThat(mockMvc.delete().uri(BASE_URL + "/sales/{id}", sale.getId()).exchange())
+                .hasStatusOk();
+
+        assertThat(saleRepository.existsById(sale.getId())).isFalse();
+    }
+
+    @Test
+    @WithMockUser(authorities = "SCOPE_ADMIN")
+    void shouldReturnNotFoundWhenDeletingUnknownSale() {
+        var result = mockMvc.delete().uri(BASE_URL + "/sales/{id}", UUID.randomUUID()).exchange();
+
+        assertThat(result).hasStatus(404);
+        assertThat(result).bodyText().contains("Sale not found with id");
+    }
+
+    @Test
+    @WithMockUser(authorities = "SCOPE_ADMIN")
+    void shouldAllowAuthorizedDeleteRestockById() {
+        String suffix = randomSuffix();
+        var employee = createEmployeeUser(suffix);
+        var product = createProductForSale(suffix);
+        var restock = createRestock(employee, product, 11);
+
+        assertThat(mockMvc.delete().uri(BASE_URL + "/restocks/{id}", restock.getId()).exchange())
+                .hasStatusOk();
+
+        assertThat(restockRepository.existsById(restock.getId())).isFalse();
+    }
+
+    @Test
+    @WithMockUser(authorities = "SCOPE_ADMIN")
+    void shouldReturnNotFoundWhenDeletingUnknownRestock() {
+        var result = mockMvc.delete().uri(BASE_URL + "/restocks/{id}", UUID.randomUUID())
+                .exchange();
+
+        assertThat(result).hasStatus(404);
+        assertThat(result).bodyText().contains("Restock not found with id");
     }
 }

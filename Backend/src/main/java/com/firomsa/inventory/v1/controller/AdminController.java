@@ -23,12 +23,16 @@ import com.firomsa.inventory.v1.dto.ProductResponseDTO;
 import com.firomsa.inventory.v1.dto.ProductUpdateRequestDTO;
 import com.firomsa.inventory.v1.dto.RegisterRequestDTO;
 import com.firomsa.inventory.v1.dto.RegisterResponseDTO;
+import com.firomsa.inventory.v1.dto.RestockResponseDTO;
+import com.firomsa.inventory.v1.dto.SaleResponseDTO;
 import com.firomsa.inventory.v1.dto.UserResponseDTO;
 import com.firomsa.inventory.v1.dto.UserUpdateRequestDTO;
 import com.firomsa.inventory.v1.service.AuthService;
 import com.firomsa.inventory.v1.service.CategoryService;
 import com.firomsa.inventory.v1.service.EmployeeService;
 import com.firomsa.inventory.v1.service.ProductService;
+import com.firomsa.inventory.v1.service.RestockService;
+import com.firomsa.inventory.v1.service.SaleService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -47,6 +51,8 @@ public class AdminController {
     private final EmployeeService employeeService;
     private final ProductService productService;
     private final CategoryService categoryService;
+    private final SaleService saleService;
+    private final RestockService restockService;
 
     // Employee management endpoints
     @Operation(summary = "For registering an employee")
@@ -178,5 +184,33 @@ public class AdminController {
     @ResponseStatus(HttpStatus.OK)
     public void deleteCategory(@PathVariable UUID id) {
         categoryService.delete(id);
+    }
+
+    @Operation(summary = "For getting all sales")
+    @GetMapping("/sales")
+    @ResponseStatus(HttpStatus.OK)
+    public List<SaleResponseDTO> getAllSales() {
+        return saleService.getAllSales();
+    }
+
+    @Operation(summary = "For deleting a sale record by id")
+    @DeleteMapping("/sales/{id}")
+    @ResponseStatus(HttpStatus.OK)
+    public void deleteSaleById(@PathVariable UUID id) {
+        saleService.deleteSaleById(id);
+    }
+
+    @Operation(summary = "For getting all restocks")
+    @GetMapping("/restocks")
+    @ResponseStatus(HttpStatus.OK)
+    public List<RestockResponseDTO> getAllRestocks() {
+        return restockService.getAllRestocks();
+    }
+
+    @Operation(summary = "For deleting a restock record by id")
+    @DeleteMapping("/restocks/{id}")
+    @ResponseStatus(HttpStatus.OK)
+    public void deleteRestockById(@PathVariable UUID id) {
+        restockService.deleteRestockById(id);
     }
 }

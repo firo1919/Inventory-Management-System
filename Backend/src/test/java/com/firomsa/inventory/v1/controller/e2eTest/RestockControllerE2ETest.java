@@ -8,9 +8,9 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
 
-public class ProductControllerE2ETest extends AbstractE2ETest {
+public class RestockControllerE2ETest extends AbstractE2ETest {
 
-    private static final String PRODUCT_BASE_URL = "/api/v1/products";
+    private static final String RESTOCKS_BASE_URL = "/api/v1/restocks";
 
     private static String adminAccessToken;
 
@@ -93,65 +93,123 @@ public class ProductControllerE2ETest extends AbstractE2ETest {
         return loginByEmail(employeeEmail);
     }
 
+    private String createRestockPayload(UUID productId, Integer quantity) {
+        return "{\"productId\":\"" + productId + "\",\"quantity\":" + quantity + "}";
+    }
+
     @Test
     void shouldReturnUnauthorizedWhenMissingToken() {
-        var response = client.get().uri(PRODUCT_BASE_URL).exchange();
+        var response = client.post().uri(RESTOCKS_BASE_URL).contentType(APPLICATION_JSON)
+                .body("{\"quantity\":1,\"productId\":\"" + UUID.randomUUID() + "\"}")
+                .exchange();
+
         response.expectStatus().isUnauthorized();
     }
 
     @Test
-    void shouldReturnAllProductsForAuthenticatedUser() {
+    void shouldCreateRestockForAuthenticatedAdmin() {
         registerAndConfirmAdminIfNeeded();
         UUID categoryId = createCategory(adminAccessToken, randomSuffix());
-        String suffix = randomSuffix();
-        createProduct(adminAccessToken, suffix, categoryId);
+        UUID productId = createProduct(adminAccessToken, randomSuffix(), categoryId);
+        String payload = createRestockPayload(productId, 5);
 
-        var response = client.get().uri(PRODUCT_BASE_URL)
+        var response = client.post().uri(RESTOCKS_BASE_URL)
                 .header(HttpHeaders.AUTHORIZATION, authorizationHeader(adminAccessToken))
-                .exchange();
+                .contentType(APPLICATION_JSON).body(payload).exchange();
 
         response.expectStatus().isOk();
         String body = response.returnResult(String.class).getResponseBody();
-        assertThat(body).contains("SKU-" + suffix);
+        assertThat(body).contains("Restock recorded successfully");
+        assertThat(body).contains("\"quantity\":5");
+        assertThat(body).contains(productId.toString());
     }
 
     @Test
-    void shouldReturnProductByIdForAuthenticatedUser() {
+    void shouldCreateRestockForAuthenticatedEmployee() {
         registerAndConfirmAdminIfNeeded();
         UUID categoryId = createCategory(adminAccessToken, randomSuffix());
-        String suffix = randomSuffix();
-        UUID productId = createProduct(adminAccessToken, suffix, categoryId);
+        UUID productId = createProduct(adminAccessToken, randomSuffix(), categoryId);
+        String employeeToken = registerAndLoginEmployee(adminAccessToken, randomSuffix());
 
-        var response = client.get().uri(PRODUCT_BASE_URL + "/" + productId)
-                .header(HttpHeaders.AUTHORIZATION, authorizationHeader(adminAccessToken))
-                .exchange();
+        var response = client.post().uri(RESTOCKS_BASE_URL)
+                .header(HttpHeaders.AUTHORIZATION, authorizationHeader(employeeToken))
+                .contentType(APPLICATION_JSON).body(createRestockPayload(productId, 3)).exchange();
 
         response.expectStatus().isOk();
         String body = response.returnResult(String.class).getResponseBody();
-        assertThat(body).contains("SKU-" + suffix);
+        assertThat(body).contains("Restock recorded successfully");
+        assertThat(body).contains("\"quantity\":3");
     }
 
     @Test
-    void shouldReturnNotFoundForUnknownProductId() {
+    void shouldReturnNotFoundWhenProductDoesNotExist() {
         registerAndConfirmAdminIfNeeded();
 
-        var response = client.get().uri(PRODUCT_BASE_URL + "/" + UUID.randomUUID())
+        var response = client.post().uri(RESTOCKS_BASE_URL)
+                .header(HttpHeaders.AUTHORIZATION, authorizationHeader(adminAccessToken))
+                .contentType(APPLICATION_JSON)
+                .body(createRestockPayload(UUID.randomUUID(), 5)).exchange();
+
+        response.expectStatus().isNotFound();
+        String body = response.returnResult(String.class).getResponseBody();
+        assertThat(body).contains("Product not found with id");
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenPayloadIsInvalid() {
+        registerAndConfirmAdminIfNeeded();
+        UUID categoryId = createCategory(adminAccessToken, randomSuffix());
+        UUID productId = createProduct(adminAccessToken, randomSuffix(), categoryId);
+
+        var response = client.post().uri(RESTOCKS_BASE_URL)
+                .header(HttpHeaders.AUTHORIZATION, authorizationHeader(adminAccessToken))
+                .contentType(APPLICATION_JSON)
+                .body("{\"productId\":\"" + productId + "\"}")
+                .exchange();
+
+        response.expectStatus().isBadRequest();
+        String body = response.returnResult(String.class).getResponseBody();
+        assertThat(body).contains("Validation failed for fields");
+        assertThat(body).contains("quantity");
+    }
+
+    @Test
+    void shouldGetRestockByIdForAuthenticatedEmployee() {
+        registerAndConfirmAdminIfNeeded();
+        UUID categoryId = createCategory(adminAccessToken, randomSuffix());
+        UUID productId = createProduct(adminAccessToken, randomSuffix(), categoryId);
+        String employeeToken = registerAndLoginEmployee(adminAccessToken, randomSuffix());
+
+        var createRestockResponse = client.post().uri(RESTOCKS_BASE_URL)
+                .header(HttpHeaders.AUTHORIZATION, authorizationHeader(employeeToken))
+                .contentType(APPLICATION_JSON).body(createRestockPayload(productId, 7))
+                .exchange();
+        createRestockResponse.expectStatus().isOk();
+
+        UUID restockId = restockRepository.findAll().stream()
+                .filter(restock -> restock.getProduct() != null
+                        && productId.equals(restock.getProduct().getId()))
+                .map(restock -> restock.getId()).reduce((first, second) -> second).orElseThrow();
+
+        var getResponse = client.get().uri(RESTOCKS_BASE_URL + "/" + restockId)
+                .header(HttpHeaders.AUTHORIZATION, authorizationHeader(employeeToken)).exchange();
+
+        getResponse.expectStatus().isOk();
+        String body = getResponse.returnResult(String.class).getResponseBody();
+        assertThat(body).contains(productId.toString());
+        assertThat(body).contains("\"quantity\":7");
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenRestockIdDoesNotExist() {
+        registerAndConfirmAdminIfNeeded();
+
+        var response = client.get().uri(RESTOCKS_BASE_URL + "/" + UUID.randomUUID())
                 .header(HttpHeaders.AUTHORIZATION, authorizationHeader(adminAccessToken))
                 .exchange();
 
         response.expectStatus().isNotFound();
-    }
-
-    @Test
-    void shouldAllowEmployeeToReadProducts() {
-        registerAndConfirmAdminIfNeeded();
-        UUID categoryId = createCategory(adminAccessToken, randomSuffix());
-        createProduct(adminAccessToken, randomSuffix(), categoryId);
-        String employeeToken = registerAndLoginEmployee(adminAccessToken, randomSuffix());
-
-        var response = client.get().uri(PRODUCT_BASE_URL)
-                .header(HttpHeaders.AUTHORIZATION, authorizationHeader(employeeToken)).exchange();
-
-        response.expectStatus().isOk();
+        String body = response.returnResult(String.class).getResponseBody();
+        assertThat(body).contains("Restock not found with id");
     }
 }

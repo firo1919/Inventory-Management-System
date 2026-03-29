@@ -1,7 +1,9 @@
 package com.firomsa.inventory.v1.dto;
 
-import java.util.Set;
 import java.util.UUID;
+
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,15 +13,11 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CategoryResponseDTO {
+public class RestockRequestDTO {
+    @NotNull
+    @Min(1)
+    private Integer quantity;
 
-    private UUID id;
-
-    private String name;
-
-    private String createdAt;
-
-    private String updatedAt;
-
-    private Set<UUID> productIds;
+    @NotNull
+    private UUID productId;
 }
