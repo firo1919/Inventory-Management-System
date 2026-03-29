@@ -26,6 +26,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.lifecycle.Startables;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 
+import com.firomsa.inventory.config.BootstrapConfig;
 import com.firomsa.inventory.repository.CategoryRepository;
 import com.firomsa.inventory.repository.ConfirmationOtpRepository;
 import com.firomsa.inventory.repository.ProductRepository;
@@ -52,9 +53,7 @@ import software.amazon.awssdk.services.s3.model.S3Exception;
 public abstract class AbstractE2ETest {
     protected static final String AUTH_BASE_URL = "/api/v1/auth";
     protected static final String ADMIN_BASE_URL = "/api/v1/admin";
-    protected static final String BOOTSTRAP_TOKEN = "test-bootstrap-token-12345678901234";
     protected static final String DEFAULT_PASSWORD = "password123";
-
     private static final String RUSTFS_ACCESS_KEY = "rustfsadmin";
     private static final String RUSTFS_SECRET_KEY = "rustfsadmin";
     private static final String TEST_BUCKET = "test-bucket";
@@ -95,6 +94,9 @@ public abstract class AbstractE2ETest {
 
     @Autowired
     protected RestockRepository restockRepository;
+
+    @Autowired
+    private BootstrapConfig bootstrapConfig;
 
     private static void ensureBucketExists() {
         URI endpoint = URI.create("http://" + s3.getHost() + ":" + s3.getMappedPort(9000));
@@ -166,7 +168,7 @@ public abstract class AbstractE2ETest {
     }
 
     protected String registerAdminPayload(String suffix) {
-        return registerAdminPayload(suffix, BOOTSTRAP_TOKEN);
+        return registerAdminPayload(suffix, bootstrapConfig.getToken());
     }
 
     protected String registerAdminPayload(String suffix, String bootstrapToken) {

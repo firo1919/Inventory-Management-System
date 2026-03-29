@@ -11,7 +11,7 @@ public class AuthControllerE2ETest extends AbstractE2ETest {
 
     private void registerAdmin(String suffix) {
         var registerResponse = client.post().uri(AUTH_BASE_URL + "/admins").contentType(APPLICATION_JSON)
-                .body(registerAdminPayload(suffix, BOOTSTRAP_TOKEN)).exchange();
+                .body(registerAdminPayload(suffix)).exchange();
 
         registerResponse.expectStatus().isOk();
         String registerBody = registerResponse.returnResult(String.class).getResponseBody();
