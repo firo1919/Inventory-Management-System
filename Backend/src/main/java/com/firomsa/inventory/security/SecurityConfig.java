@@ -101,7 +101,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/auth/**", "/docs", "/v3/api-docs",
                                 "/v3/api-docs/**", "/swagger-resources/**", "/swagger-ui.html",
                                 "/swagger-ui/**")
-                        .permitAll().requestMatchers("/api/v1/admin/**", "/actuator/**")
+                        .permitAll().requestMatchers("/api/v1/admin/**")
                         .hasAuthority("SCOPE_" + Roles.ADMIN.name())
                         .requestMatchers("/api/v1/employee/**")
                         .hasAuthority("SCOPE_" + Roles.EMPLOYEE.name()).anyRequest()
