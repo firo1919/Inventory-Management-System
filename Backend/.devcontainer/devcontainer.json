@@ -28,7 +28,7 @@
             ]
         }
     },
-    "forwardPorts": [8080],
+    "forwardPorts": [8080, 6060],
     "runArgs": ["--network=inventory_network"],
     "initializeCommand": "docker network create inventory_network || true",
     "postCreateCommand": "mvn clean install -DskipTests"

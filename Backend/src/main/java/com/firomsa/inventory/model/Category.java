@@ -24,7 +24,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import lombok.ToString;
 
 @Entity
 @Table(name = "categories")
@@ -33,7 +32,6 @@ import lombok.ToString;
 @Builder
 @Getter
 @Setter
-@ToString(exclude = "products")
 @EntityListeners(AuditingEntityListener.class)
 public class Category {
 
@@ -47,9 +45,7 @@ public class Category {
     private String name;
 
     @ManyToMany
-    @JoinTable(name = "Product_Categories",
-            joinColumns = @JoinColumn(name = "categories_id", referencedColumnName = "id"),
-            inverseJoinColumns = @JoinColumn(name = "product_id", referencedColumnName = "id"))
+    @JoinTable(name = "Product_Categories", joinColumns = @JoinColumn(name = "categories_id", referencedColumnName = "id"), inverseJoinColumns = @JoinColumn(name = "product_id", referencedColumnName = "id"))
     @Builder.Default
     private Set<Product> products = new HashSet<>();
 
