@@ -2,15 +2,24 @@ package com.firomsa.inventory.v1.dto;
 
 import java.util.UUID;
 
-public record UserResponseDTO(
-        UUID id,
-        String firstName,
-        String lastName,
-        String username,
-        String email,
-        String phone,
-        String role,
-        String createdAt,
-        boolean active,
-        boolean enabled) {
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class UserResponseDTO {
+
+    private UUID id;
+    private String firstName;
+    private String lastName;
+    private String username;
+    private String email;
+    private String phone;
+    private String role;
+    private String profilePictureUrl;
+    private String createdAt;
+    private boolean active;
+    private boolean enabled;
 }

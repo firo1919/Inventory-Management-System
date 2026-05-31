@@ -26,7 +26,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import lombok.ToString;
 
 @Entity
 @Table(name = "users")
@@ -35,7 +34,6 @@ import lombok.ToString;
 @Builder
 @Getter
 @Setter
-@ToString
 @EntityListeners(AuditingEntityListener.class)
 public class User {
     @Id
@@ -61,6 +59,8 @@ public class User {
 
     @NotBlank
     private String phone;
+
+    private String imageKey;
 
     @NotNull
     @Builder.Default
