@@ -1,5 +1,6 @@
 package com.firomsa.inventory.v1.service;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -11,6 +12,9 @@ import com.firomsa.inventory.model.Category;
 import com.firomsa.inventory.model.Product;
 import com.firomsa.inventory.repository.CategoryRepository;
 import com.firomsa.inventory.repository.ProductRepository;
+import com.firomsa.inventory.v1.dto.CategoryValueDTO;
+import com.firomsa.inventory.v1.dto.InventoryValueResponseDTO;
+import com.firomsa.inventory.v1.dto.LowStockProductResponseDTO;
 import com.firomsa.inventory.v1.dto.ProductRequestDTO;
 import com.firomsa.inventory.v1.dto.ProductResponseDTO;
 import com.firomsa.inventory.v1.dto.ProductUpdateRequestDTO;
@@ -123,5 +127,38 @@ public class ProductService {
             throw new ResourceNotFoundException("Image not found in storage: " + objectKey);
         }
 
+    }
+
+    @Transactional(readOnly = true)
+    public List<LowStockProductResponseDTO> getLowStockProducts() {
+        return productRepository.findByQuantityLessThanLowStockThreshold().stream()
+                .map(product -> LowStockProductResponseDTO.builder()
+                        .id(product.getId())
+                        .name(product.getName())
+                        .sku(product.getSku())
+                        .quantity(product.getQuantity())
+                        .lowStockThreshold(product.getLowStockThreshold())
+                        .sellingPrice(product.getSellingPrice())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public InventoryValueResponseDTO getInventoryValueReport() {
+        BigDecimal totalValue = productRepository.calculateTotalInventoryValue();
+
+        List<CategoryValueDTO> categoryValues = categoryRepository.findAll().stream()
+                .map(category -> CategoryValueDTO.builder()
+                        .categoryId(category.getId())
+                        .categoryName(category.getName())
+                        .value(productRepository.calculateInventoryValueByCategory(category.getId()))
+                        .build())
+                .filter(dto -> dto.getValue().compareTo(BigDecimal.ZERO) > 0)
+                .collect(Collectors.toList());
+
+        return InventoryValueResponseDTO.builder()
+                .totalValue(totalValue)
+                .categories(categoryValues)
+                .build();
     }
 }

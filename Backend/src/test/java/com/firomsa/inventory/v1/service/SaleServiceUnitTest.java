@@ -40,6 +40,8 @@ public class SaleServiceUnitTest {
     private SaleMapper saleMapper;
     @Mock
     private SaleRepository saleRepository;
+    @Mock
+    private NotificationService notificationService;
     @InjectMocks
     private SaleService saleService;
 
@@ -219,5 +221,59 @@ public class SaleServiceUnitTest {
         });
 
         assertThat(exception.getMessage()).contains("Sale not found with id: " + saleId);
+    }
+
+    @Test
+    void shouldTriggerNotificationWhenLowStockAfterSale() {
+        // Arrange
+        var request = SaleRequestDTO.builder().productId(UUID.randomUUID()).quantity(8)
+                .salePrice(10.0).build();
+        var response = SaleResponseDTO.builder().productId(request.getProductId())
+                .quantity(request.getQuantity()).salePrice(request.getSalePrice())
+                .message("Sale recorded successfully").build();
+        var product = Product.builder().id(request.getProductId()).name("Test Product")
+                .quantity(10).lowStockThreshold(5).build();
+        var user = getUser();
+        var sale = Sale.builder().product(product).quantity(request.getQuantity())
+                .salePrice(request.getSalePrice()).soldBy(user).build();
+
+        when(saleMapper.toDTO(any())).thenReturn(response);
+        when(saleMapper.toModel(request)).thenReturn(sale);
+        when(saleRepository.save(any())).thenReturn(sale);
+        when(productRepository.findById(request.getProductId())).thenReturn(Optional.of(product));
+        when(userRepository.findByEmail("user@example.com")).thenReturn(Optional.of(user));
+
+        // Act
+        saleService.createSale(request, "user@example.com");
+
+        // Assert
+        verify(notificationService).sendLowStockAlertIfNeeded(product);
+    }
+
+    @Test
+    void shouldNotTriggerNotificationWhenStockStillSufficient() {
+        // Arrange
+        var request = SaleRequestDTO.builder().productId(UUID.randomUUID()).quantity(2)
+                .salePrice(10.0).build();
+        var response = SaleResponseDTO.builder().productId(request.getProductId())
+                .quantity(request.getQuantity()).salePrice(request.getSalePrice())
+                .message("Sale recorded successfully").build();
+        var product = Product.builder().id(request.getProductId()).name("Test Product")
+                .quantity(10).lowStockThreshold(5).build();
+        var user = getUser();
+        var sale = Sale.builder().product(product).quantity(request.getQuantity())
+                .salePrice(request.getSalePrice()).soldBy(user).build();
+
+        when(saleMapper.toDTO(any())).thenReturn(response);
+        when(saleMapper.toModel(request)).thenReturn(sale);
+        when(saleRepository.save(any())).thenReturn(sale);
+        when(productRepository.findById(request.getProductId())).thenReturn(Optional.of(product));
+        when(userRepository.findByEmail("user@example.com")).thenReturn(Optional.of(user));
+
+        // Act
+        saleService.createSale(request, "user@example.com");
+
+        // Assert
+        verify(notificationService).sendLowStockAlertIfNeeded(product);
     }
 }

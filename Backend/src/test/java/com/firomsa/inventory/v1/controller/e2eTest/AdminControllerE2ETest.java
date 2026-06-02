@@ -661,4 +661,43 @@ public class AdminControllerE2ETest extends AbstractE2ETest {
         });
     }
 
+    @Test
+    void shouldGetInventoryValueAsAdmin() {
+        withAuthenticatedAdmin(accessToken -> {
+            // Create category and product
+            UUID categoryId = UUID.fromString(createCategoryAndGetId(accessToken, randomSuffix()));
+
+            var createProductResponse = client.post().uri(ADMIN_BASE_URL + "/products")
+                    .header(HttpHeaders.AUTHORIZATION, authorizationHeader(accessToken))
+                    .contentType(APPLICATION_JSON)
+                    .body(createProductPayload(randomSuffix(), categoryId)).exchange();
+            createProductResponse.expectStatus().isOk();
+
+            // Get inventory value
+            var response = client.get().uri(ADMIN_BASE_URL + "/inventory/value")
+                    .header(HttpHeaders.AUTHORIZATION, authorizationHeader(accessToken))
+                    .exchange();
+
+            response.expectStatus().isOk();
+            String body = response.returnResult(String.class).getResponseBody();
+            assertThat(body).contains("totalValue");
+            assertThat(body).contains("categories");
+        });
+    }
+
+    @Test
+    void shouldRejectEmployeeAccessToInventoryValue() {
+        withAuthenticatedAdmin(adminAccessToken -> {
+            registerEmployee(adminAccessToken, randomSuffix());
+            String employeeEmail = employeeEmailForSuffix(randomSuffix());
+            confirmOtpForEmail(employeeEmail);
+            String employeeAccessToken = loginByEmail(employeeEmail);
+
+            var response = client.get().uri(ADMIN_BASE_URL + "/inventory/value")
+                    .header(HttpHeaders.AUTHORIZATION, authorizationHeader(employeeAccessToken))
+                    .exchange();
+
+            response.expectStatus().isForbidden();
+        });
+    }
 }
