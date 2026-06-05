@@ -688,8 +688,9 @@ public class AdminControllerE2ETest extends AbstractE2ETest {
     @Test
     void shouldRejectEmployeeAccessToInventoryValue() {
         withAuthenticatedAdmin(adminAccessToken -> {
-            registerEmployee(adminAccessToken, randomSuffix());
-            String employeeEmail = employeeEmailForSuffix(randomSuffix());
+            String suffix = randomSuffix();
+            registerEmployee(adminAccessToken, suffix);
+            String employeeEmail = employeeEmailForSuffix(suffix);
             confirmOtpForEmail(employeeEmail);
             String employeeAccessToken = loginByEmail(employeeEmail);
 
