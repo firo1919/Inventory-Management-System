@@ -11,8 +11,8 @@ import org.springframework.http.HttpHeaders;
 
 public class AdminControllerE2ETest extends AbstractE2ETest {
 
-    private static String registeredAdminEmail;
-    private static String registeredAdminAccessToken;
+    private String registeredAdminEmail;
+    private String registeredAdminAccessToken;
 
     private UUID randomId() {
         return UUID.randomUUID();

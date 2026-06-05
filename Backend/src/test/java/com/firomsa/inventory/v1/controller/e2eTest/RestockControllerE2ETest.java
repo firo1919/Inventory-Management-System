@@ -12,7 +12,7 @@ public class RestockControllerE2ETest extends AbstractE2ETest {
 
     private static final String RESTOCKS_BASE_URL = "/api/v1/restocks";
 
-    private static String adminAccessToken;
+    private String adminAccessToken;
 
     private String createCategoryPayload(String suffix) {
         return "{\"name\":\"Category-" + suffix + "\"}";

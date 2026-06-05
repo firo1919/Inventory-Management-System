@@ -10,7 +10,7 @@ public class UploadControllerE2ETest extends AbstractE2ETest {
 
     private static final String UPLOAD_BASE_URL = "/api/v1/uploads";
 
-    private static String adminAccessToken;
+    private String adminAccessToken;
 
     private void registerAndConfirmAdminIfNeeded() {
         if (adminAccessToken != null) {

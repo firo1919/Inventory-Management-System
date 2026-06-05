@@ -12,7 +12,7 @@ public class ProductControllerE2ETest extends AbstractE2ETest {
 
     private static final String PRODUCT_BASE_URL = "/api/v1/products";
 
-    private static String adminAccessToken;
+    private String adminAccessToken;
 
     private String createCategoryPayload(String suffix) {
         return "{\"name\":\"Category-" + suffix + "\"}";
