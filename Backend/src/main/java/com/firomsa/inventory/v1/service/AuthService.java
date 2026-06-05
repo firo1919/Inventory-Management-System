@@ -40,6 +40,9 @@ import com.firomsa.inventory.v1.dto.RegisterRequestDTO;
 import com.firomsa.inventory.v1.dto.RegisterResponseDTO;
 import com.firomsa.inventory.v1.dto.ResendOtpRequestDTO;
 import com.firomsa.inventory.v1.dto.ResendOtpResponseDTO;
+import com.firomsa.inventory.model.AuditAction;
+import com.firomsa.inventory.model.AuditStatus;
+import com.firomsa.inventory.service.AuditLogService;
 import com.firomsa.inventory.v1.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -62,6 +65,7 @@ public class AuthService {
     private final BootstrapConfig bootstrapConfig;
     private final int OTP_DURATION = 6;
     private final JwtDecoder jwtDecoder;
+    private final AuditLogService auditLogService;
 
     @Transactional
     public RegisterResponseDTO create(RegisterRequestDTO registerRequestDTO) {
@@ -92,7 +96,8 @@ public class AuthService {
 
     @Transactional
     public RegisterResponseDTO createAdmin(RegisterAdminRequestDTO registerAdminRequestDTO) {
-        // Validate bootstrap token configuration first to avoid revealing deployment state
+        // Validate bootstrap token configuration first to avoid revealing deployment
+        // state
         if (bootstrapConfig.getToken() == null || bootstrapConfig.getToken().isBlank()) {
             throw new AuthenticationException(
                     "Bootstrap token is not configured. Please set APP_BOOTSTRAP_TOKEN environment variable to enable admin registration.");
@@ -179,21 +184,29 @@ public class AuthService {
     }
 
     public LoginResponseDTO login(LoginRequestDTO loginRequestDTO) {
-        Authentication authentication =
-                authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
-                        loginRequestDTO.email(), loginRequestDTO.password()));
-        String accessToken = jwtAuthService.generateToken(authentication);
-        String refreshToken = jwtAuthService.generateRefreshToken(authentication);
-        User user = userRepository.findByEmail(authentication.getName())
-                .orElseThrow(() -> new ResourceNotFoundException(authentication.getName()));
-        RefreshToken refreshTokenEntity = new RefreshToken();
-        refreshTokenEntity.setUser(user);
-        refreshTokenEntity.setToken(refreshToken);
+        try {
+            Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
+                    loginRequestDTO.email(), loginRequestDTO.password()));
+            String accessToken = jwtAuthService.generateToken(authentication);
+            String refreshToken = jwtAuthService.generateRefreshToken(authentication);
+            User user = userRepository.findByEmail(authentication.getName())
+                    .orElseThrow(() -> new ResourceNotFoundException(authentication.getName()));
+            RefreshToken refreshTokenEntity = new RefreshToken();
+            refreshTokenEntity.setUser(user);
+            refreshTokenEntity.setToken(refreshToken);
 
-        refreshTokenRepository.save(refreshTokenEntity);
+            refreshTokenRepository.save(refreshTokenEntity);
 
-        return new LoginResponseDTO(user.getRole().getName(), accessToken, refreshToken,
-                user.getUsername(), user.getEmail());
+            auditLogService.logAudit(AuditAction.LOGIN, "User", user.getId(), null,
+                    user.getEmail(), AuditStatus.SUCCESS, null);
+
+            return new LoginResponseDTO(user.getRole().getName(), accessToken, refreshToken,
+                    user.getUsername(), user.getEmail());
+        } catch (Exception e) {
+            auditLogService.logAudit(AuditAction.AUTH_FAILED, "User", null, null,
+                    loginRequestDTO.email(), AuditStatus.FAILURE, e.getMessage());
+            throw e;
+        }
     }
 
     @Transactional
@@ -237,6 +250,10 @@ public class AuthService {
                         "Refresh token is invalid, please login"));
 
         refreshTokenRepository.delete(token);
+
+        auditLogService.logAudit(AuditAction.LOGOUT, "User", user.getId(), null,
+                user.getEmail(), AuditStatus.SUCCESS, null);
+
         return new LogoutResponseDTO("Successfully logged out");
     }
 
