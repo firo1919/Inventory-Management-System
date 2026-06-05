@@ -18,6 +18,7 @@ import com.firomsa.inventory.v1.dto.CategoryRequestDTO;
 import com.firomsa.inventory.v1.dto.CategoryResponseDTO;
 import com.firomsa.inventory.v1.dto.CategoryUpdateRequestDTO;
 import com.firomsa.inventory.v1.dto.FileDTO;
+import com.firomsa.inventory.v1.dto.InventoryValueResponseDTO;
 import com.firomsa.inventory.v1.dto.ProductRequestDTO;
 import com.firomsa.inventory.v1.dto.ProductResponseDTO;
 import com.firomsa.inventory.v1.dto.ProductUpdateRequestDTO;
@@ -212,5 +213,12 @@ public class AdminController {
     @ResponseStatus(HttpStatus.OK)
     public void deleteRestockById(@PathVariable UUID id) {
         restockService.deleteRestockById(id);
+    }
+
+    @Operation(summary = "For getting inventory value report")
+    @GetMapping("/inventory/value")
+    @ResponseStatus(HttpStatus.OK)
+    public InventoryValueResponseDTO getInventoryValue() {
+        return productService.getInventoryValueReport();
     }
 }

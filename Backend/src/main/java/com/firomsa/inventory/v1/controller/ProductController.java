@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.firomsa.inventory.v1.dto.LowStockProductResponseDTO;
 import com.firomsa.inventory.v1.dto.ProductResponseDTO;
 import com.firomsa.inventory.v1.service.ProductService;
 
@@ -41,5 +42,12 @@ public class ProductController {
     public ProductResponseDTO getProductById(@PathVariable UUID id) {
         var response = productService.getById(id);
         return response;
+    }
+
+    @Operation(summary = "Get all low stock products")
+    @GetMapping("/low-stock")
+    @ResponseStatus(HttpStatus.OK)
+    public List<LowStockProductResponseDTO> getLowStockProducts() {
+        return productService.getLowStockProducts();
     }
 }

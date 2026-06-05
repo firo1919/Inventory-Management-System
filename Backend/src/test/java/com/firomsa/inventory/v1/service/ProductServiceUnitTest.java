@@ -315,4 +315,71 @@ class ProductServiceUnitTest {
         verify(productRepository, times(1)).findById(productId);
         verify(storageService, never()).exists(objectKey);
     }
+
+    @Test
+    @DisplayName("Should return low stock products")
+    void shouldReturnLowStockProducts() {
+        // Arrange
+        Product lowStockProduct = new Product();
+        lowStockProduct.setId(productId);
+        lowStockProduct.setName("Low Stock Item");
+        lowStockProduct.setSku("LOW-001");
+        lowStockProduct.setQuantity(2);
+        lowStockProduct.setLowStockThreshold(5);
+        lowStockProduct.setSellingPrice(java.math.BigDecimal.valueOf(100));
+
+        when(productRepository.findByQuantityLessThanLowStockThreshold()).thenReturn(List.of(lowStockProduct));
+
+        // Act
+        var result = productService.getLowStockProducts();
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertEquals("Low Stock Item", result.get(0).getName());
+        assertEquals(2, result.get(0).getQuantity());
+        verify(productRepository, times(1)).findByQuantityLessThanLowStockThreshold();
+    }
+
+    @Test
+    @DisplayName("Should return empty list when no low stock products")
+    void shouldReturnEmptyListWhenNoLowStockProducts() {
+        // Arrange
+        when(productRepository.findByQuantityLessThanLowStockThreshold()).thenReturn(List.of());
+
+        // Act
+        var result = productService.getLowStockProducts();
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(0, result.size());
+        verify(productRepository, times(1)).findByQuantityLessThanLowStockThreshold();
+    }
+
+    @Test
+    @DisplayName("Should return inventory value report")
+    void shouldReturnInventoryValueReport() {
+        // Arrange
+        UUID electronicsId = UUID.randomUUID();
+        Category electronics = new Category();
+        electronics.setId(electronicsId);
+        electronics.setName("Electronics");
+
+        when(productRepository.calculateTotalInventoryValue())
+                .thenReturn(java.math.BigDecimal.valueOf(5000).setScale(4));
+        when(categoryRepository.findAll()).thenReturn(List.of(electronics));
+        when(productRepository.calculateInventoryValueByCategory(electronicsId))
+                .thenReturn(java.math.BigDecimal.valueOf(5000).setScale(4));
+
+        // Act
+        var result = productService.getInventoryValueReport();
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(java.math.BigDecimal.valueOf(5000).setScale(4), result.getTotalValue());
+        assertEquals(1, result.getCategories().size());
+        assertEquals("Electronics", result.getCategories().get(0).getCategoryName());
+        verify(productRepository, times(1)).calculateTotalInventoryValue();
+        verify(categoryRepository, times(1)).findAll();
+    }
 }

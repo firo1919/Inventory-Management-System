@@ -23,6 +23,7 @@ public class SaleService {
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
     private final SaleMapper saleMapper;
+    private final NotificationService notificationService;
 
     @Transactional
     public SaleResponseDTO createSale(SaleRequestDTO saleRequestDTO, String email) {
@@ -40,6 +41,10 @@ public class SaleService {
         sale.setSoldBy(user);
         product.setQuantity(product.getQuantity() - saleRequestDTO.getQuantity());
         productRepository.save(product);
+
+        // Check for low stock and send notification if needed
+        notificationService.sendLowStockAlertIfNeeded(product);
+
         var savedSale = saleRepository.save(sale);
         var response = saleMapper.toDTO(savedSale);
         response.setMessage("Sale recorded successfully");

@@ -10,12 +10,12 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Isolated;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureRestTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.client.RestTestClient;
@@ -49,7 +49,7 @@ import software.amazon.awssdk.services.s3.model.S3Exception;
 @Transactional
 @AutoConfigureRestTestClient
 @SuppressWarnings("resource")
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
+@Isolated
 public abstract class AbstractE2ETest {
     protected static final String AUTH_BASE_URL = "/api/v1/auth";
     protected static final String ADMIN_BASE_URL = "/api/v1/admin";
@@ -60,14 +60,14 @@ public abstract class AbstractE2ETest {
 
     @ServiceConnection
     @Container
-    private static final PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18-alpine");
+    private static final PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18-alpine").withReuse(true);
 
     private static final GenericContainer<?> mailhog = new GenericContainer<>("mailhog/mailhog:latest")
-            .withExposedPorts(1025, 8025);
+            .withExposedPorts(1025, 8025).withReuse(true);
 
     private static final GenericContainer<?> s3 = new GenericContainer<>("rustfs/rustfs:latest")
             .withExposedPorts(9000, 9001).withEnv("RUSTFS_ACCESS_KEY", RUSTFS_ACCESS_KEY)
-            .withEnv("RUSTFS_SECRET_KEY", RUSTFS_SECRET_KEY);
+            .withEnv("RUSTFS_SECRET_KEY", RUSTFS_SECRET_KEY).withReuse(true);
 
     protected RestTestClient client;
 

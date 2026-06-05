@@ -65,17 +65,16 @@ public class ProfileControllerUnitTest {
         when(userService.updateProfile(eq(email), any(ProfileUpdateDTO.class)))
                 .thenReturn(response);
 
-        MvcTestResult result =
-                mockMvc.put().uri(BASE_URL).with(csrf()).contentType(APPLICATION_JSON).content("""
-                        {
-                            "firstName": "Updated",
-                            "lastName": "User",
-                            "username": "updated.user",
-                            "password": "password123",
-                            "email": "employee.one@example.com",
-                            "phone": "+251933333333"
-                        }
-                            """).exchange();
+        MvcTestResult result = mockMvc.put().uri(BASE_URL).with(csrf()).contentType(APPLICATION_JSON).content("""
+                {
+                    "firstName": "Updated",
+                    "lastName": "User",
+                    "username": "updated.user",
+                    "password": "password123",
+                    "email": "employee.one@example.com",
+                    "phone": "+251933333333"
+                }
+                    """).exchange();
         assertThat(result).hasStatusOk();
         assertThat(result).bodyJson().extractingPath("$.email").asString().isEqualTo(email);
 

@@ -39,9 +39,8 @@ public class ProductControllerIntTest extends AbstractIntegrationTest {
     }
 
     private UUID createCategoryAsAdmin(String suffix) {
-        MvcTestResult response =
-                mockMvc.post().uri("/api/v1/admin/categories").contentType(APPLICATION_JSON)
-                        .content("{\"name\":\"Category " + suffix + "\"}").exchange();
+        MvcTestResult response = mockMvc.post().uri("/api/v1/admin/categories").contentType(APPLICATION_JSON)
+                .content("{\"name\":\"Category " + suffix + "\"}").exchange();
 
         assertThat(response).hasStatusOk();
         return categoryRepository.findAll().stream()
@@ -134,5 +133,53 @@ public class ProductControllerIntTest extends AbstractIntegrationTest {
     void shouldReturnNotFoundWhenProductDoesNotExist() {
         assertThat(mockMvc.get().uri(BASE_URL + "/{id}", UUID.randomUUID()).exchange())
                 .hasStatus(404);
+    }
+
+    @Test
+    void shouldRejectUnauthorizedLowStockRequest() {
+        assertThat(mockMvc.get().uri(BASE_URL + "/low-stock").exchange())
+                .hasStatus(401);
+    }
+
+    @Test
+    @WithMockUser
+    void shouldReturnLowStockProductsWhenAuthenticated() {
+        // Create a low stock product
+        String suffix = randomSuffix();
+        UUID categoryId = createCategoryAsAdmin(suffix);
+
+        // Create product with quantity below threshold
+        var lowStockResponse = mockMvc.post().uri("/api/v1/admin/products")
+                .contentType(APPLICATION_JSON)
+                .content("""
+                        {
+                            "name": "Low Stock Item %s",
+                            "sku": "LOW-%s",
+                            "description": "Low stock test",
+                            "sellingPrice": 49.99,
+                            "costPrice": 25.00,
+                            "quantity": 2,
+                            "lowStockThreshold": 5,
+                            "categoryIds": ["%s"]
+                        }
+                        """.formatted(suffix, suffix, categoryId)).exchange();
+        assertThat(lowStockResponse).hasStatusOk();
+
+        // Get low stock products
+        MvcTestResult response = mockMvc.get().uri(BASE_URL + "/low-stock").exchange();
+
+        assertThat(response).hasStatusOk();
+        assertThat(response).bodyText().contains("Low Stock Item " + suffix);
+        assertThat(response).bodyJson().extractingPath("$[0].quantity").asNumber().isEqualTo(2);
+        assertThat(response).bodyJson().extractingPath("$[0].lowStockThreshold").asNumber().isEqualTo(5);
+    }
+
+    @Test
+    @WithMockUser
+    void shouldReturnEmptyListWhenNoLowStockProducts() {
+        MvcTestResult response = mockMvc.get().uri(BASE_URL + "/low-stock").exchange();
+
+        assertThat(response).hasStatusOk();
+        assertThat(response).bodyText().contains("[]");
     }
 }

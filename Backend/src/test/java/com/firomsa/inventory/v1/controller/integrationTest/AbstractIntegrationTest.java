@@ -1,13 +1,14 @@
 package com.firomsa.inventory.v1.controller.integrationTest;
 
+import org.junit.jupiter.api.parallel.Isolated;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
+
 import com.firomsa.inventory.v1.service.EmailService;
 import com.firomsa.inventory.v1.service.StorageService;
 
@@ -15,13 +16,12 @@ import com.firomsa.inventory.v1.service.StorageService;
 @AutoConfigureMockMvc
 @Testcontainers
 @SuppressWarnings("resource")
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
+@Isolated
 public abstract class AbstractIntegrationTest {
 
     @ServiceConnection
     @Container
-    protected static final PostgreSQLContainer postgres =
-            new PostgreSQLContainer("postgres:18-alpine");
+    protected static final PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18-alpine").withReuse(true);
 
     @MockitoBean
     protected StorageService storageService;
