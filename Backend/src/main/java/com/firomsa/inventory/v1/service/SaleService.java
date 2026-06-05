@@ -3,13 +3,17 @@ package com.firomsa.inventory.v1.service;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.firomsa.inventory.exception.ResourceNotFoundException;
+import com.firomsa.inventory.model.Sale;
 import com.firomsa.inventory.repository.ProductRepository;
 import com.firomsa.inventory.repository.SaleRepository;
 import com.firomsa.inventory.repository.UserRepository;
+import com.firomsa.inventory.v1.dto.PageResponse;
 import com.firomsa.inventory.v1.dto.SaleRequestDTO;
 import com.firomsa.inventory.v1.dto.SaleResponseDTO;
 import com.firomsa.inventory.v1.mapper.SaleMapper;
@@ -57,6 +61,23 @@ public class SaleService {
     }
 
     @Transactional(readOnly = true)
+    public PageResponse<SaleResponseDTO> getAllSales(Pageable pageable) {
+        Page<Sale> salePage = saleRepository.findAll(pageable);
+        var response = salePage.getContent().stream().map(saleMapper::toDTO).toList();
+
+        return PageResponse.<SaleResponseDTO>builder()
+                .content(response)
+                .pageNumber(salePage.getNumber())
+                .pageSize(salePage.getSize())
+                .totalElements(salePage.getTotalElements())
+                .totalPages(salePage.getTotalPages())
+                .first(salePage.isFirst())
+                .last(salePage.isLast())
+                .empty(salePage.isEmpty())
+                .build();
+    }
+
+    @Transactional(readOnly = true)
     public SaleResponseDTO getSaleById(UUID saleId) {
         var sale = saleRepository.findById(saleId)
                 .orElseThrow(() -> new ResourceNotFoundException("Sale not found with id: " + saleId));
@@ -66,6 +87,23 @@ public class SaleService {
     @Transactional(readOnly = true)
     public List<SaleResponseDTO> getSalesByEmployee(String email) {
         return saleRepository.findBySoldByEmail(email).stream().map(saleMapper::toDTO).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<SaleResponseDTO> getSalesByEmployee(String email, Pageable pageable) {
+        Page<Sale> salePage = saleRepository.findBySoldByEmail(email, pageable);
+        var response = salePage.getContent().stream().map(saleMapper::toDTO).toList();
+
+        return PageResponse.<SaleResponseDTO>builder()
+                .content(response)
+                .pageNumber(salePage.getNumber())
+                .pageSize(salePage.getSize())
+                .totalElements(salePage.getTotalElements())
+                .totalPages(salePage.getTotalPages())
+                .first(salePage.isFirst())
+                .last(salePage.isLast())
+                .empty(salePage.isEmpty())
+                .build();
     }
 
     @Transactional

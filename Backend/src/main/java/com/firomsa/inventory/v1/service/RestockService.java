@@ -3,13 +3,17 @@ package com.firomsa.inventory.v1.service;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.firomsa.inventory.exception.ResourceNotFoundException;
+import com.firomsa.inventory.model.Restock;
 import com.firomsa.inventory.repository.ProductRepository;
 import com.firomsa.inventory.repository.RestockRepository;
 import com.firomsa.inventory.repository.UserRepository;
+import com.firomsa.inventory.v1.dto.PageResponse;
 import com.firomsa.inventory.v1.dto.RestockRequestDTO;
 import com.firomsa.inventory.v1.dto.RestockResponseDTO;
 import com.firomsa.inventory.v1.mapper.RestockMapper;
@@ -52,6 +56,23 @@ public class RestockService {
     }
 
     @Transactional(readOnly = true)
+    public PageResponse<RestockResponseDTO> getAllRestocks(Pageable pageable) {
+        Page<Restock> restockPage = restockRepository.findAll(pageable);
+        var response = restockPage.getContent().stream().map(restockMapper::toDTO).toList();
+
+        return PageResponse.<RestockResponseDTO>builder()
+                .content(response)
+                .pageNumber(restockPage.getNumber())
+                .pageSize(restockPage.getSize())
+                .totalElements(restockPage.getTotalElements())
+                .totalPages(restockPage.getTotalPages())
+                .first(restockPage.isFirst())
+                .last(restockPage.isLast())
+                .empty(restockPage.isEmpty())
+                .build();
+    }
+
+    @Transactional(readOnly = true)
     public RestockResponseDTO getRestockById(UUID restockId) {
         var restock = restockRepository.findById(restockId)
                 .orElseThrow(() -> new ResourceNotFoundException("Restock not found with id: " + restockId));
@@ -62,6 +83,24 @@ public class RestockService {
     public List<RestockResponseDTO> getRestocksByEmployee(String email) {
         return restockRepository.findByRestockedByEmail(email).stream().map(restockMapper::toDTO)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<RestockResponseDTO> getRestocksByEmployee(String email, Pageable pageable) {
+        Page<Restock> restockPage = restockRepository.findByRestockedByEmail(email,
+                pageable);
+        var response = restockPage.getContent().stream().map(restockMapper::toDTO).toList();
+
+        return PageResponse.<RestockResponseDTO>builder()
+                .content(response)
+                .pageNumber(restockPage.getNumber())
+                .pageSize(restockPage.getSize())
+                .totalElements(restockPage.getTotalElements())
+                .totalPages(restockPage.getTotalPages())
+                .first(restockPage.isFirst())
+                .last(restockPage.isLast())
+                .empty(restockPage.isEmpty())
+                .build();
     }
 
     @Transactional

@@ -3,6 +3,8 @@ package com.firomsa.inventory.v1.service;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.firomsa.inventory.exception.ResourceNotFoundException;
@@ -11,6 +13,7 @@ import com.firomsa.inventory.repository.CategoryRepository;
 import com.firomsa.inventory.v1.dto.CategoryRequestDTO;
 import com.firomsa.inventory.v1.dto.CategoryResponseDTO;
 import com.firomsa.inventory.v1.dto.CategoryUpdateRequestDTO;
+import com.firomsa.inventory.v1.dto.PageResponse;
 import com.firomsa.inventory.v1.mapper.CategoryMapper;
 import lombok.RequiredArgsConstructor;
 
@@ -25,6 +28,24 @@ public class CategoryService {
     public List<CategoryResponseDTO> getAll() {
         return categoryRepository.findAll().stream().map(categoryMapper::toDTO)
                 .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<CategoryResponseDTO> getAll(Pageable pageable) {
+        Page<Category> categoryPage = categoryRepository.findAll(pageable);
+        var response = categoryPage.getContent().stream().map(categoryMapper::toDTO)
+                .collect(Collectors.toList());
+
+        return PageResponse.<CategoryResponseDTO>builder()
+                .content(response)
+                .pageNumber(categoryPage.getNumber())
+                .pageSize(categoryPage.getSize())
+                .totalElements(categoryPage.getTotalElements())
+                .totalPages(categoryPage.getTotalPages())
+                .first(categoryPage.isFirst())
+                .last(categoryPage.isLast())
+                .empty(categoryPage.isEmpty())
+                .build();
     }
 
     @Transactional(readOnly = true)
