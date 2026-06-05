@@ -10,8 +10,8 @@ public class ProfileControllerE2ETest extends AbstractE2ETest {
 
     private static final String PROFILE_BASE_URL = "/api/v1/profile";
 
-    private static String adminEmail;
-    private static String adminAccessToken;
+    private String adminEmail;
+    private String adminAccessToken;
 
     private void registerAndConfirmAdminIfNeeded() {
         if (adminAccessToken != null) {

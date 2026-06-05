@@ -12,7 +12,7 @@ public class CategoryControllerE2ETest extends AbstractE2ETest {
 
     private static final String CATEGORY_BASE_URL = "/api/v1/categories";
 
-    private static String adminAccessToken;
+    private String adminAccessToken;
 
     private String createCategoryPayload(String suffix) {
         return "{\"name\":\"Category-" + suffix + "\"}";
