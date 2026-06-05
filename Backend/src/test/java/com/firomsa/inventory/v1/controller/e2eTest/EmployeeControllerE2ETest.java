@@ -14,7 +14,7 @@ public class EmployeeControllerE2ETest extends AbstractE2ETest {
     private static final String SALES_BASE_URL = "/api/v1/sales";
     private static final String RESTOCKS_BASE_URL = "/api/v1/restocks";
 
-    private static String adminAccessToken;
+    private String adminAccessToken;
 
     private String createCategoryPayload(String suffix) {
         return "{\"name\":\"Category-" + suffix + "\"}";

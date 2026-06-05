@@ -142,7 +142,7 @@ public class ProductControllerIntTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(authorities = "SCOPE_ADMIN")
     void shouldReturnLowStockProductsWhenAuthenticated() {
         // Create a low stock product
         String suffix = randomSuffix();
