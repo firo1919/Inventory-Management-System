@@ -1,4 +1,4 @@
-package com.firomsa.inventory.service;
+package com.firomsa.inventory.v1.service;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -23,6 +23,7 @@ import com.firomsa.inventory.model.AuditAction;
 import com.firomsa.inventory.model.AuditLog;
 import com.firomsa.inventory.model.AuditStatus;
 import com.firomsa.inventory.repository.AuditLogRepository;
+import com.firomsa.inventory.service.AuditLogService;
 
 @ExtendWith(MockitoExtension.class)
 class AuditLogServiceTest {

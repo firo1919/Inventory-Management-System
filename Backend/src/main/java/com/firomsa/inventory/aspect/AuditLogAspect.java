@@ -7,7 +7,6 @@ import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
-import org.slf4j.MDC;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -35,10 +34,10 @@ public class AuditLogAspect {
     public Object auditControllerMethods(ProceedingJoinPoint joinPoint) throws Throwable {
         MethodSignature signature = (MethodSignature) joinPoint.getSignature();
         Method method = signature.getMethod();
-        
+
         String resourceType = extractResourceType(method);
         AuditAction action = extractAction(method);
-        
+
         if (action == null || resourceType == null) {
             return joinPoint.proceed();
         }
@@ -49,13 +48,13 @@ public class AuditLogAspect {
 
         try {
             Object result = joinPoint.proceed();
-            
-            auditLogService.logAudit(action, resourceType, resourceId, oldValue, newValue, 
+
+            auditLogService.logAudit(action, resourceType, resourceId, oldValue, newValue,
                     AuditStatus.SUCCESS, null);
-            
+
             return result;
         } catch (Exception e) {
-            auditLogService.logAudit(action, resourceType, resourceId, oldValue, newValue, 
+            auditLogService.logAudit(action, resourceType, resourceId, oldValue, newValue,
                     AuditStatus.FAILURE, e.getMessage());
             throw e;
         }
