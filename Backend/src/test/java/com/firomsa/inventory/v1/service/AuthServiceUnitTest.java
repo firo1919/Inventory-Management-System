@@ -42,6 +42,7 @@ import com.firomsa.inventory.repository.ConfirmationOtpRepository;
 import com.firomsa.inventory.repository.RefreshTokenRepository;
 import com.firomsa.inventory.repository.RoleRepository;
 import com.firomsa.inventory.repository.UserRepository;
+import com.firomsa.inventory.service.AuditLogService;
 import com.firomsa.inventory.v1.dto.ConfirmOtpRequestDTO;
 import com.firomsa.inventory.v1.dto.ConfirmOtpResponseDTO;
 import com.firomsa.inventory.v1.dto.LoginRequestDTO;
@@ -84,6 +85,8 @@ class AuthServiceUnitTest {
     private BootstrapConfig bootstrapConfig;
     @Mock
     private JwtDecoder jwtDecoder;
+    @Mock
+    private AuditLogService auditLogService;
 
     @InjectMocks
     private AuthService authService;

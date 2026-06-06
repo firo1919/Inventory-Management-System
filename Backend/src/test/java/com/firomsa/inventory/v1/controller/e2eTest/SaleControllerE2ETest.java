@@ -12,7 +12,7 @@ public class SaleControllerE2ETest extends AbstractE2ETest {
 
     private static final String SALES_BASE_URL = "/api/v1/sales";
 
-    private static String adminAccessToken;
+    private String adminAccessToken;
 
     private String createCategoryPayload(String suffix) {
         return "{\"name\":\"Category-" + suffix + "\"}";
