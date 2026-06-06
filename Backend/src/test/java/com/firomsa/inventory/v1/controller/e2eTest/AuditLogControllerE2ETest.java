@@ -2,6 +2,8 @@ package com.firomsa.inventory.v1.controller.e2eTest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.UUID;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -19,7 +21,7 @@ class AuditLogControllerE2ETest extends AbstractE2ETest {
         String adminEmail = adminEmailForSuffix(suffix);
 
         // Register admin
-        var registerResponse = client.post().uri(AUTH_BASE_URL + "/register/admin")
+        var registerResponse = client.post().uri(AUTH_BASE_URL + "/admins")
                 .contentType(MediaType.APPLICATION_JSON).body(registerAdminPayload(suffix)).exchange();
         registerResponse.expectStatus().isOk();
 
@@ -33,16 +35,31 @@ class AuditLogControllerE2ETest extends AbstractE2ETest {
         // Login
         String accessToken = loginByEmail(adminEmail);
 
-        // Create a product to trigger audit log
+        // Create a category first (products reference categories by id)
+        var createCategoryResponse = client.post().uri(ADMIN_BASE_URL + "/categories")
+                .header("Authorization", authorizationHeader(accessToken))
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("{\"name\":\"Category-" + suffix + "\"}").exchange();
+        createCategoryResponse.expectStatus().isOk();
+
+        String categoryName = "Category-" + suffix;
+        UUID categoryId = categoryRepository.findAll().stream()
+                .filter(c -> categoryName.equals(c.getName()))
+                .map(c -> c.getId()).findFirst().orElseThrow();
+
+        // Create a product to trigger an audit log
         String productPayload = """
                 {
                     "name": "Test Product %s",
+                    "sku": "SKU-%s",
                     "description": "Test Description",
-                    "price": 100.0,
+                    "sellingPrice": 120.50,
+                    "costPrice": 90.00,
                     "quantity": 50,
-                    "categoryId": 1
+                    "lowStockThreshold": 5,
+                    "categoryIds": ["%s"]
                 }
-                """.formatted(suffix);
+                """.formatted(suffix, suffix, categoryId);
 
         var createProductResponse = client.post().uri(ADMIN_BASE_URL + "/products")
                 .header("Authorization", authorizationHeader(accessToken))
@@ -68,7 +85,7 @@ class AuditLogControllerE2ETest extends AbstractE2ETest {
         String adminEmail = adminEmailForSuffix(suffix);
 
         // Register and login
-        var registerResponse = client.post().uri(AUTH_BASE_URL + "/register/admin")
+        var registerResponse = client.post().uri(AUTH_BASE_URL + "/admins")
                 .contentType(MediaType.APPLICATION_JSON).body(registerAdminPayload(suffix)).exchange();
         registerResponse.expectStatus().isOk();
 
@@ -97,7 +114,7 @@ class AuditLogControllerE2ETest extends AbstractE2ETest {
         String adminEmail = adminEmailForSuffix(suffix);
 
         // Register and login
-        var registerResponse = client.post().uri(AUTH_BASE_URL + "/register/admin")
+        var registerResponse = client.post().uri(AUTH_BASE_URL + "/admins")
                 .contentType(MediaType.APPLICATION_JSON).body(registerAdminPayload(suffix)).exchange();
         registerResponse.expectStatus().isOk();
 
@@ -127,24 +144,39 @@ class AuditLogControllerE2ETest extends AbstractE2ETest {
     @Test
     void testAuditLogAccessDeniedForNonAdmin() {
         String suffix = randomSuffix();
+        String adminEmail = adminEmailForSuffix(suffix);
         String employeeEmail = employeeEmailForSuffix(suffix);
 
-        // Register employee
-        var registerResponse = client.post().uri(AUTH_BASE_URL + "/register")
-                .contentType(MediaType.APPLICATION_JSON).body(registerEmployeePayload(suffix)).exchange();
+        // Register and login an admin (employees can only be created by an admin)
+        var registerResponse = client.post().uri(AUTH_BASE_URL + "/admins")
+                .contentType(MediaType.APPLICATION_JSON).body(registerAdminPayload(suffix)).exchange();
         registerResponse.expectStatus().isOk();
 
-        String otp = latestOtpForEmail(employeeEmail);
-        String confirmPayload = "{\"email\":\"" + employeeEmail + "\",\"otp\":\"" + otp + "\"}";
-        var confirmResponse = client.post().uri(AUTH_BASE_URL + "/confirm-otp")
-                .contentType(MediaType.APPLICATION_JSON).body(confirmPayload).exchange();
-        confirmResponse.expectStatus().isOk();
+        String adminOtp = latestOtpForEmail(adminEmail);
+        String adminConfirmPayload = "{\"email\":\"" + adminEmail + "\",\"otp\":\"" + adminOtp + "\"}";
+        var adminConfirmResponse = client.post().uri(AUTH_BASE_URL + "/confirm-otp")
+                .contentType(MediaType.APPLICATION_JSON).body(adminConfirmPayload).exchange();
+        adminConfirmResponse.expectStatus().isOk();
 
-        String accessToken = loginByEmail(employeeEmail);
+        String adminAccessToken = loginByEmail(adminEmail);
 
-        // Try to access audit logs (should be denied)
+        // Create the employee through the admin endpoint
+        var registerEmployeeResponse = client.post().uri(ADMIN_BASE_URL + "/employees")
+                .header("Authorization", authorizationHeader(adminAccessToken))
+                .contentType(MediaType.APPLICATION_JSON).body(registerEmployeePayload(suffix)).exchange();
+        registerEmployeeResponse.expectStatus().isOk();
+
+        String employeeOtp = latestOtpForEmail(employeeEmail);
+        String employeeConfirmPayload = "{\"email\":\"" + employeeEmail + "\",\"otp\":\"" + employeeOtp + "\"}";
+        var employeeConfirmResponse = client.post().uri(AUTH_BASE_URL + "/confirm-otp")
+                .contentType(MediaType.APPLICATION_JSON).body(employeeConfirmPayload).exchange();
+        employeeConfirmResponse.expectStatus().isOk();
+
+        String employeeAccessToken = loginByEmail(employeeEmail);
+
+        // Try to access audit logs as a non-admin (should be denied)
         var auditLogsResponse = client.get().uri(ADMIN_BASE_URL + "/audit-logs")
-                .header("Authorization", authorizationHeader(accessToken)).exchange();
+                .header("Authorization", authorizationHeader(employeeAccessToken)).exchange();
         auditLogsResponse.expectStatus().isForbidden();
     }
 }
