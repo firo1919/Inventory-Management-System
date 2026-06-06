@@ -28,6 +28,13 @@ services:
             - APP_BOOTSTRAP_TOKEN
         ports:
             - 8080:8080
+            - 6060:6060
         container_name: inventory_app
         image: inventory:prod
         restart: unless-stopped
+        healthcheck:
+            test: ["CMD", "curl", "-f", "http://localhost:6060/actuator/health"]
+            interval: 30s
+            timeout: 10s
+            retries: 3
+            start_period: 40s
