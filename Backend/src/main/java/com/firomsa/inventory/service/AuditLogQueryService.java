@@ -17,6 +17,7 @@ import com.firomsa.inventory.model.AuditAction;
 import com.firomsa.inventory.model.AuditLog;
 import com.firomsa.inventory.model.AuditStatus;
 import com.firomsa.inventory.repository.AuditLogRepository;
+import com.firomsa.inventory.repository.specification.AuditLogSpecification;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,16 +32,8 @@ public class AuditLogQueryService {
     public Page<AuditLogResponseDTO> getAuditLogs(AuditLogFilterDTO filter) {
         Pageable pageable = createPageable(filter);
 
-        Page<AuditLog> auditLogs = auditLogRepository.findByFilters(
-                filter.correlationId(),
-                filter.userId(),
-                filter.username(),
-                filter.action(),
-                filter.resourceType(),
-                filter.status(),
-                filter.startDate(),
-                filter.endDate(),
-                pageable);
+        Page<AuditLog> auditLogs = auditLogRepository.findAll(
+                AuditLogSpecification.withFilters(filter), pageable);
 
         return auditLogs.map(this::toResponseDTO);
     }
@@ -64,10 +57,13 @@ public class AuditLogQueryService {
             }
         }
 
-        List<Map<String, Long>> resourceTypeCountsList = auditLogRepository.countByResourceTypeGrouped();
+        List<Object[]> resourceTypeCountsList = auditLogRepository.countByResourceTypeGrouped();
         Map<String, Long> resourceTypeCounts = new HashMap<>();
-        for (Map<String, Long> item : resourceTypeCountsList) {
-            resourceTypeCounts.putAll(item);
+        for (Object[] row : resourceTypeCountsList) {
+            String resourceType = (String) row[0];
+            if (resourceType != null) {
+                resourceTypeCounts.put(resourceType, (Long) row[1]);
+            }
         }
 
         return new AuditLogStatisticsDTO(totalLogs, successCount, failureCount, actionCounts, resourceTypeCounts);

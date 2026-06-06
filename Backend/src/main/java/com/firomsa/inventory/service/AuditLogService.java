@@ -30,7 +30,7 @@ import lombok.extern.slf4j.Slf4j;
 public class AuditLogService {
 
     private final AuditLogRepository auditLogRepository;
-    private final ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper = new ObjectMapper();
     private final Environment environment;
 
     @Async

@@ -23,8 +23,7 @@ class AuditLogControllerIntTest extends AbstractIntegrationTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @Autowired
-    private ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Test
     @WithMockUser(authorities = "SCOPE_ADMIN")
@@ -61,7 +60,7 @@ class AuditLogControllerIntTest extends AbstractIntegrationTest {
     @Test
     @WithMockUser(authorities = "SCOPE_ADMIN")
     void testExportToCsv() throws Exception {
-        AuditLogFilterDTO filter = new AuditLogFilterDTO(null, null, null, null, null, null, 
+        AuditLogFilterDTO filter = new AuditLogFilterDTO(null, null, null, null, null, null,
                 null, null, 0, 20, "timestamp,desc");
 
         mockMvc.perform(post("/api/v1/admin/audit-logs/export/csv")
@@ -74,7 +73,7 @@ class AuditLogControllerIntTest extends AbstractIntegrationTest {
     @Test
     @WithMockUser(authorities = "SCOPE_ADMIN")
     void testExportToJson() throws Exception {
-        AuditLogFilterDTO filter = new AuditLogFilterDTO(null, null, null, null, null, null, 
+        AuditLogFilterDTO filter = new AuditLogFilterDTO(null, null, null, null, null, null,
                 null, null, 0, 20, "timestamp,desc");
 
         mockMvc.perform(post("/api/v1/admin/audit-logs/export/json")

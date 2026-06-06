@@ -18,7 +18,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.env.Environment;
 import org.springframework.security.core.context.SecurityContextHolder;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.firomsa.inventory.model.AuditAction;
 import com.firomsa.inventory.model.AuditLog;
 import com.firomsa.inventory.model.AuditStatus;
@@ -30,9 +29,6 @@ class AuditLogServiceTest {
 
     @Mock
     private AuditLogRepository auditLogRepository;
-
-    @Mock
-    private ObjectMapper objectMapper;
 
     @Mock
     private Environment environment;
