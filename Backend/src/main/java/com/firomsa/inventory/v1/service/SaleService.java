@@ -3,11 +3,14 @@ package com.firomsa.inventory.v1.service;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.firomsa.inventory.config.CacheConfig;
 import com.firomsa.inventory.exception.ResourceNotFoundException;
 import com.firomsa.inventory.model.Sale;
 import com.firomsa.inventory.repository.ProductRepository;
@@ -30,6 +33,10 @@ public class SaleService {
     private final NotificationService notificationService;
 
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = CacheConfig.PRODUCTS, allEntries = true),
+            @CacheEvict(value = CacheConfig.LOW_STOCK, allEntries = true),
+            @CacheEvict(value = CacheConfig.INVENTORY_VALUE, allEntries = true)})
     public SaleResponseDTO createSale(SaleRequestDTO saleRequestDTO, String email) {
         var product = productRepository.findById(saleRequestDTO.getProductId())
                 .orElseThrow(() -> new ResourceNotFoundException(
