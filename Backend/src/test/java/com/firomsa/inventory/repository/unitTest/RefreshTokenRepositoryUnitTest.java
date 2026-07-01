@@ -6,13 +6,21 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
+import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
+import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.testcontainers.postgresql.PostgreSQLContainer;
 import com.firomsa.inventory.model.RefreshToken;
 import com.firomsa.inventory.model.User;
 import com.firomsa.inventory.repository.RefreshTokenRepository;
 import com.firomsa.inventory.repository.UserRepository;
+import com.firomsa.inventory.support.SharedContainers;
 
 @DataJpaTest
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 public class RefreshTokenRepositoryUnitTest {
+
+    @ServiceConnection
+    static PostgreSQLContainer postgres = SharedContainers.POSTGRES;
     @Autowired
     private RefreshTokenRepository refreshTokenRepository;
 

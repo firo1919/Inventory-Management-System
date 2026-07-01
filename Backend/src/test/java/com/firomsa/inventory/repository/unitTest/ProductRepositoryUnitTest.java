@@ -10,7 +10,10 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
+import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
+import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Import;
+import org.testcontainers.postgresql.PostgreSQLContainer;
 
 import com.firomsa.inventory.config.JpaAuditingConfig;
 import com.firomsa.inventory.model.Category;
@@ -21,10 +24,15 @@ import com.firomsa.inventory.repository.CategoryRepository;
 import com.firomsa.inventory.repository.ProductRepository;
 import com.firomsa.inventory.repository.SaleRepository;
 import com.firomsa.inventory.repository.UserRepository;
+import com.firomsa.inventory.support.SharedContainers;
 
 @DataJpaTest
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import(JpaAuditingConfig.class)
 public class ProductRepositoryUnitTest {
+
+    @ServiceConnection
+    static PostgreSQLContainer postgres = SharedContainers.POSTGRES;
 
     @Autowired
     private ProductRepository productRepository;

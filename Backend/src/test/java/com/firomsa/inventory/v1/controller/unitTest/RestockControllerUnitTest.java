@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
@@ -18,14 +19,17 @@ import org.springframework.test.web.servlet.assertj.MvcTestResult;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.firomsa.inventory.support.TestCacheConfig;
 import com.firomsa.inventory.v1.controller.RestockController;
 import com.firomsa.inventory.v1.dto.RestockRequestDTO;
 import com.firomsa.inventory.v1.dto.RestockResponseDTO;
 import com.firomsa.inventory.v1.service.RestockService;
 
 @WebMvcTest(RestockController.class)
+@Import(TestCacheConfig.class)
 @AutoConfigureMockMvc
 public class RestockControllerUnitTest {
+
     @Autowired
     private MockMvcTester mockMvc;
 

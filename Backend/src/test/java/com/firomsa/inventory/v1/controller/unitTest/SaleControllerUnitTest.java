@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
@@ -18,16 +19,20 @@ import org.springframework.test.web.servlet.assertj.MvcTestResult;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.firomsa.inventory.support.TestCacheConfig;
 import com.firomsa.inventory.v1.controller.SaleController;
 import com.firomsa.inventory.v1.dto.SaleRequestDTO;
 import com.firomsa.inventory.v1.dto.SaleResponseDTO;
 import com.firomsa.inventory.v1.service.SaleService;
 
 @WebMvcTest(SaleController.class)
+@Import(TestCacheConfig.class)
 @AutoConfigureMockMvc
 public class SaleControllerUnitTest {
+
     @Autowired
     private MockMvcTester mockMvc;
+
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @MockitoBean
@@ -48,20 +53,15 @@ public class SaleControllerUnitTest {
 
         // Act
         MvcTestResult result = mockMvc.post().uri(BASE_URL).with(csrf()).contentType(APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request))
-                .exchange();
+                .content(objectMapper.writeValueAsString(request)).exchange();
 
         // Assert
         assertThat(result).hasStatusOk();
-        assertThat(result).bodyJson()
-                .extractingPath("$.message").isEqualTo("Sale recorded successfully");
-        assertThat(result).bodyJson()
-                .extractingPath("$.quantity").isEqualTo(request.getQuantity());
-        assertThat(result).bodyJson()
-                .extractingPath("$.salePrice").isEqualTo(request.getSalePrice());
-        assertThat(result).bodyJson()
-                .extractingPath("$.productId").isEqualTo(request.getProductId()
-                        .toString());
+        assertThat(result).bodyJson().extractingPath("$.message").isEqualTo("Sale recorded successfully");
+        assertThat(result).bodyJson().extractingPath("$.quantity").isEqualTo(request.getQuantity());
+        assertThat(result).bodyJson().extractingPath("$.salePrice").isEqualTo(request.getSalePrice());
+        assertThat(result).bodyJson().extractingPath("$.productId")
+                .isEqualTo(request.getProductId().toString());
     }
 
     @Test
@@ -73,17 +73,15 @@ public class SaleControllerUnitTest {
 
         // Act
         MvcTestResult result = mockMvc.post().uri(BASE_URL).with(csrf()).contentType(APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request))
-                .exchange();
+                .content(objectMapper.writeValueAsString(request)).exchange();
 
         // Assert
         assertThat(result).hasStatus(400);
-        assertThat(result).bodyJson()
-                .extractingPath("$.status").isEqualTo(400);
-        assertThat(result).bodyJson()
-                .extractingPath("$.message").isEqualTo("Validation failed for fields");
-        assertThat(result).bodyJson()
-                .extractingPath("$.validationErrors.quantity").isEqualTo("must not be null");
+        assertThat(result).bodyJson().extractingPath("$.status").isEqualTo(400);
+        assertThat(result).bodyJson().extractingPath("$.message")
+                .isEqualTo("Validation failed for fields");
+        assertThat(result).bodyJson().extractingPath("$.validationErrors.quantity")
+                .isEqualTo("must not be null");
     }
 
     @Test
