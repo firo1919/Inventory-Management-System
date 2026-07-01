@@ -1,8 +1,8 @@
 package com.firomsa.inventory.v1.controller;
 
-import java.util.List;
 import java.util.UUID;
 
+import org.springframework.data.domain.Sort.Direction;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -19,6 +20,8 @@ import com.firomsa.inventory.v1.dto.CategoryResponseDTO;
 import com.firomsa.inventory.v1.dto.CategoryUpdateRequestDTO;
 import com.firomsa.inventory.v1.dto.FileDTO;
 import com.firomsa.inventory.v1.dto.InventoryValueResponseDTO;
+import com.firomsa.inventory.v1.dto.PageRequest;
+import com.firomsa.inventory.v1.dto.PageResponse;
 import com.firomsa.inventory.v1.dto.ProductRequestDTO;
 import com.firomsa.inventory.v1.dto.ProductResponseDTO;
 import com.firomsa.inventory.v1.dto.ProductUpdateRequestDTO;
@@ -68,9 +71,22 @@ public class AdminController {
     @Operation(summary = "For getting all employees")
     @GetMapping("/employees")
     @ResponseStatus(HttpStatus.OK)
-    public List<UserResponseDTO> getAllEmployees() {
-        var response = employeeService.getEmployees();
-        return response;
+    public PageResponse<UserResponseDTO> getAllEmployees(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(required = false) String sortDirection) {
+        var pageable = PageRequest.builder()
+                .page(page)
+                .size(size)
+                .sortBy(sortBy)
+                .sortDirection(sortDirection != null
+                        ? sortDirection.equalsIgnoreCase("desc") ? Direction.DESC
+                                : Direction.ASC
+                        : Direction.ASC)
+                .build()
+                .toPageable();
+        return employeeService.getEmployees(pageable);
     }
 
     @Operation(summary = "For getting an employee by id")
@@ -190,8 +206,22 @@ public class AdminController {
     @Operation(summary = "For getting all sales")
     @GetMapping("/sales")
     @ResponseStatus(HttpStatus.OK)
-    public List<SaleResponseDTO> getAllSales() {
-        return saleService.getAllSales();
+    public PageResponse<SaleResponseDTO> getAllSales(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(required = false) String sortDirection) {
+        var pageable = PageRequest.builder()
+                .page(page)
+                .size(size)
+                .sortBy(sortBy)
+                .sortDirection(sortDirection != null
+                        ? sortDirection.equalsIgnoreCase("desc") ? Direction.DESC
+                                : Direction.ASC
+                        : Direction.ASC)
+                .build()
+                .toPageable();
+        return saleService.getAllSales(pageable);
     }
 
     @Operation(summary = "For deleting a sale record by id")
@@ -204,8 +234,22 @@ public class AdminController {
     @Operation(summary = "For getting all restocks")
     @GetMapping("/restocks")
     @ResponseStatus(HttpStatus.OK)
-    public List<RestockResponseDTO> getAllRestocks() {
-        return restockService.getAllRestocks();
+    public PageResponse<RestockResponseDTO> getAllRestocks(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(required = false) String sortDirection) {
+        var pageable = PageRequest.builder()
+                .page(page)
+                .size(size)
+                .sortBy(sortBy)
+                .sortDirection(sortDirection != null
+                        ? sortDirection.equalsIgnoreCase("desc") ? Direction.DESC
+                                : Direction.ASC
+                        : Direction.ASC)
+                .build()
+                .toPageable();
+        return restockService.getAllRestocks(pageable);
     }
 
     @Operation(summary = "For deleting a restock record by id")

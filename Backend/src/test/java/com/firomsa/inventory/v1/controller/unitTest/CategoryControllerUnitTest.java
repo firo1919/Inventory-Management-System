@@ -1,6 +1,7 @@
 package com.firomsa.inventory.v1.controller.unitTest;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -13,16 +14,21 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
 import org.springframework.test.web.servlet.assertj.MvcTestResult;
 
+import com.firomsa.inventory.support.TestCacheConfig;
 import com.firomsa.inventory.v1.controller.CategoryController;
 import com.firomsa.inventory.v1.dto.CategoryResponseDTO;
+import com.firomsa.inventory.v1.dto.PageResponse;
 import com.firomsa.inventory.v1.service.CategoryService;
 
 @WebMvcTest(CategoryController.class)
+@Import(TestCacheConfig.class)
 @AutoConfigureMockMvc
 @WithMockUser
 public class CategoryControllerUnitTest {
@@ -45,14 +51,17 @@ public class CategoryControllerUnitTest {
     void shouldGetAllCategories() {
         CategoryResponseDTO first = sampleCategory(UUID.randomUUID(), "Beverages");
         CategoryResponseDTO second = sampleCategory(UUID.randomUUID(), "Snacks");
-        when(categoryService.getAll()).thenReturn(List.of(first, second));
+        PageResponse<CategoryResponseDTO> page = PageResponse.<CategoryResponseDTO>builder()
+                .content(List.of(first, second)).pageNumber(0).pageSize(10)
+                .totalElements(2).totalPages(1).first(true).last(true).empty(false).build();
+        when(categoryService.getAll(any(Pageable.class))).thenReturn(page);
 
         MvcTestResult result = mockMvc.get().uri(BASE_URL).exchange();
-        assertThat(result).hasStatusOk();
-        assertThat(result).bodyJson().extractingPath("$[0].name").asString().isEqualTo("Beverages");
-        assertThat(result).bodyJson().extractingPath("$[1].name").asString().isEqualTo("Snacks");
 
-        verify(categoryService).getAll();
+        assertThat(result).hasStatusOk();
+        assertThat(result).bodyJson().extractingPath("$.content[0].name").asString().isEqualTo("Beverages");
+        assertThat(result).bodyJson().extractingPath("$.content[1].name").asString().isEqualTo("Snacks");
+        verify(categoryService).getAll(any(Pageable.class));
     }
 
     @Test
@@ -62,11 +71,11 @@ public class CategoryControllerUnitTest {
         when(categoryService.getById(categoryId)).thenReturn(response);
 
         MvcTestResult result = mockMvc.get().uri(BASE_URL + "/{id}", categoryId).exchange();
+
         assertThat(result).hasStatusOk();
         assertThat(result).bodyJson().extractingPath("$.id").asString()
                 .isEqualTo(categoryId.toString());
         assertThat(result).bodyJson().extractingPath("$.name").asString().isEqualTo("Beverages");
-
         verify(categoryService).getById(categoryId);
     }
 }

@@ -170,8 +170,8 @@ public class ProductControllerIntTest extends AbstractIntegrationTest {
 
         assertThat(response).hasStatusOk();
         assertThat(response).bodyText().contains("Low Stock Item " + suffix);
-        assertThat(response).bodyJson().extractingPath("$[0].quantity").asNumber().isEqualTo(2);
-        assertThat(response).bodyJson().extractingPath("$[0].lowStockThreshold").asNumber().isEqualTo(5);
+        assertThat(response).bodyJson().extractingPath("$.content[0].quantity").asNumber().isEqualTo(2);
+        assertThat(response).bodyJson().extractingPath("$.content[0].lowStockThreshold").asNumber().isEqualTo(5);
     }
 
     @Test

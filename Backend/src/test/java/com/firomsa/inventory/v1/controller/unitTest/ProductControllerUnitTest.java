@@ -1,6 +1,7 @@
 package com.firomsa.inventory.v1.controller.unitTest;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -14,16 +15,21 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
 import org.springframework.test.web.servlet.assertj.MvcTestResult;
 
+import com.firomsa.inventory.support.TestCacheConfig;
 import com.firomsa.inventory.v1.controller.ProductController;
+import com.firomsa.inventory.v1.dto.PageResponse;
 import com.firomsa.inventory.v1.dto.ProductResponseDTO;
 import com.firomsa.inventory.v1.service.ProductService;
 
 @WebMvcTest(ProductController.class)
+@Import(TestCacheConfig.class)
 @AutoConfigureMockMvc
 @WithMockUser
 public class ProductControllerUnitTest {
@@ -49,14 +55,17 @@ public class ProductControllerUnitTest {
     void shouldGetAllProducts() {
         ProductResponseDTO first = sampleProduct(UUID.randomUUID(), "Coffee");
         ProductResponseDTO second = sampleProduct(UUID.randomUUID(), "Tea");
-        when(productService.getAll()).thenReturn(List.of(first, second));
+        PageResponse<ProductResponseDTO> page = PageResponse.<ProductResponseDTO>builder()
+                .content(List.of(first, second)).pageNumber(0).pageSize(10)
+                .totalElements(2).totalPages(1).first(true).last(true).empty(false).build();
+        when(productService.getAll(any(Pageable.class))).thenReturn(page);
 
         MvcTestResult result = mockMvc.get().uri(BASE_URL).exchange();
-        assertThat(result).hasStatusOk();
-        assertThat(result).bodyJson().extractingPath("$[0].name").asString().isEqualTo("Coffee");
-        assertThat(result).bodyJson().extractingPath("$[1].name").asString().isEqualTo("Tea");
 
-        verify(productService).getAll();
+        assertThat(result).hasStatusOk();
+        assertThat(result).bodyJson().extractingPath("$.content[0].name").asString().isEqualTo("Coffee");
+        assertThat(result).bodyJson().extractingPath("$.content[1].name").asString().isEqualTo("Tea");
+        verify(productService).getAll(any(Pageable.class));
     }
 
     @Test
@@ -66,11 +75,11 @@ public class ProductControllerUnitTest {
         when(productService.getById(productId)).thenReturn(response);
 
         MvcTestResult result = mockMvc.get().uri(BASE_URL + "/{id}", productId).exchange();
+
         assertThat(result).hasStatusOk();
         assertThat(result).bodyJson().extractingPath("$.id").asString()
                 .isEqualTo(productId.toString());
         assertThat(result).bodyJson().extractingPath("$.name").asString().isEqualTo("Coffee");
-
         verify(productService).getById(productId);
     }
 }

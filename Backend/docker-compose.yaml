@@ -26,6 +26,9 @@ services:
             - S3_GET_LINK_EXPIRY_MINUTES
             - S3_UPLOAD_LINK_EXPIRY_MINUTES
             - APP_BOOTSTRAP_TOKEN
+            - SPRING_DATA_REDIS_HOST
+            - SPRING_DATA_REDIS_PORT
+            - SPRING_DATA_REDIS_PASSWORD
         ports:
             - 8080:8080
             - 6060:6060

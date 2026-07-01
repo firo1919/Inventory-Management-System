@@ -17,13 +17,18 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.security.test.context.support.WithMockUser;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
 import org.springframework.test.web.servlet.assertj.MvcTestResult;
 
+import org.springframework.data.domain.Pageable;
+
 import com.firomsa.inventory.model.Roles;
+import com.firomsa.inventory.support.TestCacheConfig;
+import com.firomsa.inventory.v1.dto.PageResponse;
 import com.firomsa.inventory.v1.controller.AdminController;
 import com.firomsa.inventory.v1.dto.CategoryRequestDTO;
 import com.firomsa.inventory.v1.dto.CategoryResponseDTO;
@@ -45,6 +50,7 @@ import com.firomsa.inventory.v1.service.RestockService;
 import com.firomsa.inventory.v1.service.SaleService;
 
 @WebMvcTest(AdminController.class)
+@Import(TestCacheConfig.class)
 @AutoConfigureMockMvc
 @WithMockUser(authorities = "SCOPE_ADMIN")
 public class AdminControllerUnitTest {
@@ -139,15 +145,18 @@ public class AdminControllerUnitTest {
         UUID productId = UUID.randomUUID();
         SaleResponseDTO sale = SaleResponseDTO.builder().productId(productId).quantity(2)
                 .salePrice(15.0).message("Sale recorded successfully").build();
-        when(saleService.getAllSales()).thenReturn(List.of(sale));
+        PageResponse<SaleResponseDTO> page = PageResponse.<SaleResponseDTO>builder()
+                .content(List.of(sale)).pageNumber(0).pageSize(10)
+                .totalElements(1).totalPages(1).first(true).last(true).empty(false).build();
+        when(saleService.getAllSales(any(Pageable.class))).thenReturn(page);
 
         MvcTestResult result = mockMvc.get().uri(BASE_URL + "/sales").exchange();
         assertThat(result).hasStatusOk();
-        assertThat(result).bodyJson().extractingPath("$[0].productId").asString()
+        assertThat(result).bodyJson().extractingPath("$.content[0].productId").asString()
                 .isEqualTo(productId.toString());
-        assertThat(result).bodyJson().extractingPath("$[0].quantity").isEqualTo(2);
+        assertThat(result).bodyJson().extractingPath("$.content[0].quantity").isEqualTo(2);
 
-        verify(saleService).getAllSales();
+        verify(saleService).getAllSales(any(Pageable.class));
     }
 
     @Test
@@ -155,30 +164,36 @@ public class AdminControllerUnitTest {
         UUID productId = UUID.randomUUID();
         RestockResponseDTO restock = RestockResponseDTO.builder().productId(productId)
                 .quantity(12).message("Restock recorded successfully").build();
-        when(restockService.getAllRestocks()).thenReturn(List.of(restock));
+        PageResponse<RestockResponseDTO> page = PageResponse.<RestockResponseDTO>builder()
+                .content(List.of(restock)).pageNumber(0).pageSize(10)
+                .totalElements(1).totalPages(1).first(true).last(true).empty(false).build();
+        when(restockService.getAllRestocks(any(Pageable.class))).thenReturn(page);
 
         MvcTestResult result = mockMvc.get().uri(BASE_URL + "/restocks").exchange();
         assertThat(result).hasStatusOk();
-        assertThat(result).bodyJson().extractingPath("$[0].productId").asString()
+        assertThat(result).bodyJson().extractingPath("$.content[0].productId").asString()
                 .isEqualTo(productId.toString());
-        assertThat(result).bodyJson().extractingPath("$[0].quantity").isEqualTo(12);
+        assertThat(result).bodyJson().extractingPath("$.content[0].quantity").isEqualTo(12);
 
-        verify(restockService).getAllRestocks();
+        verify(restockService).getAllRestocks(any(Pageable.class));
     }
 
     @Test
     void shouldReturnAllEmployees() {
         UserResponseDTO user = sampleUser(UUID.randomUUID(), "employee.one");
-        when(employeeService.getEmployees()).thenReturn(List.of(user));
+        PageResponse<UserResponseDTO> page = PageResponse.<UserResponseDTO>builder()
+                .content(List.of(user)).pageNumber(0).pageSize(10)
+                .totalElements(1).totalPages(1).first(true).last(true).empty(false).build();
+        when(employeeService.getEmployees(any(Pageable.class))).thenReturn(page);
 
         MvcTestResult result = mockMvc.get().uri(BASE_URL + "/employees").exchange();
         assertThat(result).hasStatusOk();
-        assertThat(result).bodyJson().extractingPath("$[0].id").asString()
+        assertThat(result).bodyJson().extractingPath("$.content[0].id").asString()
                 .isEqualTo(user.getId().toString());
-        assertThat(result).bodyJson().extractingPath("$[0].username").asString()
+        assertThat(result).bodyJson().extractingPath("$.content[0].username").asString()
                 .isEqualTo("employee.one");
 
-        verify(employeeService).getEmployees();
+        verify(employeeService).getEmployees(any(Pageable.class));
     }
 
     @Test
@@ -330,16 +345,19 @@ public class AdminControllerUnitTest {
     void shouldGetAllEmployees() {
         UserResponseDTO first = sampleUser(UUID.randomUUID(), "employee.one");
         UserResponseDTO second = sampleUser(UUID.randomUUID(), "employee.two");
-        when(employeeService.getEmployees()).thenReturn(List.of(first, second));
+        PageResponse<UserResponseDTO> page = PageResponse.<UserResponseDTO>builder()
+                .content(List.of(first, second)).pageNumber(0).pageSize(10)
+                .totalElements(2).totalPages(1).first(true).last(true).empty(false).build();
+        when(employeeService.getEmployees(any(Pageable.class))).thenReturn(page);
 
         MvcTestResult result = mockMvc.get().uri(BASE_URL + "/employees").exchange();
         assertThat(result).hasStatusOk();
-        assertThat(result).bodyJson().extractingPath("$[1].id").asString()
+        assertThat(result).bodyJson().extractingPath("$.content[1].id").asString()
                 .isEqualTo(second.getId().toString());
-        assertThat(result).bodyJson().extractingPath("$[1].username").asString()
+        assertThat(result).bodyJson().extractingPath("$.content[1].username").asString()
                 .isEqualTo("employee.two");
 
-        verify(employeeService).getEmployees();
+        verify(employeeService).getEmployees(any(Pageable.class));
     }
 
     @Test

@@ -3,15 +3,22 @@ package com.firomsa.inventory.v1.service;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
 import com.firomsa.inventory.exception.ResourceNotFoundException;
 import com.firomsa.inventory.model.Role;
+import com.firomsa.inventory.model.User;
 import com.firomsa.inventory.repository.RoleRepository;
 import com.firomsa.inventory.repository.UserRepository;
+import com.firomsa.inventory.v1.dto.PageResponse;
 import com.firomsa.inventory.v1.dto.UserResponseDTO;
 import com.firomsa.inventory.v1.dto.UserUpdateRequestDTO;
 import com.firomsa.inventory.v1.mapper.UserMapper;
+
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -36,6 +43,29 @@ public class EmployeeService {
         }
 
         return response;
+    }
+
+    public PageResponse<UserResponseDTO> getEmployees(Pageable pageable) {
+        Page<User> userPage = userRepository.findAll(pageable);
+        var response = new ArrayList<UserResponseDTO>();
+        for (var user : userPage.getContent()) {
+            var userResponse = userMapper.toDTO(user);
+            if (user.getImageKey() != null) {
+                userResponse.setProfilePictureUrl(storageService.getUrl(user.getImageKey()));
+            }
+            response.add(userResponse);
+        }
+
+        return PageResponse.<UserResponseDTO>builder()
+                .content(response)
+                .pageNumber(userPage.getNumber())
+                .pageSize(userPage.getSize())
+                .totalElements(userPage.getTotalElements())
+                .totalPages(userPage.getTotalPages())
+                .first(userPage.isFirst())
+                .last(userPage.isLast())
+                .empty(userPage.isEmpty())
+                .build();
     }
 
     public UserResponseDTO getEmployeeById(UUID id) {

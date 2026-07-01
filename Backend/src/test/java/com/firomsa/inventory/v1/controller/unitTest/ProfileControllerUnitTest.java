@@ -14,18 +14,21 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
 import org.springframework.test.web.servlet.assertj.MvcTestResult;
 
 import com.firomsa.inventory.model.Roles;
+import com.firomsa.inventory.support.TestCacheConfig;
 import com.firomsa.inventory.v1.controller.ProfileController;
 import com.firomsa.inventory.v1.dto.ProfileUpdateDTO;
 import com.firomsa.inventory.v1.dto.UserResponseDTO;
 import com.firomsa.inventory.v1.service.UserService;
 
 @WebMvcTest(ProfileController.class)
+@Import(TestCacheConfig.class)
 @AutoConfigureMockMvc
 @WithMockUser(username = "employee.one@example.com")
 public class ProfileControllerUnitTest {
@@ -51,10 +54,10 @@ public class ProfileControllerUnitTest {
         when(userService.getProfile(email)).thenReturn(response);
 
         MvcTestResult result = mockMvc.get().uri(BASE_URL).exchange();
+
         assertThat(result).hasStatusOk();
         assertThat(result).bodyJson().extractingPath("$.email").asString().isEqualTo(email);
         assertThat(result).bodyJson().extractingPath("$.role").asString().isEqualTo("EMPLOYEE");
-
         verify(userService).getProfile(email);
     }
 
@@ -75,6 +78,7 @@ public class ProfileControllerUnitTest {
                     "phone": "+251933333333"
                 }
                     """).exchange();
+
         assertThat(result).hasStatusOk();
         assertThat(result).bodyJson().extractingPath("$.email").asString().isEqualTo(email);
 
@@ -91,6 +95,7 @@ public class ProfileControllerUnitTest {
         MvcTestResult result = mockMvc.post().uri(BASE_URL + "/profile-picture").with(csrf())
                 .contentType(APPLICATION_JSON).content("{" + "\"objectKey\":\"" + objectKey + "\"}")
                 .exchange();
+
         assertThat(result).hasStatusOk();
         assertThat(result).bodyJson().extractingPath("$.email").asString().isEqualTo(email);
 
