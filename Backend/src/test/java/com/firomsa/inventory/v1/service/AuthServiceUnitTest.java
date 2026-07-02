@@ -236,8 +236,8 @@ class AuthServiceUnitTest {
         otp.setConfirmed(false);
 
         when(userRepository.findByEmail("john@example.com")).thenReturn(Optional.of(user));
-        when(confirmationOtpRepository.findByOtpAndExpiresAtAfterAndConfirmedFalse(eq("12345"),
-                any(LocalDateTime.class))).thenReturn(Optional.of(otp));
+        when(confirmationOtpRepository.findByOtpAndUserEmailAndExpiresAtAfterAndConfirmedFalse(eq("12345"),
+                eq("john@example.com"), any(LocalDateTime.class))).thenReturn(Optional.of(otp));
 
         // Act
         ConfirmOtpResponseDTO response = authService.confirmOtp(request);
@@ -257,8 +257,8 @@ class AuthServiceUnitTest {
         // Arrange
         ConfirmOtpRequestDTO request = new ConfirmOtpRequestDTO("wrong-otp", "john@example.com");
         when(userRepository.findByEmail("john@example.com")).thenReturn(Optional.of(user));
-        when(confirmationOtpRepository.findByOtpAndExpiresAtAfterAndConfirmedFalse(eq("wrong-otp"),
-                any(LocalDateTime.class))).thenReturn(Optional.empty());
+        when(confirmationOtpRepository.findByOtpAndUserEmailAndExpiresAtAfterAndConfirmedFalse(eq("wrong-otp"),
+                eq("john@example.com"), any(LocalDateTime.class))).thenReturn(Optional.empty());
 
         // Act & Assert
         assertThrows(InvalidOtpException.class, () -> authService.confirmOtp(request));
@@ -266,11 +266,26 @@ class AuthServiceUnitTest {
     }
 
     @Test
-    @DisplayName("Should resend OTP successfully")
+    @DisplayName("Should throw InvalidOtpException when OTP does not belong to user")
+    void confirmOtp_WhenOtpBelongsToAnotherUser_ShouldThrowException() {
+        // Arrange
+        ConfirmOtpRequestDTO request = new ConfirmOtpRequestDTO("12345", "john@example.com");
+        when(userRepository.findByEmail("john@example.com")).thenReturn(Optional.of(user));
+        when(confirmationOtpRepository.findByOtpAndUserEmailAndExpiresAtAfterAndConfirmedFalse(eq("12345"),
+                eq("john@example.com"), any(LocalDateTime.class))).thenReturn(Optional.empty());
+
+        // Act & Assert
+        assertThrows(InvalidOtpException.class, () -> authService.confirmOtp(request));
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Should resend OTP successfully and delete old unconfirmed OTPs")
     void resendOtp_ShouldGenerateAndSendNewOtp() {
         // Arrange
         ResendOtpRequestDTO request = new ResendOtpRequestDTO("john@example.com");
         when(userRepository.findByEmail("john@example.com")).thenReturn(Optional.of(user));
+        doNothing().when(confirmationOtpRepository).deleteByUserEmailAndConfirmedFalse("john@example.com");
         when(confirmationOtpRepository.save(any(ConfirmationOTP.class)))
                 .thenReturn(new ConfirmationOTP());
         doNothing().when(emailService).sendOtp(anyString(), anyString());
@@ -281,6 +296,7 @@ class AuthServiceUnitTest {
         // Assert
         assertNotNull(response);
         assertEquals("Successfully resent OTP, check your inbox", response.message());
+        verify(confirmationOtpRepository, times(1)).deleteByUserEmailAndConfirmedFalse("john@example.com");
         verify(confirmationOtpRepository, times(1)).save(any(ConfirmationOTP.class));
         verify(emailService, times(1)).sendOtp(anyString(), eq("john@example.com"));
     }
