@@ -40,34 +40,29 @@ public class ProductService {
     @Transactional(readOnly = true)
     @Cacheable(value = CacheConfig.PRODUCTS, key = "'all'")
     public List<ProductResponseDTO> getAll() {
-        var response = productRepository.findAll().stream().map(productMapper::toDTO)
-                .collect(Collectors.toList());
-
-        // Fetch image URLs for each product
-        response.forEach(productResponse -> {
-            var imageUrls = productRepository.findById(productResponse.getId())
-                    .map(Product::getImageKeys).orElse(List.of()).stream()
-                    .map(storageService::getUrl).collect(Collectors.toList());
-            productResponse.setImageUrls(imageUrls);
-        });
-        return response;
+        return productRepository.findAllWithImages().stream().map(product -> {
+            var dto = productMapper.toDTO(product);
+            var imageUrls = product.getImageKeys().stream()
+                    .map(storageService::getUrl)
+                    .collect(Collectors.toList());
+            dto.setImageUrls(imageUrls);
+            return dto;
+        }).collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
     @Cacheable(value = CacheConfig.PRODUCTS,
             key = "'page:' + #pageable.pageNumber + ':' + #pageable.pageSize + ':' + #pageable.sort")
     public PageResponse<ProductResponseDTO> getAll(Pageable pageable) {
-        Page<Product> productPage = productRepository.findAll(pageable);
-        var response = productPage.getContent().stream().map(productMapper::toDTO)
-                .collect(Collectors.toList());
-
-        // Fetch image URLs for each product
-        response.forEach(productResponse -> {
-            var imageUrls = productRepository.findById(productResponse.getId())
-                    .map(Product::getImageKeys).orElse(List.of()).stream()
-                    .map(storageService::getUrl).collect(Collectors.toList());
-            productResponse.setImageUrls(imageUrls);
-        });
+        Page<Product> productPage = productRepository.findAllWithImages(pageable);
+        var response = productPage.getContent().stream().map(product -> {
+            var dto = productMapper.toDTO(product);
+            var imageUrls = product.getImageKeys().stream()
+                    .map(storageService::getUrl)
+                    .collect(Collectors.toList());
+            dto.setImageUrls(imageUrls);
+            return dto;
+        }).collect(Collectors.toList());
 
         return PageResponse.<ProductResponseDTO>builder()
                 .content(response)

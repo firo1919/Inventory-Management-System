@@ -8,7 +8,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.firomsa.inventory.model.AuditAction;
@@ -32,7 +34,13 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, Long>, JpaSp
 
     List<AuditLog> findByTimestampBefore(LocalDateTime timestamp);
 
-    void deleteByTimestampBefore(LocalDateTime timestamp);
+    @Modifying
+    @Query("DELETE FROM AuditLog a WHERE a.timestamp < :cutoffDate")
+    int deleteByTimestampBefore(@Param("cutoffDate") LocalDateTime cutoffDate);
+
+    @Modifying
+    @Query("DELETE FROM AuditLog a WHERE a.timestamp > :startDate AND a.timestamp < :endDate")
+    int deleteByTimestampBetween(@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
 
     long countByStatus(AuditStatus status);
 
