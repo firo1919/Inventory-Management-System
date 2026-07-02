@@ -56,14 +56,15 @@ class UserServiceUnitTest {
     }
 
     @Test
-    @DisplayName("Should update user profile")
-    void updateProfile_WhenExists_ShouldUpdateAndReturnProfile() {
+    @DisplayName("Should update user profile and re-encode password when valid non-blank password provided")
+    void updateProfile_WhenValidPassword_ShouldReencodeAndUpdatePassword() {
         // Arrange
-        ProfileUpdateDTO updateDTO = new ProfileUpdateDTO("John", "Doe", "johndoe", "newpassword",
+        user.setPassword("oldEncodedPassword");
+        ProfileUpdateDTO updateDTO = new ProfileUpdateDTO("John", "Doe", "johndoe", "newpassword123",
                 "john@example.com", "1234567890");
         when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
         doNothing().when(userMapper).updateModelFromDTO(user, updateDTO);
-        when(passwordEncoder.encode("newpassword")).thenReturn("encodedpassword");
+        when(passwordEncoder.encode("newpassword123")).thenReturn("newEncodedPassword");
         when(userRepository.save(user)).thenReturn(user);
         when(userMapper.toDTO(user)).thenReturn(userResponseDTO);
         when(storageService.getUrl("profile.jpg")).thenReturn("http://example.com/profile.jpg");
@@ -73,10 +74,57 @@ class UserServiceUnitTest {
 
         // Assert
         assertNotNull(result);
-        assertEquals("encodedpassword", user.getPassword());
+        assertEquals("newEncodedPassword", user.getPassword());
         assertEquals("http://example.com/profile.jpg", result.getProfilePictureUrl());
         verify(userRepository, times(1)).findByEmail(email);
         verify(userMapper, times(1)).updateModelFromDTO(user, updateDTO);
+        verify(passwordEncoder, times(1)).encode("newpassword123");
+        verify(userRepository, times(1)).save(user);
+    }
+
+    @Test
+    @DisplayName("Should preserve existing password when profile update receives null password")
+    void updateProfile_WhenNullPassword_ShouldPreserveExistingPassword() {
+        // Arrange
+        user.setPassword("oldEncodedPassword");
+        ProfileUpdateDTO updateDTO = new ProfileUpdateDTO("John", "Doe", "johndoe", null,
+                "john@example.com", "1234567890");
+        when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
+        doNothing().when(userMapper).updateModelFromDTO(user, updateDTO);
+        when(userRepository.save(user)).thenReturn(user);
+        when(userMapper.toDTO(user)).thenReturn(userResponseDTO);
+        when(storageService.getUrl("profile.jpg")).thenReturn("http://example.com/profile.jpg");
+
+        // Act
+        UserResponseDTO result = userService.updateProfile(email, updateDTO);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals("oldEncodedPassword", user.getPassword());
+        verify(passwordEncoder, never()).encode(any());
+        verify(userRepository, times(1)).save(user);
+    }
+
+    @Test
+    @DisplayName("Should preserve existing password when profile update receives blank password")
+    void updateProfile_WhenBlankPassword_ShouldPreserveExistingPassword() {
+        // Arrange
+        user.setPassword("oldEncodedPassword");
+        ProfileUpdateDTO updateDTO = new ProfileUpdateDTO("John", "Doe", "johndoe", "   ",
+                "john@example.com", "1234567890");
+        when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
+        doNothing().when(userMapper).updateModelFromDTO(user, updateDTO);
+        when(userRepository.save(user)).thenReturn(user);
+        when(userMapper.toDTO(user)).thenReturn(userResponseDTO);
+        when(storageService.getUrl("profile.jpg")).thenReturn("http://example.com/profile.jpg");
+
+        // Act
+        UserResponseDTO result = userService.updateProfile(email, updateDTO);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals("oldEncodedPassword", user.getPassword());
+        verify(passwordEncoder, never()).encode(any());
         verify(userRepository, times(1)).save(user);
     }
 
