@@ -3,6 +3,7 @@ package com.firomsa.inventory.v1.controller.e2eTest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
@@ -35,7 +36,7 @@ public class EmployeeControllerE2ETest extends AbstractE2ETest {
                 """.formatted(suffix, suffix, categoryId);
     }
 
-    private String createSalePayload(UUID productId, int quantity, double salePrice) {
+    private String createSalePayload(UUID productId, int quantity, BigDecimal salePrice) {
         return "{\"productId\":\"" + productId + "\",\"quantity\":" + quantity
                 + ",\"salePrice\":" + salePrice + "}";
     }
@@ -136,13 +137,13 @@ public class EmployeeControllerE2ETest extends AbstractE2ETest {
 
         var firstSaleResponse = client.post().uri(SALES_BASE_URL)
                 .header(HttpHeaders.AUTHORIZATION, authorizationHeader(firstEmployeeToken))
-                .contentType(APPLICATION_JSON).body(createSalePayload(firstProductId, 2, 12.0))
+                .contentType(APPLICATION_JSON).body(createSalePayload(firstProductId, 2, BigDecimal.valueOf(12.0)))
                 .exchange();
         firstSaleResponse.expectStatus().isOk();
 
         var secondSaleResponse = client.post().uri(SALES_BASE_URL)
                 .header(HttpHeaders.AUTHORIZATION, authorizationHeader(secondEmployeeToken))
-                .contentType(APPLICATION_JSON).body(createSalePayload(secondProductId, 4, 13.0))
+                .contentType(APPLICATION_JSON).body(createSalePayload(secondProductId, 4, BigDecimal.valueOf(13.0)))
                 .exchange();
         secondSaleResponse.expectStatus().isOk();
 

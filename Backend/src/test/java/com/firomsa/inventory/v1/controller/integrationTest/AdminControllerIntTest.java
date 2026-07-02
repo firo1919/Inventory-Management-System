@@ -205,7 +205,7 @@ public class AdminControllerIntTest extends AbstractIntegrationTest {
                 .costPrice(BigDecimal.valueOf(10.0)).build());
     }
 
-    private Sale createSale(User user, Product product, int quantity, double salePrice) {
+    private Sale createSale(User user, Product product, int quantity, BigDecimal salePrice) {
         return saleRepository.save(Sale.builder().soldBy(user).product(product).quantity(quantity)
                 .salePrice(salePrice).build());
     }
@@ -366,7 +366,7 @@ public class AdminControllerIntTest extends AbstractIntegrationTest {
         String suffix = randomSuffix();
         var employee = createEmployeeUser(suffix);
         var product = createProductForSale(suffix);
-        createSale(employee, product, 3, 18.5);
+        createSale(employee, product, 3, BigDecimal.valueOf(18.5));
 
         var result = mockMvc.get().uri(BASE_URL + "/sales").exchange();
 
@@ -613,7 +613,7 @@ public class AdminControllerIntTest extends AbstractIntegrationTest {
         String suffix = randomSuffix();
         var employee = createEmployeeUser(suffix);
         var product = createProductForSale(suffix);
-        var sale = createSale(employee, product, 3, 18.5);
+        var sale = createSale(employee, product, 3, BigDecimal.valueOf(18.5));
 
         assertThat(mockMvc.delete().uri(BASE_URL + "/sales/{id}", sale.getId()).exchange())
                 .hasStatusOk();

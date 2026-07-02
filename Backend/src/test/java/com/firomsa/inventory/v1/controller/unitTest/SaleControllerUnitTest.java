@@ -5,6 +5,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
@@ -45,7 +46,7 @@ public class SaleControllerUnitTest {
     void shouldCreateASale() throws JsonProcessingException {
         // Arrange
         var request = SaleRequestDTO.builder().productId(UUID.randomUUID()).quantity(5)
-                .salePrice(10.0).build();
+                .salePrice(BigDecimal.valueOf(10.0)).build();
         var response = SaleResponseDTO.builder().productId(request.getProductId())
                 .quantity(request.getQuantity()).salePrice(request.getSalePrice())
                 .message("Sale recorded successfully").build();
@@ -59,7 +60,7 @@ public class SaleControllerUnitTest {
         assertThat(result).hasStatusOk();
         assertThat(result).bodyJson().extractingPath("$.message").isEqualTo("Sale recorded successfully");
         assertThat(result).bodyJson().extractingPath("$.quantity").isEqualTo(request.getQuantity());
-        assertThat(result).bodyJson().extractingPath("$.salePrice").isEqualTo(request.getSalePrice());
+        assertThat(result).bodyJson().extractingPath("$.salePrice").isEqualTo(10.0);
         assertThat(result).bodyJson().extractingPath("$.productId")
                 .isEqualTo(request.getProductId().toString());
     }
@@ -69,7 +70,7 @@ public class SaleControllerUnitTest {
     void shouldReturnBadRequestWhenQuantityIsMissing() throws JsonProcessingException {
         // Arrange
         var request = SaleRequestDTO.builder().productId(UUID.randomUUID())
-                .salePrice(10.0).build();
+                .salePrice(BigDecimal.valueOf(10.0)).build();
 
         // Act
         MvcTestResult result = mockMvc.post().uri(BASE_URL).with(csrf()).contentType(APPLICATION_JSON)
@@ -91,7 +92,7 @@ public class SaleControllerUnitTest {
         UUID saleId = UUID.randomUUID();
         UUID productId = UUID.randomUUID();
         var response = SaleResponseDTO.builder().productId(productId).quantity(3)
-                .salePrice(12.5).build();
+                .salePrice(BigDecimal.valueOf(12.5)).build();
         when(saleService.getSaleById(saleId)).thenReturn(response);
 
         // Act
@@ -109,7 +110,7 @@ public class SaleControllerUnitTest {
     void shouldReturnForbiddenWhenUserNotAuthenticated() throws JsonProcessingException {
         // Arrange
         var request = SaleRequestDTO.builder().productId(UUID.randomUUID()).quantity(5)
-                .salePrice(10.0).build();
+                .salePrice(BigDecimal.valueOf(10.0)).build();
 
         // Act
         MvcTestResult result = mockMvc.post().uri(BASE_URL).contentType(APPLICATION_JSON)

@@ -8,6 +8,7 @@ import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -57,7 +58,7 @@ public class SaleServiceUnitTest {
     void shouldCreateASale() {
         // Arrange
         var request = SaleRequestDTO.builder().productId(UUID.randomUUID()).quantity(5)
-                .salePrice(10.0).build();
+                .salePrice(BigDecimal.valueOf(10.0)).build();
         var response = SaleResponseDTO.builder().productId(request.getProductId())
                 .quantity(request.getQuantity()).salePrice(request.getSalePrice())
                 .message("Sale recorded successfully").build();
@@ -87,7 +88,7 @@ public class SaleServiceUnitTest {
     void shouldThrowExceptionWhenProductNotFound() {
         // Arrange
         var request = SaleRequestDTO.builder().productId(UUID.randomUUID()).quantity(5)
-                .salePrice(10.0).build();
+                .salePrice(BigDecimal.valueOf(10.0)).build();
         when(productRepository.findById(request.getProductId())).thenReturn(Optional.empty());
 
         // Act & Assert
@@ -101,7 +102,7 @@ public class SaleServiceUnitTest {
     void shouldThrowExceptionWhenInsufficientStock() {
         // Arrange
         var request = SaleRequestDTO.builder().productId(UUID.randomUUID()).quantity(15)
-                .salePrice(10.0).build();
+                .salePrice(BigDecimal.valueOf(10.0)).build();
         var product = getProduct();
         var user = getUser();
         when(productRepository.findById(request.getProductId())).thenReturn(Optional.of(product));
@@ -120,14 +121,14 @@ public class SaleServiceUnitTest {
         var product = getProduct();
         var user = getUser();
         var firstSale = Sale.builder().id(UUID.randomUUID()).product(product).soldBy(user)
-                .quantity(2).salePrice(12.0).build();
+                .quantity(2).salePrice(BigDecimal.valueOf(12.0)).build();
         var secondSale = Sale.builder().id(UUID.randomUUID()).product(product).soldBy(user)
-                .quantity(4).salePrice(15.0).build();
+                .quantity(4).salePrice(BigDecimal.valueOf(15.0)).build();
 
         var firstResponse = SaleResponseDTO.builder().productId(product.getId()).quantity(2)
-                .salePrice(12.0).build();
+                .salePrice(BigDecimal.valueOf(12.0)).build();
         var secondResponse = SaleResponseDTO.builder().productId(product.getId()).quantity(4)
-                .salePrice(15.0).build();
+                .salePrice(BigDecimal.valueOf(15.0)).build();
 
         when(saleRepository.findAll()).thenReturn(List.of(firstSale, secondSale));
         when(saleMapper.toDTO(eq(firstSale))).thenReturn(firstResponse);
@@ -149,9 +150,9 @@ public class SaleServiceUnitTest {
         var product = getProduct();
         var user = getUser();
         var sale = Sale.builder().id(saleId).product(product).soldBy(user).quantity(3)
-                .salePrice(11.0).build();
+                .salePrice(BigDecimal.valueOf(11.0)).build();
         var response = SaleResponseDTO.builder().productId(product.getId()).quantity(3)
-                .salePrice(11.0).build();
+                .salePrice(BigDecimal.valueOf(11.0)).build();
 
         when(saleRepository.findById(saleId)).thenReturn(Optional.of(sale));
         when(saleMapper.toDTO(sale)).thenReturn(response);
@@ -161,7 +162,7 @@ public class SaleServiceUnitTest {
 
         // Assert
         assertThat(result.getQuantity()).isEqualTo(3);
-        assertThat(result.getSalePrice()).isEqualTo(11.0);
+        assertThat(result.getSalePrice()).isEqualTo(BigDecimal.valueOf(11.0));
     }
 
     @Test
@@ -184,9 +185,9 @@ public class SaleServiceUnitTest {
         var product = getProduct();
         var user = getUser();
         var sale = Sale.builder().id(UUID.randomUUID()).product(product).soldBy(user).quantity(6)
-                .salePrice(20.0).build();
+                .salePrice(BigDecimal.valueOf(20.0)).build();
         var response = SaleResponseDTO.builder().productId(product.getId()).quantity(6)
-                .salePrice(20.0).build();
+                .salePrice(BigDecimal.valueOf(20.0)).build();
 
         when(saleRepository.findBySoldByEmail(email)).thenReturn(List.of(sale));
         when(saleMapper.toDTO(sale)).thenReturn(response);
@@ -227,7 +228,7 @@ public class SaleServiceUnitTest {
     void shouldTriggerNotificationWhenLowStockAfterSale() {
         // Arrange
         var request = SaleRequestDTO.builder().productId(UUID.randomUUID()).quantity(8)
-                .salePrice(10.0).build();
+                .salePrice(BigDecimal.valueOf(10.0)).build();
         var response = SaleResponseDTO.builder().productId(request.getProductId())
                 .quantity(request.getQuantity()).salePrice(request.getSalePrice())
                 .message("Sale recorded successfully").build();
@@ -254,7 +255,7 @@ public class SaleServiceUnitTest {
     void shouldNotTriggerNotificationWhenStockStillSufficient() {
         // Arrange
         var request = SaleRequestDTO.builder().productId(UUID.randomUUID()).quantity(2)
-                .salePrice(10.0).build();
+                .salePrice(BigDecimal.valueOf(10.0)).build();
         var response = SaleResponseDTO.builder().productId(request.getProductId())
                 .quantity(request.getQuantity()).salePrice(request.getSalePrice())
                 .message("Sale recorded successfully").build();

@@ -69,7 +69,7 @@ public class SaleControllerIntTest extends AbstractIntegrationTest {
                         .password("password").phone("1234567").role(getRole()).build());
     }
 
-    Sale createSale(Product product, User user, int quantity, double salePrice) {
+    Sale createSale(Product product, User user, int quantity, BigDecimal salePrice) {
         return saleRepository.save(Sale.builder().product(product).soldBy(user).quantity(quantity)
                 .salePrice(salePrice).build());
     }
@@ -81,7 +81,7 @@ public class SaleControllerIntTest extends AbstractIntegrationTest {
         var product = getProduct();
         getUser();
         var request = SaleRequestDTO.builder().productId(product.getId()).quantity(5)
-                .salePrice(10.0).build();
+                .salePrice(BigDecimal.valueOf(10.0)).build();
 
         // Act
         var result = mockMvc.post().uri(BASE_URL).contentType(APPLICATION_JSON)
@@ -94,7 +94,7 @@ public class SaleControllerIntTest extends AbstractIntegrationTest {
         assertThat(result).bodyJson()
                 .extractingPath("$.quantity").isEqualTo(request.getQuantity());
         assertThat(result).bodyJson()
-                .extractingPath("$.salePrice").isEqualTo(request.getSalePrice());
+                .extractingPath("$.salePrice").isEqualTo(10.0);
         assertThat(result).bodyJson()
                 .extractingPath("$.productId").isEqualTo(request.getProductId()
                         .toString());
@@ -106,7 +106,7 @@ public class SaleControllerIntTest extends AbstractIntegrationTest {
         // Arrange
         getUser();
         var request = SaleRequestDTO.builder().productId(UUID.randomUUID()).quantity(5)
-                .salePrice(10.0).build();
+                .salePrice(BigDecimal.valueOf(10.0)).build();
 
         // Act
         var result = mockMvc.post().uri(BASE_URL).contentType(APPLICATION_JSON)
@@ -128,7 +128,7 @@ public class SaleControllerIntTest extends AbstractIntegrationTest {
         var product = getProduct();
         getUser();
         var request = SaleRequestDTO.builder().productId(product.getId()).quantity(15)
-                .salePrice(10.0).build();
+                .salePrice(BigDecimal.valueOf(10.0)).build();
 
         // Act
         var result = mockMvc.post().uri(BASE_URL).contentType(APPLICATION_JSON)
@@ -147,7 +147,7 @@ public class SaleControllerIntTest extends AbstractIntegrationTest {
         // Arrange
         var product = getProduct();
         var request = SaleRequestDTO.builder().productId(product.getId()).quantity(5)
-                .salePrice(10.0).build();
+                .salePrice(BigDecimal.valueOf(10.0)).build();
         // Act
         var result = mockMvc.post().uri(BASE_URL).contentType(APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)).exchange();
@@ -161,7 +161,7 @@ public class SaleControllerIntTest extends AbstractIntegrationTest {
         // Arrange
         var product = getProduct();
         var user = getUser();
-        var sale = createSale(product, user, 4, 13.5);
+        var sale = createSale(product, user, 4, BigDecimal.valueOf(13.5));
 
         // Act
         var result = mockMvc.get().uri(BASE_URL + "/{id}", sale.getId()).exchange();
