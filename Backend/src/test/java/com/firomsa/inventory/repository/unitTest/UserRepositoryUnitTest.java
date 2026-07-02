@@ -11,6 +11,9 @@ import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabas
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 import com.firomsa.inventory.model.User;
+import com.firomsa.inventory.model.Role;
+import com.firomsa.inventory.model.Roles;
+import com.firomsa.inventory.repository.RoleRepository;
 import com.firomsa.inventory.repository.UserRepository;
 import com.firomsa.inventory.support.SharedContainers;
 
@@ -22,6 +25,8 @@ public class UserRepositoryUnitTest {
     static PostgreSQLContainer postgres = SharedContainers.POSTGRES;
     @Autowired
     private UserRepository userRepository;
+    @Autowired
+    private RoleRepository roleRepository;
     private final User user = User.builder().firstName("John").lastName("Doe").username("john_doe")
             .password("password123").email("john.doe@example.com").phone("1234567890").build();
 
@@ -63,6 +68,26 @@ public class UserRepositoryUnitTest {
             assertThat(foundUser.get().getPassword()).isEqualTo("password123");
             assertThat(foundUser.get().getPhone()).isEqualTo("1234567890");
         });
+    }
+
+    @Test
+    @DisplayName("should check if user exists by role")
+    void shouldCheckIfExistsByRole() {
+        // Arrange
+        Role adminRole = roleRepository.findByName(Roles.ADMIN)
+                .orElseGet(() -> roleRepository.save(Role.builder().name(Roles.ADMIN).build()));
+        user.setRole(adminRole);
+        userRepository.save(user);
+
+        // Act
+        boolean existsAdmin = userRepository.existsByRole(adminRole);
+        Role employeeRole = roleRepository.findByName(Roles.EMPLOYEE)
+                .orElseGet(() -> roleRepository.save(Role.builder().name(Roles.EMPLOYEE).build()));
+        boolean existsEmployee = userRepository.existsByRole(employeeRole);
+
+        // Assert
+        assertThat(existsAdmin).isTrue();
+        assertThat(existsEmployee).isFalse();
     }
 
 }
