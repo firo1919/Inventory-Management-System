@@ -38,7 +38,7 @@ public class ProfileControllerE2ETest extends AbstractE2ETest {
         var registerEmployeeResponse = client.post().uri(ADMIN_BASE_URL + "/employees")
                 .header(HttpHeaders.AUTHORIZATION, authorizationHeader(adminToken))
                 .contentType(APPLICATION_JSON).body(registerEmployeePayload(suffix)).exchange();
-        registerEmployeeResponse.expectStatus().isOk();
+        registerEmployeeResponse.expectStatus().isCreated();
 
         String employeeEmail = employeeEmailForSuffix(suffix);
         String otp = latestOtpForEmail(employeeEmail);

@@ -40,7 +40,7 @@ class AuditLogControllerE2ETest extends AbstractE2ETest {
                 .header("Authorization", authorizationHeader(accessToken))
                 .contentType(MediaType.APPLICATION_JSON)
                 .body("{\"name\":\"Category-" + suffix + "\"}").exchange();
-        createCategoryResponse.expectStatus().isOk();
+        createCategoryResponse.expectStatus().isCreated();
 
         String categoryName = "Category-" + suffix;
         UUID categoryId = categoryRepository.findAll().stream()
@@ -64,7 +64,7 @@ class AuditLogControllerE2ETest extends AbstractE2ETest {
         var createProductResponse = client.post().uri(ADMIN_BASE_URL + "/products")
                 .header("Authorization", authorizationHeader(accessToken))
                 .contentType(MediaType.APPLICATION_JSON).body(productPayload).exchange();
-        createProductResponse.expectStatus().isOk();
+        createProductResponse.expectStatus().isCreated();
 
         // Verify audit log was created
         long auditLogCount = auditLogRepository.count();
@@ -164,7 +164,7 @@ class AuditLogControllerE2ETest extends AbstractE2ETest {
         var registerEmployeeResponse = client.post().uri(ADMIN_BASE_URL + "/employees")
                 .header("Authorization", authorizationHeader(adminAccessToken))
                 .contentType(MediaType.APPLICATION_JSON).body(registerEmployeePayload(suffix)).exchange();
-        registerEmployeeResponse.expectStatus().isOk();
+        registerEmployeeResponse.expectStatus().isCreated();
 
         String employeeOtp = latestOtpForEmail(employeeEmail);
         String employeeConfirmPayload = "{\"email\":\"" + employeeEmail + "\",\"otp\":\"" + employeeOtp + "\"}";

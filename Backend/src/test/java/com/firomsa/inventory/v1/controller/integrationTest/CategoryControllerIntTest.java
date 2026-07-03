@@ -38,7 +38,7 @@ public class CategoryControllerIntTest extends AbstractIntegrationTest {
                 .contentType(APPLICATION_JSON)
                 .content("{\"name\":\"Category " + suffix + "\"}").exchange();
 
-        assertThat(response).hasStatusOk();
+        assertThat(response).hasStatus(org.springframework.http.HttpStatus.CREATED);
     }
 
     private UUID findCategoryIdBySuffix(String suffix) {
