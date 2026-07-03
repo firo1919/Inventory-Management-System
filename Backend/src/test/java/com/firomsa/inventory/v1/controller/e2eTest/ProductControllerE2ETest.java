@@ -58,7 +58,7 @@ public class ProductControllerE2ETest extends AbstractE2ETest {
         var response = client.post().uri(ADMIN_BASE_URL + "/categories")
                 .header(HttpHeaders.AUTHORIZATION, authorizationHeader(accessToken))
                 .contentType(APPLICATION_JSON).body(createCategoryPayload(suffix)).exchange();
-        response.expectStatus().isOk();
+        response.expectStatus().isCreated();
 
         String categoryName = "Category-" + suffix;
         return categoryRepository.findAll().stream().filter(c -> categoryName.equals(c.getName()))
@@ -70,7 +70,7 @@ public class ProductControllerE2ETest extends AbstractE2ETest {
                 .header(HttpHeaders.AUTHORIZATION, authorizationHeader(accessToken))
                 .contentType(APPLICATION_JSON).body(createProductPayload(suffix, categoryId))
                 .exchange();
-        response.expectStatus().isOk();
+        response.expectStatus().isCreated();
 
         String sku = "SKU-" + suffix;
         return productRepository.findAll().stream().filter(p -> sku.equals(p.getSku()))
@@ -81,7 +81,7 @@ public class ProductControllerE2ETest extends AbstractE2ETest {
         var registerEmployeeResponse = client.post().uri(ADMIN_BASE_URL + "/employees")
                 .header(HttpHeaders.AUTHORIZATION, authorizationHeader(adminToken))
                 .contentType(APPLICATION_JSON).body(registerEmployeePayload(suffix)).exchange();
-        registerEmployeeResponse.expectStatus().isOk();
+        registerEmployeeResponse.expectStatus().isCreated();
 
         String employeeEmail = employeeEmailForSuffix(suffix);
         String otp = latestOtpForEmail(employeeEmail);
