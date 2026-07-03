@@ -50,15 +50,15 @@ public class SaleService {
         }
 
         // Refresh product to obtain updated quantity for notification service
-        product = productRepository.findById(product.getId())
+        var refreshedProduct = productRepository.findById(product.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + product.getId()));
 
         var sale = saleMapper.toModel(saleRequestDTO);
-        sale.setProduct(product);
+        sale.setProduct(refreshedProduct);
         sale.setSoldBy(user);
 
         // Check for low stock and send notification if needed
-        notificationService.sendLowStockAlertIfNeeded(product);
+        notificationService.sendLowStockAlertIfNeeded(refreshedProduct);
 
         var savedSale = saleRepository.save(sale);
         var response = saleMapper.toDTO(savedSale);

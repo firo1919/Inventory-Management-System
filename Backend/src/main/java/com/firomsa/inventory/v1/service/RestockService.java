@@ -51,8 +51,10 @@ public class RestockService {
         productRepository.incrementQuantity(product.getId(), restockRequestDTO.getQuantity());
 
         // Refresh product to obtain updated quantity
-        product = productRepository.findById(product.getId())
+        var refreshedProduct = productRepository.findById(product.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + product.getId()));
+
+        restock.setProduct(refreshedProduct);
 
         var savedRestock = restockRepository.save(restock);
         var response = restockMapper.toDTO(savedRestock);
