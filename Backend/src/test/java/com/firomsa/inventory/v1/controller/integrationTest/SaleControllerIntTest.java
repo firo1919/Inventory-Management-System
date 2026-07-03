@@ -88,7 +88,7 @@ public class SaleControllerIntTest extends AbstractIntegrationTest {
                 .content(objectMapper.writeValueAsString(request)).exchange();
 
         // Assert
-        assertThat(result).hasStatusOk();
+        assertThat(result).hasStatus(org.springframework.http.HttpStatus.CREATED);
         assertThat(result).bodyJson()
                 .extractingPath("$.message").isEqualTo("Sale recorded successfully");
         assertThat(result).bodyJson()

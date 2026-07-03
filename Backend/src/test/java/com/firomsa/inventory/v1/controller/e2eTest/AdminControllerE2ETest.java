@@ -124,7 +124,7 @@ public class AdminControllerE2ETest extends AbstractE2ETest {
                 .header(HttpHeaders.AUTHORIZATION, authorizationHeader(accessToken))
                 .body(registerEmployeePayload(suffix)).exchange();
 
-        employeeResponse.expectStatus().isOk();
+        employeeResponse.expectStatus().isCreated();
         String employeeBody = employeeResponse.returnResult(String.class).getResponseBody();
         assertThat(employeeBody).contains(employeeEmailForSuffix(suffix));
     }
@@ -153,7 +153,7 @@ public class AdminControllerE2ETest extends AbstractE2ETest {
                 .header(HttpHeaders.AUTHORIZATION, authorizationHeader(accessToken))
                 .contentType(APPLICATION_JSON).body(createCategoryPayload(suffix)).exchange();
 
-        response.expectStatus().isOk();
+        response.expectStatus().isCreated();
         String responseBody = response.returnResult(String.class).getResponseBody();
         assertThat(responseBody).contains(categoryName);
         return categoryIdByName(categoryName).toString();
@@ -335,7 +335,7 @@ public class AdminControllerE2ETest extends AbstractE2ETest {
 
             var deleteResponse = client.delete().uri(ADMIN_BASE_URL + "/employees/" + employeeId)
                     .header(HttpHeaders.AUTHORIZATION, authorizationHeader(accessToken)).exchange();
-            deleteResponse.expectStatus().isOk();
+            deleteResponse.expectStatus().isNoContent();
 
             var getResponse = client.get().uri(ADMIN_BASE_URL + "/employees/" + employeeId)
                     .header(HttpHeaders.AUTHORIZATION, authorizationHeader(accessToken)).exchange();
@@ -353,7 +353,7 @@ public class AdminControllerE2ETest extends AbstractE2ETest {
                     .header(HttpHeaders.AUTHORIZATION, authorizationHeader(accessToken))
                     .contentType(APPLICATION_JSON).body(createCategoryPayload(categorySuffix))
                     .exchange();
-            createResponse.expectStatus().isOk();
+            createResponse.expectStatus().isCreated();
             String createBody = createResponse.returnResult(String.class).getResponseBody();
             assertThat(createBody).contains("Category-" + categorySuffix);
             UUID categoryId = categoryIdByName("Category-" + categorySuffix);
@@ -368,7 +368,7 @@ public class AdminControllerE2ETest extends AbstractE2ETest {
 
             var deleteResponse = client.delete().uri(ADMIN_BASE_URL + "/categories/" + categoryId)
                     .header(HttpHeaders.AUTHORIZATION, authorizationHeader(accessToken)).exchange();
-            deleteResponse.expectStatus().isOk();
+            deleteResponse.expectStatus().isNoContent();
             assertThat(categoryRepository.existsById(categoryId)).isFalse();
         });
     }
@@ -409,7 +409,7 @@ public class AdminControllerE2ETest extends AbstractE2ETest {
                     .header(HttpHeaders.AUTHORIZATION, authorizationHeader(accessToken))
                     .contentType(APPLICATION_JSON)
                     .body(createProductPayload(productSuffix, categoryId)).exchange();
-            createResponse.expectStatus().isOk();
+            createResponse.expectStatus().isCreated();
             String createBody = createResponse.returnResult(String.class).getResponseBody();
             assertThat(createBody).contains("Product-" + productSuffix);
             UUID productId = productIdBySku("SKU-" + productSuffix);
@@ -446,7 +446,7 @@ public class AdminControllerE2ETest extends AbstractE2ETest {
 
             var deleteResponse = client.delete().uri(ADMIN_BASE_URL + "/products/" + productId)
                     .header(HttpHeaders.AUTHORIZATION, authorizationHeader(accessToken)).exchange();
-            deleteResponse.expectStatus().isOk();
+            deleteResponse.expectStatus().isNoContent();
             assertThat(productRepository.existsById(productId)).isFalse();
         });
     }
@@ -513,7 +513,7 @@ public class AdminControllerE2ETest extends AbstractE2ETest {
                     .header(HttpHeaders.AUTHORIZATION, authorizationHeader(accessToken))
                     .contentType(APPLICATION_JSON)
                     .body(createProductPayload(productSuffix, categoryId)).exchange();
-            createProductResponse.expectStatus().isOk();
+            createProductResponse.expectStatus().isCreated();
             UUID productId = productIdBySku("SKU-" + productSuffix);
 
             String salePayload = "{\"productId\":\"" + productId
@@ -521,7 +521,7 @@ public class AdminControllerE2ETest extends AbstractE2ETest {
             var createSaleResponse = client.post().uri("/api/v1/sales")
                     .header(HttpHeaders.AUTHORIZATION, authorizationHeader(accessToken))
                     .contentType(APPLICATION_JSON).body(salePayload).exchange();
-            createSaleResponse.expectStatus().isOk();
+            createSaleResponse.expectStatus().isCreated();
 
             var response = client.get().uri(ADMIN_BASE_URL + "/sales")
                     .header(HttpHeaders.AUTHORIZATION, authorizationHeader(accessToken))
@@ -546,14 +546,14 @@ public class AdminControllerE2ETest extends AbstractE2ETest {
                     .header(HttpHeaders.AUTHORIZATION, authorizationHeader(accessToken))
                     .contentType(APPLICATION_JSON)
                     .body(createProductPayload(productSuffix, categoryId)).exchange();
-            createProductResponse.expectStatus().isOk();
+            createProductResponse.expectStatus().isCreated();
             UUID productId = productIdBySku("SKU-" + productSuffix);
 
             String restockPayload = "{\"productId\":\"" + productId + "\",\"quantity\":17}";
             var createRestockResponse = client.post().uri("/api/v1/restocks")
                     .header(HttpHeaders.AUTHORIZATION, authorizationHeader(accessToken))
                     .contentType(APPLICATION_JSON).body(restockPayload).exchange();
-            createRestockResponse.expectStatus().isOk();
+            createRestockResponse.expectStatus().isCreated();
 
             var response = client.get().uri(ADMIN_BASE_URL + "/restocks")
                     .header(HttpHeaders.AUTHORIZATION, authorizationHeader(accessToken))
@@ -578,7 +578,7 @@ public class AdminControllerE2ETest extends AbstractE2ETest {
                     .header(HttpHeaders.AUTHORIZATION, authorizationHeader(accessToken))
                     .contentType(APPLICATION_JSON)
                     .body(createProductPayload(productSuffix, categoryId)).exchange();
-            createProductResponse.expectStatus().isOk();
+            createProductResponse.expectStatus().isCreated();
             UUID productId = productIdBySku("SKU-" + productSuffix);
 
             String salePayload = "{\"productId\":\"" + productId
@@ -586,7 +586,7 @@ public class AdminControllerE2ETest extends AbstractE2ETest {
             var createSaleResponse = client.post().uri("/api/v1/sales")
                     .header(HttpHeaders.AUTHORIZATION, authorizationHeader(accessToken))
                     .contentType(APPLICATION_JSON).body(salePayload).exchange();
-            createSaleResponse.expectStatus().isOk();
+            createSaleResponse.expectStatus().isCreated();
 
             UUID saleId = saleRepository.findAll().stream()
                     .filter(sale -> sale.getProduct() != null
@@ -596,7 +596,7 @@ public class AdminControllerE2ETest extends AbstractE2ETest {
             var deleteResponse = client.delete().uri(ADMIN_BASE_URL + "/sales/" + saleId)
                     .header(HttpHeaders.AUTHORIZATION, authorizationHeader(accessToken)).exchange();
 
-            deleteResponse.expectStatus().isOk();
+            deleteResponse.expectStatus().isNoContent();
             assertThat(saleRepository.existsById(saleId)).isFalse();
         });
     }
@@ -626,14 +626,14 @@ public class AdminControllerE2ETest extends AbstractE2ETest {
                     .header(HttpHeaders.AUTHORIZATION, authorizationHeader(accessToken))
                     .contentType(APPLICATION_JSON)
                     .body(createProductPayload(productSuffix, categoryId)).exchange();
-            createProductResponse.expectStatus().isOk();
+            createProductResponse.expectStatus().isCreated();
             UUID productId = productIdBySku("SKU-" + productSuffix);
 
             String restockPayload = "{\"productId\":\"" + productId + "\",\"quantity\":7}";
             var createRestockResponse = client.post().uri("/api/v1/restocks")
                     .header(HttpHeaders.AUTHORIZATION, authorizationHeader(accessToken))
                     .contentType(APPLICATION_JSON).body(restockPayload).exchange();
-            createRestockResponse.expectStatus().isOk();
+            createRestockResponse.expectStatus().isCreated();
 
             UUID restockId = restockRepository.findAll().stream()
                     .filter(restock -> restock.getProduct() != null
@@ -643,7 +643,7 @@ public class AdminControllerE2ETest extends AbstractE2ETest {
             var deleteResponse = client.delete().uri(ADMIN_BASE_URL + "/restocks/" + restockId)
                     .header(HttpHeaders.AUTHORIZATION, authorizationHeader(accessToken)).exchange();
 
-            deleteResponse.expectStatus().isOk();
+            deleteResponse.expectStatus().isNoContent();
             assertThat(restockRepository.existsById(restockId)).isFalse();
         });
     }
@@ -671,7 +671,7 @@ public class AdminControllerE2ETest extends AbstractE2ETest {
                     .header(HttpHeaders.AUTHORIZATION, authorizationHeader(accessToken))
                     .contentType(APPLICATION_JSON)
                     .body(createProductPayload(randomSuffix(), categoryId)).exchange();
-            createProductResponse.expectStatus().isOk();
+            createProductResponse.expectStatus().isCreated();
 
             // Get inventory value
             var response = client.get().uri(ADMIN_BASE_URL + "/inventory/value")
