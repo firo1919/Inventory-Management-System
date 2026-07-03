@@ -89,7 +89,8 @@ class AuditLogServiceTest {
 
         auditLogService.deleteAuditLogsByDateRange(startDate, endDate);
 
-        verify(auditLogRepository).findByTimestampBefore(eq(endDate));
+        verify(auditLogRepository).deleteByTimestampBetween(eq(startDate), eq(endDate));
+        verify(auditLogRepository, never()).findByTimestampBefore(any());
     }
 
     @Test

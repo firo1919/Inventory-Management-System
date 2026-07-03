@@ -3,6 +3,7 @@ package com.firomsa.inventory.v1.service;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -71,12 +72,11 @@ class ProductServiceUnitTest {
     }
 
     @Test
-    @DisplayName("Should return all products with image URLs")
+    @DisplayName("Should return all products with image URLs using batch fetch")
     void getAll_ShouldReturnListOfProducts() {
         // Arrange
-        when(productRepository.findAll()).thenReturn(List.of(product));
+        when(productRepository.findAllWithImages()).thenReturn(List.of(product));
         when(productMapper.toDTO(product)).thenReturn(productResponseDTO);
-        when(productRepository.findById(productId)).thenReturn(Optional.of(product));
         when(storageService.getUrl("image1.jpg")).thenReturn("http://example.com/image1.jpg");
 
         // Act
@@ -89,8 +89,35 @@ class ProductServiceUnitTest {
         assertEquals(1, result.get(0).getImageUrls().size());
         assertEquals("http://example.com/image1.jpg", result.get(0).getImageUrls().get(0));
 
-        verify(productRepository, times(1)).findAll();
+        verify(productRepository, times(1)).findAllWithImages();
         verify(productMapper, times(1)).toDTO(product);
+        verify(productRepository, never()).findById(any());
+    }
+
+    @Test
+    @DisplayName("Should return paged products with image URLs using batch fetch")
+    void getAllWithPageable_ShouldReturnPageResponse() {
+        // Arrange
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(0, 10);
+        org.springframework.data.domain.Page<Product> page = new org.springframework.data.domain.PageImpl<>(List.of(product), pageable, 1);
+
+        when(productRepository.findAllWithImages(pageable)).thenReturn(page);
+        when(productMapper.toDTO(product)).thenReturn(productResponseDTO);
+        when(storageService.getUrl("image1.jpg")).thenReturn("http://example.com/image1.jpg");
+
+        // Act
+        var result = productService.getAll(pageable);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(1, result.getContent().size());
+        assertEquals("Laptop", result.getContent().get(0).getName());
+        assertEquals(1, result.getContent().get(0).getImageUrls().size());
+        assertEquals("http://example.com/image1.jpg", result.getContent().get(0).getImageUrls().get(0));
+
+        verify(productRepository, times(1)).findAllWithImages(pageable);
+        verify(productMapper, times(1)).toDTO(product);
+        verify(productRepository, never()).findById(any());
     }
 
     @Test

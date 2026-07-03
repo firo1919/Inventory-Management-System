@@ -10,6 +10,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
@@ -133,12 +134,9 @@ public class AuditLogService {
                 environment.getProperty("audit.logging.enabled", "true"));
     }
 
+    @Transactional
     public void deleteAuditLogsByDateRange(LocalDateTime startDate, LocalDateTime endDate) {
-        List<AuditLog> logsToDelete = auditLogRepository.findByTimestampBefore(endDate);
-        logsToDelete.stream()
-                .filter(log -> log.getTimestamp().isAfter(startDate))
-                .forEach(auditLogRepository::delete);
-
-        log.info("Deleted {} audit logs between {} and {}", logsToDelete.size(), startDate, endDate);
+        int deletedCount = auditLogRepository.deleteByTimestampBetween(startDate, endDate);
+        log.info("Deleted {} audit logs between {} and {}", deletedCount, startDate, endDate);
     }
 }
