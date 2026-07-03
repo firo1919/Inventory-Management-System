@@ -14,6 +14,10 @@ FROM eclipse-temurin:25-jre-alpine AS runner
 
 WORKDIR /app
 
-COPY --from=builder /app/target/inventory-0.0.1-SNAPSHOT.jar ./app.jar
+RUN addgroup -S spring && adduser -S spring -G spring
+
+COPY --chown=spring:spring --from=builder /app/target/inventory-0.0.1-SNAPSHOT.jar ./app.jar
+
+USER spring:spring
 
 ENTRYPOINT ["java", "-jar", "app.jar", "--spring.profiles.active=prod"]
