@@ -19,6 +19,8 @@ import com.firomsa.inventory.model.AuditAction;
 import com.firomsa.inventory.model.AuditLog;
 import com.firomsa.inventory.model.AuditStatus;
 import com.firomsa.inventory.repository.AuditLogRepository;
+import com.firomsa.inventory.repository.UserRepository;
+import com.firomsa.inventory.model.User;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +32,7 @@ import lombok.extern.slf4j.Slf4j;
 public class AuditLogService {
 
     private final AuditLogRepository auditLogRepository;
+    private final UserRepository userRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final Environment environment;
 
@@ -70,6 +73,12 @@ public class AuditLogService {
                 username = ((org.springframework.security.core.userdetails.UserDetails) principal).getUsername();
             } else if (principal instanceof String) {
                 username = (String) principal;
+            }
+
+            if (username != null) {
+                userId = userRepository.findByEmail(username)
+                        .map(User::getId)
+                        .orElse(null);
             }
         }
 
