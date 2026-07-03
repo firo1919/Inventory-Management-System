@@ -84,7 +84,7 @@ public class RestockControllerIntTest extends AbstractIntegrationTest {
         var result = mockMvc.post().uri(BASE_URL).contentType(APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)).exchange();
 
-        assertThat(result).hasStatusOk();
+        assertThat(result).hasStatus(org.springframework.http.HttpStatus.CREATED);
         assertThat(result).bodyJson().extractingPath("$.message")
                 .isEqualTo("Restock recorded successfully");
         assertThat(result).bodyJson().extractingPath("$.quantity")

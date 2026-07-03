@@ -32,7 +32,7 @@ public class SaleController {
 
     @Operation(summary = "For adding a sales record")
     @PostMapping("")
-    @ResponseStatus(HttpStatus.OK)
+    @ResponseStatus(HttpStatus.CREATED)
     public SaleResponseDTO createSale(@Valid @RequestBody SaleRequestDTO saleRequestDTO,
             Authentication authentication) {
         return saleService.createSale(saleRequestDTO, authentication.getName());

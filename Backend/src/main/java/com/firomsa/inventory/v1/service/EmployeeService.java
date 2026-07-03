@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import com.firomsa.inventory.exception.ResourceNotFoundException;
 import com.firomsa.inventory.model.Role;
+import com.firomsa.inventory.model.Roles;
 import com.firomsa.inventory.model.User;
 import com.firomsa.inventory.repository.RoleRepository;
 import com.firomsa.inventory.repository.UserRepository;
@@ -32,7 +33,7 @@ public class EmployeeService {
     private final PasswordEncoder passwordEncoder;
 
     public List<UserResponseDTO> getEmployees() {
-        var users = userRepository.findAll();
+        var users = userRepository.findByRoleNameNot(Roles.ADMIN);
         var response = new ArrayList<UserResponseDTO>();
         for (var user : users) {
             var userResponse = userMapper.toDTO(user);
@@ -46,7 +47,7 @@ public class EmployeeService {
     }
 
     public PageResponse<UserResponseDTO> getEmployees(Pageable pageable) {
-        Page<User> userPage = userRepository.findAll(pageable);
+        Page<User> userPage = userRepository.findByRoleNameNot(Roles.ADMIN, pageable);
         var response = new ArrayList<UserResponseDTO>();
         for (var user : userPage.getContent()) {
             var userResponse = userMapper.toDTO(user);

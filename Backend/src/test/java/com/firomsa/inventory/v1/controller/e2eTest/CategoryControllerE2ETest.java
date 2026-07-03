@@ -43,7 +43,7 @@ public class CategoryControllerE2ETest extends AbstractE2ETest {
         var createResponse = client.post().uri(ADMIN_BASE_URL + "/categories")
                 .header(HttpHeaders.AUTHORIZATION, authorizationHeader(accessToken))
                 .contentType(APPLICATION_JSON).body(createCategoryPayload(suffix)).exchange();
-        createResponse.expectStatus().isOk();
+        createResponse.expectStatus().isCreated();
 
         String categoryName = "Category-" + suffix;
         UUID categoryId = categoryRepository.findAll().stream()
@@ -56,7 +56,7 @@ public class CategoryControllerE2ETest extends AbstractE2ETest {
         var registerEmployeeResponse = client.post().uri(ADMIN_BASE_URL + "/employees")
                 .header(HttpHeaders.AUTHORIZATION, authorizationHeader(adminToken))
                 .contentType(APPLICATION_JSON).body(registerEmployeePayload(suffix)).exchange();
-        registerEmployeeResponse.expectStatus().isOk();
+        registerEmployeeResponse.expectStatus().isCreated();
 
         String employeeEmail = employeeEmailForSuffix(suffix);
         String otp = latestOtpForEmail(employeeEmail);
