@@ -164,7 +164,7 @@ public class AdminControllerIntTest extends AbstractIntegrationTest {
         MvcTestResult result = mockMvc.post().uri(BASE_URL + "/employees")
                 .contentType(APPLICATION_JSON).content(registerEmployeeJson(suffix)).exchange();
 
-        assertThat(result).hasStatusOk();
+        assertThat(result).hasStatus(org.springframework.http.HttpStatus.CREATED);
         assertThat(result).bodyJson().extractingPath("$.data.email").asString()
                 .isEqualTo("employee_" + suffix + "@example.com");
     }
@@ -173,7 +173,7 @@ public class AdminControllerIntTest extends AbstractIntegrationTest {
         MvcTestResult result = mockMvc.post().uri(BASE_URL + "/products")
                 .contentType(APPLICATION_JSON).content(productJson(suffix)).exchange();
 
-        assertThat(result).hasStatusOk();
+        assertThat(result).hasStatus(org.springframework.http.HttpStatus.CREATED);
         assertThat(result).bodyJson().extractingPath("$.name").asString()
                 .isEqualTo("Product " + suffix);
     }
@@ -182,7 +182,7 @@ public class AdminControllerIntTest extends AbstractIntegrationTest {
         MvcTestResult result = mockMvc.post().uri(BASE_URL + "/categories")
                 .contentType(APPLICATION_JSON).content(categoryJson(suffix)).exchange();
 
-        assertThat(result).hasStatusOk();
+        assertThat(result).hasStatus(org.springframework.http.HttpStatus.CREATED);
         assertThat(result).bodyJson().extractingPath("$.name").asString()
                 .isEqualTo("Category " + suffix);
     }
@@ -478,7 +478,7 @@ public class AdminControllerIntTest extends AbstractIntegrationTest {
         UUID employeeId = findEmployeeIdBySuffix(suffix);
 
         assertThat(mockMvc.delete().uri(BASE_URL + "/employees/{id}", employeeId).exchange())
-                .hasStatusOk();
+                .hasStatus(org.springframework.http.HttpStatus.NO_CONTENT);
 
         assertThat(userRepository.existsById(employeeId)).isFalse();
     }
@@ -515,7 +515,7 @@ public class AdminControllerIntTest extends AbstractIntegrationTest {
         UUID productId = findProductIdBySuffix(suffix);
 
         assertThat(mockMvc.delete().uri(BASE_URL + "/products/{id}", productId).exchange())
-                .hasStatusOk();
+                .hasStatus(org.springframework.http.HttpStatus.NO_CONTENT);
 
         assertThat(productRepository.existsById(productId)).isFalse();
     }
@@ -602,7 +602,7 @@ public class AdminControllerIntTest extends AbstractIntegrationTest {
         UUID categoryId = findCategoryIdBySuffix(suffix);
 
         assertThat(mockMvc.delete().uri(BASE_URL + "/categories/{id}", categoryId).exchange())
-                .hasStatusOk();
+                .hasStatus(org.springframework.http.HttpStatus.NO_CONTENT);
 
         assertThat(categoryRepository.existsById(categoryId)).isFalse();
     }
@@ -616,7 +616,7 @@ public class AdminControllerIntTest extends AbstractIntegrationTest {
         var sale = createSale(employee, product, 3, 18.5);
 
         assertThat(mockMvc.delete().uri(BASE_URL + "/sales/{id}", sale.getId()).exchange())
-                .hasStatusOk();
+                .hasStatus(org.springframework.http.HttpStatus.NO_CONTENT);
 
         assertThat(saleRepository.existsById(sale.getId())).isFalse();
     }
@@ -639,7 +639,7 @@ public class AdminControllerIntTest extends AbstractIntegrationTest {
         var restock = createRestock(employee, product, 11);
 
         assertThat(mockMvc.delete().uri(BASE_URL + "/restocks/{id}", restock.getId()).exchange())
-                .hasStatusOk();
+                .hasStatus(org.springframework.http.HttpStatus.NO_CONTENT);
 
         assertThat(restockRepository.existsById(restock.getId())).isFalse();
     }
