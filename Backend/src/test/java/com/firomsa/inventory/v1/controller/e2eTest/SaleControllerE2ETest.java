@@ -59,7 +59,7 @@ public class SaleControllerE2ETest extends AbstractE2ETest {
         var response = client.post().uri(ADMIN_BASE_URL + "/categories")
                 .header(HttpHeaders.AUTHORIZATION, authorizationHeader(accessToken))
                 .contentType(APPLICATION_JSON).body(createCategoryPayload(suffix)).exchange();
-        response.expectStatus().isOk();
+        response.expectStatus().isCreated();
 
         String categoryName = "Category-" + suffix;
         return categoryRepository.findAll().stream().filter(c -> categoryName.equals(c.getName()))
@@ -71,7 +71,7 @@ public class SaleControllerE2ETest extends AbstractE2ETest {
                 .header(HttpHeaders.AUTHORIZATION, authorizationHeader(accessToken))
                 .contentType(APPLICATION_JSON).body(createProductPayload(suffix, categoryId))
                 .exchange();
-        response.expectStatus().isOk();
+        response.expectStatus().isCreated();
 
         String sku = "SKU-" + suffix;
         return productRepository.findAll().stream().filter(p -> sku.equals(p.getSku()))
@@ -82,7 +82,7 @@ public class SaleControllerE2ETest extends AbstractE2ETest {
         var registerEmployeeResponse = client.post().uri(ADMIN_BASE_URL + "/employees")
                 .header(HttpHeaders.AUTHORIZATION, authorizationHeader(adminToken))
                 .contentType(APPLICATION_JSON).body(registerEmployeePayload(suffix)).exchange();
-        registerEmployeeResponse.expectStatus().isOk();
+        registerEmployeeResponse.expectStatus().isCreated();
 
         String employeeEmail = employeeEmailForSuffix(suffix);
         String otp = latestOtpForEmail(employeeEmail);
@@ -121,7 +121,7 @@ public class SaleControllerE2ETest extends AbstractE2ETest {
                 .header(HttpHeaders.AUTHORIZATION, authorizationHeader(adminAccessToken))
                 .contentType(APPLICATION_JSON).body(payload).exchange();
 
-        response.expectStatus().isOk();
+        response.expectStatus().isCreated();
         String body = response.returnResult(String.class).getResponseBody();
         assertThat(body).contains("Sale recorded successfully");
         assertThat(body).contains("\"quantity\":5");
@@ -141,7 +141,7 @@ public class SaleControllerE2ETest extends AbstractE2ETest {
                 .contentType(APPLICATION_JSON).body(createSalePayload(productId, 3, BigDecimal.valueOf(11.5)))
                 .exchange();
 
-        response.expectStatus().isOk();
+        response.expectStatus().isCreated();
         String body = response.returnResult(String.class).getResponseBody();
         assertThat(body).contains("Sale recorded successfully");
         assertThat(body).contains("\"quantity\":3");
@@ -206,7 +206,7 @@ public class SaleControllerE2ETest extends AbstractE2ETest {
                 .header(HttpHeaders.AUTHORIZATION, authorizationHeader(employeeToken))
                 .contentType(APPLICATION_JSON).body(createSalePayload(productId, 3, BigDecimal.valueOf(22.0)))
                 .exchange();
-        createSaleResponse.expectStatus().isOk();
+        createSaleResponse.expectStatus().isCreated();
 
         UUID saleId = saleRepository.findAll().stream()
                 .filter(sale -> sale.getProduct() != null
