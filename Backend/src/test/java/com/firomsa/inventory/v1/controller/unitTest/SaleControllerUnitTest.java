@@ -56,7 +56,7 @@ public class SaleControllerUnitTest {
                 .content(objectMapper.writeValueAsString(request)).exchange();
 
         // Assert
-        assertThat(result).hasStatusOk();
+        assertThat(result).hasStatus(org.springframework.http.HttpStatus.CREATED);
         assertThat(result).bodyJson().extractingPath("$.message").isEqualTo("Sale recorded successfully");
         assertThat(result).bodyJson().extractingPath("$.quantity").isEqualTo(request.getQuantity());
         assertThat(result).bodyJson().extractingPath("$.salePrice").isEqualTo(request.getSalePrice());
