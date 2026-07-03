@@ -6,6 +6,7 @@ import java.util.UUID;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -15,6 +16,14 @@ import com.firomsa.inventory.model.Product;
 
 @Repository
 public interface ProductRepository extends JpaRepository<Product, UUID> {
+
+    @EntityGraph(attributePaths = {"imageKeys"})
+    @Query("SELECT p FROM Product p")
+    List<Product> findAllWithImages();
+
+    @EntityGraph(attributePaths = {"imageKeys"})
+    @Query("SELECT p FROM Product p")
+    Page<Product> findAllWithImages(Pageable pageable);
 
     @Query("SELECT COUNT(p) FROM Product p WHERE p.quantity < p.lowStockThreshold")
     long countByQuantityLessThanLowStockThreshold();
