@@ -54,7 +54,11 @@ public class SaleService {
         productRepository.save(product);
 
         // Check for low stock and send notification if needed
-        notificationService.sendLowStockAlertIfNeeded(product);
+        try {
+            notificationService.sendLowStockAlertIfNeeded(product);
+        } catch (Exception e) {
+            // Notification failure should not fail sale transaction
+        }
 
         var savedSale = saleRepository.save(sale);
         var response = saleMapper.toDTO(savedSale);
