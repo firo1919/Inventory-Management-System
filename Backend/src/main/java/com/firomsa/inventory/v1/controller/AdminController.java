@@ -61,7 +61,7 @@ public class AdminController {
     // Employee management endpoints
     @Operation(summary = "For registering an employee")
     @PostMapping("/employees")
-    @ResponseStatus(HttpStatus.OK)
+    @ResponseStatus(HttpStatus.CREATED)
     public RegisterResponseDTO registerUser(
             @Valid @RequestBody RegisterRequestDTO registerRequestDTO) {
         var response = authService.create(registerRequestDTO);
@@ -122,7 +122,7 @@ public class AdminController {
 
     @Operation(summary = "For deleting an employee by id")
     @DeleteMapping("/employees/{id}")
-    @ResponseStatus(HttpStatus.OK)
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteEmployee(@PathVariable UUID id) {
         employeeService.deleteEmployee(id);
     }
@@ -130,7 +130,7 @@ public class AdminController {
     // Product management endpoints
     @Operation(summary = "Create a product")
     @PostMapping("/products")
-    @ResponseStatus(HttpStatus.OK)
+    @ResponseStatus(HttpStatus.CREATED)
     public ProductResponseDTO createProduct(
             @Valid @RequestBody ProductRequestDTO productRequestDTO) {
         var response = productService.create(productRequestDTO);
@@ -149,7 +149,7 @@ public class AdminController {
     // Product management endpoints
     @Operation(summary = "Delete a product by id")
     @DeleteMapping("/products/{id}")
-    @ResponseStatus(HttpStatus.OK)
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteProduct(@PathVariable UUID id) {
         productService.delete(id);
     }
@@ -180,7 +180,7 @@ public class AdminController {
     // Category management endpoints
     @Operation(summary = "Create a category")
     @PostMapping("/categories")
-    @ResponseStatus(HttpStatus.OK)
+    @ResponseStatus(HttpStatus.CREATED)
     public CategoryResponseDTO createCategory(
             @Valid @RequestBody CategoryRequestDTO categoryRequestDTO) {
         var response = categoryService.create(categoryRequestDTO);
@@ -198,7 +198,7 @@ public class AdminController {
 
     @Operation(summary = "Delete a category by id")
     @DeleteMapping("/categories/{id}")
-    @ResponseStatus(HttpStatus.OK)
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteCategory(@PathVariable UUID id) {
         categoryService.delete(id);
     }
@@ -226,7 +226,7 @@ public class AdminController {
 
     @Operation(summary = "For deleting a sale record by id")
     @DeleteMapping("/sales/{id}")
-    @ResponseStatus(HttpStatus.OK)
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteSaleById(@PathVariable UUID id) {
         saleService.deleteSaleById(id);
     }
@@ -254,7 +254,7 @@ public class AdminController {
 
     @Operation(summary = "For deleting a restock record by id")
     @DeleteMapping("/restocks/{id}")
-    @ResponseStatus(HttpStatus.OK)
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteRestockById(@PathVariable UUID id) {
         restockService.deleteRestockById(id);
     }

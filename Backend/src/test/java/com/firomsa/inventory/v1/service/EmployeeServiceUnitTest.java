@@ -19,6 +19,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import com.firomsa.inventory.exception.ResourceNotFoundException;
 import com.firomsa.inventory.model.Role;
@@ -26,6 +30,7 @@ import com.firomsa.inventory.model.Roles;
 import com.firomsa.inventory.model.User;
 import com.firomsa.inventory.repository.RoleRepository;
 import com.firomsa.inventory.repository.UserRepository;
+import com.firomsa.inventory.v1.dto.PageResponse;
 import com.firomsa.inventory.v1.dto.UserResponseDTO;
 import com.firomsa.inventory.v1.dto.UserUpdateRequestDTO;
 import com.firomsa.inventory.v1.mapper.UserMapper;
@@ -69,10 +74,10 @@ class EmployeeServiceUnitTest {
     }
 
     @Test
-    @DisplayName("Should return all employees with profile picture URLs")
+    @DisplayName("Should return all employees excluding ADMIN users")
     void getEmployees_ShouldReturnListOfEmployees() {
         // Arrange
-        when(userRepository.findAll()).thenReturn(List.of(user));
+        when(userRepository.findByRoleNameNot(Roles.ADMIN)).thenReturn(List.of(user));
         when(userMapper.toDTO(user)).thenReturn(userResponseDTO);
         when(storageService.getUrl("profile.jpg")).thenReturn("http://example.com/profile.jpg");
 
@@ -85,8 +90,32 @@ class EmployeeServiceUnitTest {
         assertEquals("johndoe", result.get(0).getUsername());
         assertEquals("http://example.com/profile.jpg", result.get(0).getProfilePictureUrl());
 
-        verify(userRepository, times(1)).findAll();
+        verify(userRepository, times(1)).findByRoleNameNot(Roles.ADMIN);
         verify(userMapper, times(1)).toDTO(user);
+    }
+
+    @Test
+    @DisplayName("Should return page of employees excluding ADMIN users")
+    void getEmployeesPageable_ShouldReturnPageOfEmployees() {
+        // Arrange
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<User> userPage = new PageImpl<>(List.of(user), pageable, 1);
+        when(userRepository.findByRoleNameNot(Roles.ADMIN, pageable)).thenReturn(userPage);
+        when(userMapper.toDTO(user)).thenReturn(userResponseDTO);
+        when(storageService.getUrl("profile.jpg")).thenReturn("http://example.com/profile.jpg");
+
+        // Act
+        PageResponse<UserResponseDTO> result = employeeService.getEmployees(pageable);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(1, result.getContent().size());
+        assertEquals("johndoe", result.getContent().get(0).getUsername());
+        assertEquals(0, result.getPageNumber());
+        assertEquals(10, result.getPageSize());
+        assertEquals(1, result.getTotalElements());
+
+        verify(userRepository, times(1)).findByRoleNameNot(Roles.ADMIN, pageable);
     }
 
     @Test
