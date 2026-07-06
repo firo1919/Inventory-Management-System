@@ -16,19 +16,30 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.env.Environment;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 
 import com.firomsa.inventory.model.AuditAction;
 import com.firomsa.inventory.model.AuditLog;
 import com.firomsa.inventory.model.AuditStatus;
 import com.firomsa.inventory.repository.AuditLogRepository;
+import com.firomsa.inventory.repository.UserRepository;
 import com.firomsa.inventory.service.AuditLogService;
+import com.firomsa.inventory.model.User;
+import java.util.Optional;
+import static org.mockito.Mockito.mock;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith(MockitoExtension.class)
 class AuditLogServiceTest {
 
     @Mock
     private AuditLogRepository auditLogRepository;
+
+    @Mock
+    private UserRepository userRepository;
 
     @Mock
     private Environment environment;
@@ -78,6 +89,37 @@ class AuditLogServiceTest {
 
         auditLogService.deleteAuditLogsByDateRange(startDate, endDate);
 
-        verify(auditLogRepository).findByTimestampBefore(eq(endDate));
+        verify(auditLogRepository).deleteByTimestampBetween(eq(startDate), eq(endDate));
+        verify(auditLogRepository, never()).findByTimestampBefore(any());
+    }
+
+    @Test
+    void testLogAuditSetsUserIdFromAuthentication() {
+        when(environment.getProperty("audit.logging.enabled", "true")).thenReturn("true");
+
+        String username = "test@example.com";
+        UUID userId = UUID.randomUUID();
+        User mockUser = User.builder().id(userId).email(username).build();
+
+        SecurityContext securityContext = mock(SecurityContext.class);
+        Authentication authentication = mock(Authentication.class);
+        UserDetails userDetails = mock(UserDetails.class);
+
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        when(authentication.isAuthenticated()).thenReturn(true);
+        when(authentication.getPrincipal()).thenReturn(userDetails);
+        when(userDetails.getUsername()).thenReturn(username);
+        SecurityContextHolder.setContext(securityContext);
+
+        when(userRepository.findByEmail(username)).thenReturn(Optional.of(mockUser));
+
+        auditLogService.logAudit(AuditAction.CREATE, "Product", UUID.randomUUID(),
+                null, null, AuditStatus.SUCCESS, null);
+
+        org.mockito.ArgumentCaptor<AuditLog> captor = org.mockito.ArgumentCaptor.forClass(AuditLog.class);
+        verify(auditLogRepository).save(captor.capture());
+        
+        assertEquals(userId, captor.getValue().getUserId());
+        assertEquals(username, captor.getValue().getUsername());
     }
 }

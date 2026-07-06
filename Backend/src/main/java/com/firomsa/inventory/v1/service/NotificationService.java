@@ -17,9 +17,13 @@ public class NotificationService {
     private final AdminConfig adminConfig;
 
     public void sendLowStockAlert(Product product) {
-        String adminEmail = adminConfig.getEmail();
-        log.info("Sending low stock alert for product: {} to admin: {}", product.getName(), adminEmail);
-        emailService.sendLowStockAlert(adminEmail, product);
+        try {
+            String adminEmail = adminConfig.getEmail();
+            log.info("Sending low stock alert for product: {} to admin: {}", product.getName(), adminEmail);
+            emailService.sendLowStockAlert(adminEmail, product);
+        } catch (Exception e) {
+            log.error("Failed to send low stock notification email for product: {}", product.getId(), e);
+        }
     }
 
     public void sendLowStockAlertIfNeeded(Product product) {
