@@ -115,14 +115,14 @@ public class AuthService {
             throw new AuthenticationException("Authentication failed");
         }
 
+        Role role = roleRepository.findByName(Roles.ADMIN)
+                .orElseThrow(() -> new ResourceNotFoundException("Role: ADMIN"));
+
         // Check if admin already exists
-        if (userRepository.count() > 0) {
+        if (userRepository.existsByRole(role)) {
             throw new AuthenticationException(
                     "Only one admin can be registered, if you want to create more admins please ask the existing admin to create them");
         }
-
-        Role role = roleRepository.findByName(Roles.ADMIN)
-                .orElseThrow(() -> new ResourceNotFoundException("Role: ADMIN"));
 
         RegisterRequestDTO registerRequestDTO = new RegisterRequestDTO(
                 registerAdminRequestDTO.firstName(), registerAdminRequestDTO.lastName(),
