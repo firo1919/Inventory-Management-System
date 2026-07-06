@@ -12,6 +12,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.firomsa.inventory.config.BootstrapConfig;
@@ -63,7 +64,8 @@ public class AuthService {
     private final JWTAuthService jwtAuthService;
     private final RefreshTokenRepository refreshTokenRepository;
     private final BootstrapConfig bootstrapConfig;
-    private final int OTP_DURATION = 6;
+    @Value("${app.otp.duration:15}")
+    private int otpDuration = 15;
     private final JwtDecoder jwtDecoder;
     private final AuditLogService auditLogService;
 
@@ -87,7 +89,7 @@ public class AuthService {
         var registeredUser = userRepository.save(user);
         var otp = generateOtp();
         confirmationOtpRepository.save(ConfirmationOTP.builder().otp(otp).user(registeredUser)
-                .expiresAt(LocalDateTime.now().plusMinutes(OTP_DURATION)).build());
+                .expiresAt(LocalDateTime.now().plusMinutes(otpDuration)).build());
         emailService.sendOtp(otp, user.getEmail());
         var response = new RegisterResponseDTO(userMapper.toDTO(registeredUser),
                 "You have successfully registered, confirm the OTP sent to your email");
@@ -136,7 +138,7 @@ public class AuthService {
         var registeredUser = userRepository.save(user);
         var otp = generateOtp();
         confirmationOtpRepository.save(ConfirmationOTP.builder().otp(otp).user(registeredUser)
-                .expiresAt(LocalDateTime.now().plusMinutes(OTP_DURATION)).build());
+                .expiresAt(LocalDateTime.now().plusMinutes(otpDuration)).build());
         emailService.sendOtp(otp, user.getEmail());
         var response = new RegisterResponseDTO(userMapper.toDTO(registeredUser),
                 "You have successfully registered, confirm the OTP sent to your email");
@@ -148,8 +150,8 @@ public class AuthService {
         User user = userRepository.findByEmail(confirmOtpRequestDTO.email())
                 .orElseThrow(() -> new ResourceNotFoundException(confirmOtpRequestDTO.email()));
         var otp = confirmationOtpRepository
-                .findByOtpAndExpiresAtAfterAndConfirmedFalse(confirmOtpRequestDTO.otp(),
-                        LocalDateTime.now())
+                .findByOtpAndUserEmailAndExpiresAtAfterAndConfirmedFalse(confirmOtpRequestDTO.otp(),
+                        confirmOtpRequestDTO.email(), LocalDateTime.now())
                 .orElseThrow(() -> new InvalidOtpException(
                         "Wrong otp, please use the correct OTP code or ask for a resend"));
 
@@ -173,12 +175,14 @@ public class AuthService {
         return numbers.toString();
     }
 
+    @Transactional
     public ResendOtpResponseDTO resendOtp(ResendOtpRequestDTO resendOtpRequestDTO) {
         User user = userRepository.findByEmail(resendOtpRequestDTO.email())
                 .orElseThrow(() -> new ResourceNotFoundException(resendOtpRequestDTO.email()));
+        confirmationOtpRepository.deleteByUserEmailAndConfirmedFalse(resendOtpRequestDTO.email());
         var otp = generateOtp();
         confirmationOtpRepository.save(ConfirmationOTP.builder().otp(otp).user(user)
-                .expiresAt(LocalDateTime.now().plusMinutes(OTP_DURATION)).build());
+                .expiresAt(LocalDateTime.now().plusMinutes(otpDuration)).build());
         emailService.sendOtp(otp, user.getEmail());
         return new ResendOtpResponseDTO("Successfully resent OTP, check your inbox");
     }
