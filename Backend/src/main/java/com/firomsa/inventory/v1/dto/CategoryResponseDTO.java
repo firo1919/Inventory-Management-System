@@ -2,6 +2,7 @@ package com.firomsa.inventory.v1.dto;
 
 import java.util.Set;
 import java.util.UUID;
+import java.io.Serializable;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,7 +12,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CategoryResponseDTO {
+public class CategoryResponseDTO implements Serializable {
 
     private UUID id;
 
