@@ -3,6 +3,7 @@ package com.firomsa.inventory.v1.controller.e2eTest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
@@ -35,7 +36,7 @@ public class EmployeeControllerE2ETest extends AbstractE2ETest {
                 """.formatted(suffix, suffix, categoryId);
     }
 
-    private String createSalePayload(UUID productId, int quantity, double salePrice) {
+    private String createSalePayload(UUID productId, int quantity, BigDecimal salePrice) {
         return "{\"productId\":\"" + productId + "\",\"quantity\":" + quantity
                 + ",\"salePrice\":" + salePrice + "}";
     }
@@ -48,7 +49,7 @@ public class EmployeeControllerE2ETest extends AbstractE2ETest {
         var response = client.post().uri(ADMIN_BASE_URL + "/categories")
                 .header(HttpHeaders.AUTHORIZATION, authorizationHeader(accessToken))
                 .contentType(APPLICATION_JSON).body(createCategoryPayload(suffix)).exchange();
-        response.expectStatus().isOk();
+        response.expectStatus().isCreated();
 
         String categoryName = "Category-" + suffix;
         return categoryRepository.findAll().stream().filter(c -> categoryName.equals(c.getName()))
@@ -60,7 +61,7 @@ public class EmployeeControllerE2ETest extends AbstractE2ETest {
                 .header(HttpHeaders.AUTHORIZATION, authorizationHeader(accessToken))
                 .contentType(APPLICATION_JSON).body(createProductPayload(suffix, categoryId))
                 .exchange();
-        response.expectStatus().isOk();
+        response.expectStatus().isCreated();
 
         String sku = "SKU-" + suffix;
         return productRepository.findAll().stream().filter(p -> sku.equals(p.getSku()))
@@ -92,7 +93,7 @@ public class EmployeeControllerE2ETest extends AbstractE2ETest {
         var registerEmployeeResponse = client.post().uri(ADMIN_BASE_URL + "/employees")
                 .header(HttpHeaders.AUTHORIZATION, authorizationHeader(adminToken))
                 .contentType(APPLICATION_JSON).body(registerEmployeePayload(suffix)).exchange();
-        registerEmployeeResponse.expectStatus().isOk();
+        registerEmployeeResponse.expectStatus().isCreated();
 
         String employeeEmail = employeeEmailForSuffix(suffix);
         String otp = latestOtpForEmail(employeeEmail);
@@ -136,15 +137,15 @@ public class EmployeeControllerE2ETest extends AbstractE2ETest {
 
         var firstSaleResponse = client.post().uri(SALES_BASE_URL)
                 .header(HttpHeaders.AUTHORIZATION, authorizationHeader(firstEmployeeToken))
-                .contentType(APPLICATION_JSON).body(createSalePayload(firstProductId, 2, 12.0))
+                .contentType(APPLICATION_JSON).body(createSalePayload(firstProductId, 2, BigDecimal.valueOf(12.0)))
                 .exchange();
-        firstSaleResponse.expectStatus().isOk();
+        firstSaleResponse.expectStatus().isCreated();
 
         var secondSaleResponse = client.post().uri(SALES_BASE_URL)
                 .header(HttpHeaders.AUTHORIZATION, authorizationHeader(secondEmployeeToken))
-                .contentType(APPLICATION_JSON).body(createSalePayload(secondProductId, 4, 13.0))
+                .contentType(APPLICATION_JSON).body(createSalePayload(secondProductId, 4, BigDecimal.valueOf(13.0)))
                 .exchange();
-        secondSaleResponse.expectStatus().isOk();
+        secondSaleResponse.expectStatus().isCreated();
 
         var response = client.get().uri(EMPLOYEE_BASE_URL + "/sales")
                 .header(HttpHeaders.AUTHORIZATION, authorizationHeader(firstEmployeeToken))
@@ -173,13 +174,13 @@ public class EmployeeControllerE2ETest extends AbstractE2ETest {
                 .header(HttpHeaders.AUTHORIZATION, authorizationHeader(firstEmployeeToken))
                 .contentType(APPLICATION_JSON).body(createRestockPayload(firstProductId, 6))
                 .exchange();
-        firstRestockResponse.expectStatus().isOk();
+        firstRestockResponse.expectStatus().isCreated();
 
         var secondRestockResponse = client.post().uri(RESTOCKS_BASE_URL)
                 .header(HttpHeaders.AUTHORIZATION, authorizationHeader(secondEmployeeToken))
                 .contentType(APPLICATION_JSON).body(createRestockPayload(secondProductId, 9))
                 .exchange();
-        secondRestockResponse.expectStatus().isOk();
+        secondRestockResponse.expectStatus().isCreated();
 
         var response = client.get().uri(EMPLOYEE_BASE_URL + "/restocks")
                 .header(HttpHeaders.AUTHORIZATION, authorizationHeader(firstEmployeeToken))

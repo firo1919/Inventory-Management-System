@@ -10,6 +10,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
@@ -19,6 +20,8 @@ import com.firomsa.inventory.model.AuditAction;
 import com.firomsa.inventory.model.AuditLog;
 import com.firomsa.inventory.model.AuditStatus;
 import com.firomsa.inventory.repository.AuditLogRepository;
+import com.firomsa.inventory.repository.UserRepository;
+import com.firomsa.inventory.model.User;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +33,7 @@ import lombok.extern.slf4j.Slf4j;
 public class AuditLogService {
 
     private final AuditLogRepository auditLogRepository;
+    private final UserRepository userRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final Environment environment;
 
@@ -70,6 +74,12 @@ public class AuditLogService {
                 username = ((org.springframework.security.core.userdetails.UserDetails) principal).getUsername();
             } else if (principal instanceof String) {
                 username = (String) principal;
+            }
+
+            if (username != null) {
+                userId = userRepository.findByEmail(username)
+                        .map(User::getId)
+                        .orElse(null);
             }
         }
 
@@ -124,12 +134,9 @@ public class AuditLogService {
                 environment.getProperty("audit.logging.enabled", "true"));
     }
 
+    @Transactional
     public void deleteAuditLogsByDateRange(LocalDateTime startDate, LocalDateTime endDate) {
-        List<AuditLog> logsToDelete = auditLogRepository.findByTimestampBefore(endDate);
-        logsToDelete.stream()
-                .filter(log -> log.getTimestamp().isAfter(startDate))
-                .forEach(auditLogRepository::delete);
-
-        log.info("Deleted {} audit logs between {} and {}", logsToDelete.size(), startDate, endDate);
+        int deletedCount = auditLogRepository.deleteByTimestampBetween(startDate, endDate);
+        log.info("Deleted {} audit logs between {} and {}", deletedCount, startDate, endDate);
     }
 }

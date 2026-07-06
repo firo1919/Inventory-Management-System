@@ -44,17 +44,25 @@ public class SaleService {
         var user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "User not found with email: " + email));
-        if (product.getQuantity() < saleRequestDTO.getQuantity()) {
+        int updated = productRepository.decrementQuantity(product.getId(), saleRequestDTO.getQuantity());
+        if (updated == 0) {
             throw new IllegalArgumentException("Insufficient stock for product: " + product.getName());
         }
+
+        // Refresh product to obtain updated quantity for notification service
+        var refreshedProduct = productRepository.findById(product.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + product.getId()));
+
         var sale = saleMapper.toModel(saleRequestDTO);
-        sale.setProduct(product);
+        sale.setProduct(refreshedProduct);
         sale.setSoldBy(user);
-        product.setQuantity(product.getQuantity() - saleRequestDTO.getQuantity());
-        productRepository.save(product);
 
         // Check for low stock and send notification if needed
-        notificationService.sendLowStockAlertIfNeeded(product);
+        try {
+            notificationService.sendLowStockAlertIfNeeded(refreshedProduct);
+        } catch (Exception e) {
+            // Notification failure should not fail sale transaction
+        }
 
         var savedSale = saleRepository.save(sale);
         var response = saleMapper.toDTO(savedSale);

@@ -6,6 +6,7 @@ import java.util.UUID;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -15,6 +16,14 @@ import com.firomsa.inventory.model.Product;
 
 @Repository
 public interface ProductRepository extends JpaRepository<Product, UUID> {
+
+    @EntityGraph(attributePaths = {"imageKeys"})
+    @Query("SELECT p FROM Product p")
+    List<Product> findAllWithImages();
+
+    @EntityGraph(attributePaths = {"imageKeys"})
+    @Query("SELECT p FROM Product p")
+    Page<Product> findAllWithImages(Pageable pageable);
 
     @Query("SELECT COUNT(p) FROM Product p WHERE p.quantity < p.lowStockThreshold")
     long countByQuantityLessThanLowStockThreshold();
@@ -33,4 +42,12 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
 
     @Query("SELECT COALESCE(SUM(p.quantity * p.sellingPrice), 0) FROM Product p JOIN p.categories c WHERE c.id = :categoryId")
     BigDecimal calculateInventoryValueByCategory(@Param("categoryId") UUID categoryId);
+
+    @org.springframework.data.jpa.repository.Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Product p SET p.quantity = p.quantity - :qty WHERE p.id = :id AND p.quantity >= :qty")
+    int decrementQuantity(@Param("id") UUID id, @Param("qty") int qty);
+
+    @org.springframework.data.jpa.repository.Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Product p SET p.quantity = p.quantity + :qty WHERE p.id = :id")
+    int incrementQuantity(@Param("id") UUID id, @Param("qty") int qty);
 }

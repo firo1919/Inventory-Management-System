@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
@@ -48,7 +49,7 @@ public class EmployeeControllerUnitTest {
     void shouldReturnOwnSalesForEmployee() {
         UUID productId = UUID.randomUUID();
         SaleResponseDTO sale = SaleResponseDTO.builder().productId(productId).quantity(7)
-                .salePrice(9.5).build();
+                .salePrice(BigDecimal.valueOf(9.5)).build();
         PageResponse<SaleResponseDTO> page = PageResponse.<SaleResponseDTO>builder()
                 .content(List.of(sale)).pageNumber(0).pageSize(10)
                 .totalElements(1).totalPages(1).first(true).last(true).empty(false).build();

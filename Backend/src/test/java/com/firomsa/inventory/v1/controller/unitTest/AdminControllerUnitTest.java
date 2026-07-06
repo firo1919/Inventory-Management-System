@@ -144,7 +144,7 @@ public class AdminControllerUnitTest {
     void shouldReturnAllSales() {
         UUID productId = UUID.randomUUID();
         SaleResponseDTO sale = SaleResponseDTO.builder().productId(productId).quantity(2)
-                .salePrice(15.0).message("Sale recorded successfully").build();
+                .salePrice(BigDecimal.valueOf(15.0)).message("Sale recorded successfully").build();
         PageResponse<SaleResponseDTO> page = PageResponse.<SaleResponseDTO>builder()
                 .content(List.of(sale)).pageNumber(0).pageSize(10)
                 .totalElements(1).totalPages(1).first(true).last(true).empty(false).build();
@@ -234,7 +234,7 @@ public class AdminControllerUnitTest {
 
         MvcTestResult result = mockMvc.post().uri(BASE_URL + "/categories").with(csrf())
                 .contentType(APPLICATION_JSON).content(categoryRequestJson("Beverages")).exchange();
-        assertThat(result).hasStatusOk();
+        assertThat(result).hasStatus(org.springframework.http.HttpStatus.CREATED);
         assertThat(result).bodyJson().extractingPath("$.id").asString()
                 .isEqualTo(response.getId().toString());
         assertThat(result).bodyJson().extractingPath("$.name").asString().isEqualTo("Beverages");
@@ -249,7 +249,7 @@ public class AdminControllerUnitTest {
 
         MvcTestResult result = mockMvc.post().uri(BASE_URL + "/products").with(csrf())
                 .contentType(APPLICATION_JSON).content(productRequestJson()).exchange();
-        assertThat(result).hasStatusOk();
+        assertThat(result).hasStatus(org.springframework.http.HttpStatus.CREATED);
         assertThat(result).bodyJson().extractingPath("$.id").asString()
                 .isEqualTo(response.getId().toString());
         assertThat(result).bodyJson().extractingPath("$.name").asString().isEqualTo("Coffee");
@@ -288,7 +288,7 @@ public class AdminControllerUnitTest {
 
         MvcTestResult result = mockMvc.delete().uri(BASE_URL + "/categories/{id}", categoryId)
                 .with(csrf()).exchange();
-        assertThat(result).hasStatusOk();
+        assertThat(result).hasStatus(org.springframework.http.HttpStatus.NO_CONTENT);
 
         verify(categoryService).delete(categoryId);
     }
@@ -300,7 +300,7 @@ public class AdminControllerUnitTest {
 
         MvcTestResult result = mockMvc.delete().uri(BASE_URL + "/employees/{id}", employeeId)
                 .with(csrf()).exchange();
-        assertThat(result).hasStatusOk();
+        assertThat(result).hasStatus(org.springframework.http.HttpStatus.NO_CONTENT);
 
         verify(employeeService).deleteEmployee(employeeId);
     }
@@ -312,7 +312,7 @@ public class AdminControllerUnitTest {
 
         MvcTestResult result = mockMvc.delete().uri(BASE_URL + "/products/{id}", productId)
                 .with(csrf()).exchange();
-        assertThat(result).hasStatusOk();
+        assertThat(result).hasStatus(org.springframework.http.HttpStatus.NO_CONTENT);
 
         verify(productService).delete(productId);
     }
@@ -324,7 +324,7 @@ public class AdminControllerUnitTest {
 
         MvcTestResult result = mockMvc.delete().uri(BASE_URL + "/sales/{id}", saleId)
                 .with(csrf()).exchange();
-        assertThat(result).hasStatusOk();
+        assertThat(result).hasStatus(org.springframework.http.HttpStatus.NO_CONTENT);
 
         verify(saleService).deleteSaleById(saleId);
     }
@@ -336,7 +336,7 @@ public class AdminControllerUnitTest {
 
         MvcTestResult result = mockMvc.delete().uri(BASE_URL + "/restocks/{id}", restockId)
                 .with(csrf()).exchange();
-        assertThat(result).hasStatusOk();
+        assertThat(result).hasStatus(org.springframework.http.HttpStatus.NO_CONTENT);
 
         verify(restockService).deleteRestockById(restockId);
     }
@@ -384,7 +384,7 @@ public class AdminControllerUnitTest {
 
         MvcTestResult result = mockMvc.post().uri(BASE_URL + "/employees").with(csrf())
                 .contentType(APPLICATION_JSON).content(registerRequestJson()).exchange();
-        assertThat(result).hasStatusOk();
+        assertThat(result).hasStatus(org.springframework.http.HttpStatus.CREATED);
         assertThat(result).bodyJson().extractingPath("$.data.id").asString()
                 .isEqualTo(user.getId().toString());
         assertThat(result).bodyJson().extractingPath("$.message").asString()

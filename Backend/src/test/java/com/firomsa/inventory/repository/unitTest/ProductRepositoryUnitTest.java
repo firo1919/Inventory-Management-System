@@ -161,9 +161,9 @@ public class ProductRepositoryUnitTest {
         LocalDateTime february = LocalDateTime.of(2026, 2, 15, 10, 0);
         LocalDateTime march = LocalDateTime.of(2026, 3, 15, 10, 0);
 
-        saveSaleAt(seller, product, 2, 600.0, january);
-        saveSaleAt(seller, product, 1, 300.0, february);
-        saveSaleAt(seller, product, 3, 900.0, march);
+        saveSaleAt(seller, product, 2, BigDecimal.valueOf(600.0), january);
+        saveSaleAt(seller, product, 1, BigDecimal.valueOf(300.0), february);
+        saveSaleAt(seller, product, 3, BigDecimal.valueOf(900.0), march);
 
         // Act: window covers January and February but excludes March
         List<Sale> sales = saleRepository.findByTimestampBetween(
@@ -177,7 +177,7 @@ public class ProductRepositoryUnitTest {
 
     // timestamp is a @CreatedDate field set on insert, so persist first then
     // override it to place the sale at a deterministic point in time.
-    private void saveSaleAt(User seller, Product product, int quantity, double salePrice,
+    private void saveSaleAt(User seller, Product product, int quantity, BigDecimal salePrice,
             LocalDateTime timestamp) {
         Sale sale = saleRepository.save(Sale.builder().soldBy(seller).product(product)
                 .quantity(quantity).salePrice(salePrice).build());

@@ -42,7 +42,7 @@ public class ProductControllerIntTest extends AbstractIntegrationTest {
         MvcTestResult response = mockMvc.post().uri("/api/v1/admin/categories").contentType(APPLICATION_JSON)
                 .content("{\"name\":\"Category " + suffix + "\"}").exchange();
 
-        assertThat(response).hasStatusOk();
+        assertThat(response).hasStatus(org.springframework.http.HttpStatus.CREATED);
         return categoryRepository.findAll().stream()
                 .filter(c -> ("Category " + suffix).equals(c.getName())).findFirst().orElseThrow()
                 .getId();
@@ -65,7 +65,7 @@ public class ProductControllerIntTest extends AbstractIntegrationTest {
                         }
                         """.formatted(suffix, suffix, categoryId)).exchange();
 
-        assertThat(response).hasStatusOk();
+        assertThat(response).hasStatus(org.springframework.http.HttpStatus.CREATED);
     }
 
     private UUID findProductIdBySuffix(String suffix) {
@@ -163,7 +163,7 @@ public class ProductControllerIntTest extends AbstractIntegrationTest {
                             "categoryIds": ["%s"]
                         }
                         """.formatted(suffix, suffix, categoryId)).exchange();
-        assertThat(lowStockResponse).hasStatusOk();
+        assertThat(lowStockResponse).hasStatus(org.springframework.http.HttpStatus.CREATED);
 
         // Get low stock products
         MvcTestResult response = mockMvc.get().uri(BASE_URL + "/low-stock").exchange();

@@ -1,6 +1,8 @@
 package com.firomsa.inventory.v1.dto;
 
+import java.math.BigDecimal;
 import java.util.UUID;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -17,8 +19,8 @@ public class SaleRequestDTO {
     @Min(1)
     private Integer quantity;
     @NotNull
-    @Min(0)
-    private Double salePrice;
+    @DecimalMin(value = "0.0", inclusive = true)
+    private BigDecimal salePrice;
     @NotNull
     private UUID productId;
 }
