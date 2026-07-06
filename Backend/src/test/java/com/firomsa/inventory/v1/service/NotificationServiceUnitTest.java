@@ -1,6 +1,8 @@
 package com.firomsa.inventory.v1.service;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -74,6 +76,19 @@ public class NotificationServiceUnitTest {
         notificationService.sendLowStockAlert(lowStockProduct);
 
         // Assert
+        verify(emailService).sendLowStockAlert("admin@test.com", lowStockProduct);
+    }
+
+    @Test
+    void shouldCatchExceptionAndNotRethrowWhenEmailFails() {
+        // Arrange
+        Product lowStockProduct = createProduct("Widget", "WDG-123", 1, 10);
+        when(adminConfig.getEmail()).thenReturn("admin@test.com");
+        doThrow(new RuntimeException("Mail server down"))
+                .when(emailService).sendLowStockAlert("admin@test.com", lowStockProduct);
+
+        // Act & Assert
+        assertDoesNotThrow(() -> notificationService.sendLowStockAlert(lowStockProduct));
         verify(emailService).sendLowStockAlert("admin@test.com", lowStockProduct);
     }
 }

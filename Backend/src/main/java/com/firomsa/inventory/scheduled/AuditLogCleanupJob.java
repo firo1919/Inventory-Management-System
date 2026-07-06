@@ -1,13 +1,12 @@
 package com.firomsa.inventory.scheduled;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
-import com.firomsa.inventory.model.AuditLog;
 import com.firomsa.inventory.repository.AuditLogRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -24,6 +23,7 @@ public class AuditLogCleanupJob {
     private int retentionDays;
 
     @Scheduled(cron = "${audit.logging.cleanup.cron:0 0 2 * * ?}") // Default: 2 AM daily
+    @Transactional
     public void cleanupOldAuditLogs() {
         LocalDateTime cutoffDate = LocalDateTime.now().minusDays(retentionDays);
 
@@ -31,10 +31,7 @@ public class AuditLogCleanupJob {
                 retentionDays, cutoffDate);
 
         try {
-            List<AuditLog> logsToDelete = auditLogRepository.findByTimestampBefore(cutoffDate);
-            int deletedCount = logsToDelete.size();
-
-            auditLogRepository.deleteAll(logsToDelete);
+            int deletedCount = auditLogRepository.deleteByTimestampBefore(cutoffDate);
 
             log.info("Audit log cleanup completed. Deleted {} logs older than {}",
                     deletedCount, cutoffDate);

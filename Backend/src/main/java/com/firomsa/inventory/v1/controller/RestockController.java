@@ -32,7 +32,7 @@ public class RestockController {
 
     @Operation(summary = "For adding a restock record")
     @PostMapping("")
-    @ResponseStatus(HttpStatus.OK)
+    @ResponseStatus(HttpStatus.CREATED)
     public RestockResponseDTO createRestock(@Valid @RequestBody RestockRequestDTO restockRequestDTO,
             Authentication authentication) {
         return restockService.createRestock(restockRequestDTO, authentication.getName());
