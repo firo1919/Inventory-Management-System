@@ -14,6 +14,8 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 import com.firomsa.inventory.model.Role;
 import com.firomsa.inventory.model.Roles;
 import com.firomsa.inventory.model.User;
+import com.firomsa.inventory.model.Role;
+import com.firomsa.inventory.model.Roles;
 import com.firomsa.inventory.repository.RoleRepository;
 import com.firomsa.inventory.repository.UserRepository;
 import com.firomsa.inventory.support.SharedContainers;
@@ -73,6 +75,25 @@ public class UserRepositoryUnitTest {
     }
 
     @Test
+    @DisplayName("should check if user exists by role")
+    void shouldCheckIfExistsByRole() {
+        // Arrange
+        Role adminRole = roleRepository.findByName(Roles.ADMIN)
+                .orElseGet(() -> roleRepository.save(Role.builder().name(Roles.ADMIN).build()));
+        user.setRole(adminRole);
+        userRepository.save(user);
+
+        // Act
+        boolean existsAdmin = userRepository.existsByRole(adminRole);
+        Role employeeRole = roleRepository.findByName(Roles.EMPLOYEE)
+                .orElseGet(() -> roleRepository.save(Role.builder().name(Roles.EMPLOYEE).build()));
+        boolean existsEmployee = userRepository.existsByRole(employeeRole);
+
+        // Assert
+        assertThat(existsAdmin).isTrue();
+        assertThat(existsEmployee).isFalse();
+    }
+
     @DisplayName("should exclude users with ADMIN role")
     void shouldExcludeUsersWithAdminRole() {
         Role adminRole = roleRepository.save(Role.builder().name(Roles.ADMIN).build());
