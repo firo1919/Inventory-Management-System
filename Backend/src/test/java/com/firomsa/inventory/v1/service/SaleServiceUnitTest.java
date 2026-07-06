@@ -57,12 +57,13 @@ public class SaleServiceUnitTest {
     @Test
     void shouldCreateASale() {
         // Arrange
-        var request = SaleRequestDTO.builder().productId(UUID.randomUUID()).quantity(5)
+        var productId = UUID.randomUUID();
+        var request = SaleRequestDTO.builder().productId(productId).quantity(5)
                 .salePrice(10.0).build();
         var response = SaleResponseDTO.builder().productId(request.getProductId())
                 .quantity(request.getQuantity()).salePrice(request.getSalePrice())
                 .message("Sale recorded successfully").build();
-        var product = getProduct();
+        var product = Product.builder().id(productId).name("Test Product").quantity(10).build();
         var user = getUser();
         var sale = Sale.builder().product(product).quantity(request.getQuantity()).salePrice(request.getSalePrice())
                 .soldBy(user)
@@ -70,8 +71,9 @@ public class SaleServiceUnitTest {
         when(saleMapper.toDTO(any())).thenReturn(response);
         when(saleMapper.toModel(request)).thenReturn(sale);
         when(saleRepository.save(any())).thenReturn(sale);
-        when(productRepository.findById(request.getProductId())).thenReturn(Optional.of(product));
+        when(productRepository.findById(productId)).thenReturn(Optional.of(product));
         when(userRepository.findByEmail("user@example.com")).thenReturn(Optional.of(user));
+        when(productRepository.decrementQuantity(eq(productId), eq(request.getQuantity()))).thenReturn(1);
 
         // Act
         var result = saleService.createSale(request, "user@example.com");
@@ -243,6 +245,7 @@ public class SaleServiceUnitTest {
         when(saleRepository.save(any())).thenReturn(sale);
         when(productRepository.findById(request.getProductId())).thenReturn(Optional.of(product));
         when(userRepository.findByEmail("user@example.com")).thenReturn(Optional.of(user));
+        when(productRepository.decrementQuantity(eq(product.getId()), eq(request.getQuantity()))).thenReturn(1);
 
         // Act
         saleService.createSale(request, "user@example.com");
@@ -270,6 +273,7 @@ public class SaleServiceUnitTest {
         when(saleRepository.save(any())).thenReturn(sale);
         when(productRepository.findById(request.getProductId())).thenReturn(Optional.of(product));
         when(userRepository.findByEmail("user@example.com")).thenReturn(Optional.of(user));
+        when(productRepository.decrementQuantity(eq(product.getId()), eq(request.getQuantity()))).thenReturn(1);
 
         // Act
         saleService.createSale(request, "user@example.com");
@@ -297,6 +301,7 @@ public class SaleServiceUnitTest {
         when(saleRepository.save(any())).thenReturn(sale);
         when(productRepository.findById(request.getProductId())).thenReturn(Optional.of(product));
         when(userRepository.findByEmail("user@example.com")).thenReturn(Optional.of(user));
+        when(productRepository.decrementQuantity(eq(product.getId()), eq(request.getQuantity()))).thenReturn(1);
         doThrow(new RuntimeException("SMTP connection failed"))
                 .when(notificationService).sendLowStockAlertIfNeeded(any());
 
@@ -306,8 +311,6 @@ public class SaleServiceUnitTest {
         // Assert
         assertThat(result).isNotNull();
         assertThat(result.getMessage()).isEqualTo("Sale recorded successfully");
-        assertThat(product.getQuantity()).isEqualTo(7);
-        verify(productRepository).save(product);
         verify(saleRepository).save(any());
         verify(notificationService).sendLowStockAlertIfNeeded(product);
     }
