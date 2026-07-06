@@ -60,7 +60,7 @@ public class SaleServiceUnitTest {
         // Arrange
         var productId = UUID.randomUUID();
         var request = SaleRequestDTO.builder().productId(productId).quantity(5)
-                .salePrice(10.0).build();
+                .salePrice(BigDecimal.valueOf(10.0)).build();
         var response = SaleResponseDTO.builder().productId(request.getProductId())
                 .quantity(request.getQuantity()).salePrice(request.getSalePrice())
                 .message("Sale recorded successfully").build();
@@ -287,7 +287,7 @@ public class SaleServiceUnitTest {
     void createSale_WhenEmailNotificationFails_ShouldStillCompleteSaleTransaction() {
         // Arrange
         var request = SaleRequestDTO.builder().productId(UUID.randomUUID()).quantity(3)
-                .salePrice(15.0).build();
+                .salePrice(BigDecimal.valueOf(15.0)).build();
         var response = SaleResponseDTO.builder().productId(request.getProductId())
                 .quantity(request.getQuantity()).salePrice(request.getSalePrice())
                 .message("Sale recorded successfully").build();
