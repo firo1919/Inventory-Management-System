@@ -58,7 +58,11 @@ public class SaleService {
         sale.setSoldBy(user);
 
         // Check for low stock and send notification if needed
-        notificationService.sendLowStockAlertIfNeeded(refreshedProduct);
+        try {
+            notificationService.sendLowStockAlertIfNeeded(refreshedProduct);
+        } catch (Exception e) {
+            // Notification failure should not fail sale transaction
+        }
 
         var savedSale = saleRepository.save(sale);
         var response = saleMapper.toDTO(savedSale);

@@ -43,11 +43,11 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
     @Query("SELECT COALESCE(SUM(p.quantity * p.sellingPrice), 0) FROM Product p JOIN p.categories c WHERE c.id = :categoryId")
     BigDecimal calculateInventoryValueByCategory(@Param("categoryId") UUID categoryId);
 
-    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.data.jpa.repository.Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE Product p SET p.quantity = p.quantity - :qty WHERE p.id = :id AND p.quantity >= :qty")
     int decrementQuantity(@Param("id") UUID id, @Param("qty") int qty);
 
-    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.data.jpa.repository.Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE Product p SET p.quantity = p.quantity + :qty WHERE p.id = :id")
     int incrementQuantity(@Param("id") UUID id, @Param("qty") int qty);
 }

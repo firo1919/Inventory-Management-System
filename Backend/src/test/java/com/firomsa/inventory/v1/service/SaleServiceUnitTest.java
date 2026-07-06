@@ -301,6 +301,7 @@ public class SaleServiceUnitTest {
         when(saleRepository.save(any())).thenReturn(sale);
         when(productRepository.findById(request.getProductId())).thenReturn(Optional.of(product));
         when(userRepository.findByEmail("user@example.com")).thenReturn(Optional.of(user));
+        when(productRepository.decrementQuantity(eq(product.getId()), eq(request.getQuantity()))).thenReturn(1);
         doThrow(new RuntimeException("SMTP connection failed"))
                 .when(notificationService).sendLowStockAlertIfNeeded(any());
 
@@ -310,8 +311,6 @@ public class SaleServiceUnitTest {
         // Assert
         assertThat(result).isNotNull();
         assertThat(result.getMessage()).isEqualTo("Sale recorded successfully");
-        assertThat(product.getQuantity()).isEqualTo(7);
-        verify(productRepository).save(product);
         verify(saleRepository).save(any());
         verify(notificationService).sendLowStockAlertIfNeeded(product);
     }
