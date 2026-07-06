@@ -328,13 +328,8 @@ class AuthServiceUnitTest {
     void confirmOtp_WhenOtpBelongsToAnotherUser_ShouldThrowException() {
         // Arrange
         ConfirmOtpRequestDTO request = new ConfirmOtpRequestDTO("12345", "john@example.com");
-        ConfirmationOTP otherUsersOtp = new ConfirmationOTP();
-        otherUsersOtp.setOtp("12345");
-        otherUsersOtp.setConfirmed(false);
 
         when(userRepository.findByEmail("john@example.com")).thenReturn(Optional.of(user));
-        when(confirmationOtpRepository.findByOtpAndUserEmailAndExpiresAtAfterAndConfirmedFalse(eq("12345"),
-                eq("other@example.com"), any(LocalDateTime.class))).thenReturn(Optional.of(otherUsersOtp));
         when(confirmationOtpRepository.findByOtpAndUserEmailAndExpiresAtAfterAndConfirmedFalse(eq("12345"),
                 eq("john@example.com"), any(LocalDateTime.class))).thenReturn(Optional.empty());
         // Act & Assert
