@@ -1,0 +1,1 @@
+ALTER TABLE sales ALTER COLUMN sale_price TYPE NUMERIC(19,4);

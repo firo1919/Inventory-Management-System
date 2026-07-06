@@ -68,7 +68,7 @@ public class EmployeeControllerIntTest extends AbstractIntegrationTest {
                 .role(employeeRole()).build());
     }
 
-    private Sale createSale(User user, Product product, int quantity, double salePrice) {
+    private Sale createSale(User user, Product product, int quantity, BigDecimal salePrice) {
         return saleRepository.save(Sale.builder().soldBy(user).product(product).quantity(quantity)
                 .salePrice(salePrice).build());
     }
@@ -97,8 +97,8 @@ public class EmployeeControllerIntTest extends AbstractIntegrationTest {
         var productOne = createProduct("Product One", "SKU-EMP-1");
         var productTwo = createProduct("Product Two", "SKU-EMP-2");
 
-        createSale(employeeOne, productOne, 3, 20.0);
-        createSale(employeeTwo, productTwo, 5, 30.0);
+        createSale(employeeOne, productOne, 3, BigDecimal.valueOf(20.0));
+        createSale(employeeTwo, productTwo, 5, BigDecimal.valueOf(30.0));
 
         var result = mockMvc.get().uri(BASE_URL + "/sales").exchange();
 

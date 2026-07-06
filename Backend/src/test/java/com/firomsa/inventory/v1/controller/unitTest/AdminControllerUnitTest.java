@@ -144,7 +144,7 @@ public class AdminControllerUnitTest {
     void shouldReturnAllSales() {
         UUID productId = UUID.randomUUID();
         SaleResponseDTO sale = SaleResponseDTO.builder().productId(productId).quantity(2)
-                .salePrice(15.0).message("Sale recorded successfully").build();
+                .salePrice(BigDecimal.valueOf(15.0)).message("Sale recorded successfully").build();
         PageResponse<SaleResponseDTO> page = PageResponse.<SaleResponseDTO>builder()
                 .content(List.of(sale)).pageNumber(0).pageSize(10)
                 .totalElements(1).totalPages(1).first(true).last(true).empty(false).build();

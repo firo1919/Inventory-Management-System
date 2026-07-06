@@ -57,7 +57,7 @@ public class ScheduledReportService {
         List<Sale> yesterdaySales = saleRepository.findByTimestampBetween(startOfYesterday, endOfYesterday);
         int yesterdaySalesCount = yesterdaySales.size();
         BigDecimal yesterdayRevenue = yesterdaySales.stream()
-                .map(sale -> BigDecimal.valueOf(sale.getSalePrice()).multiply(BigDecimal.valueOf(sale.getQuantity())))
+                .map(sale -> sale.getSalePrice().multiply(BigDecimal.valueOf(sale.getQuantity())))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         StringBuilder report = new StringBuilder();

@@ -3,6 +3,7 @@ package com.firomsa.inventory.v1.controller.e2eTest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
@@ -93,7 +94,7 @@ public class SaleControllerE2ETest extends AbstractE2ETest {
         return loginByEmail(employeeEmail);
     }
 
-    private String createSalePayload(UUID productId, Integer quantity, Double salePrice) {
+    private String createSalePayload(UUID productId, Integer quantity, BigDecimal salePrice) {
         return "{\"productId\":\"" + productId + "\",\"quantity\":" + quantity
                 + ",\"salePrice\":" + salePrice + "}";
     }
@@ -114,7 +115,7 @@ public class SaleControllerE2ETest extends AbstractE2ETest {
         UUID categoryId = createCategory(adminAccessToken, randomSuffix());
         String suffix = randomSuffix();
         UUID productId = createProduct(adminAccessToken, suffix, categoryId);
-        String payload = createSalePayload(productId, 5, 10.0);
+        String payload = createSalePayload(productId, 5, BigDecimal.valueOf(10.0));
 
         var response = client.post().uri(SALES_BASE_URL)
                 .header(HttpHeaders.AUTHORIZATION, authorizationHeader(adminAccessToken))
@@ -124,7 +125,7 @@ public class SaleControllerE2ETest extends AbstractE2ETest {
         String body = response.returnResult(String.class).getResponseBody();
         assertThat(body).contains("Sale recorded successfully");
         assertThat(body).contains("\"quantity\":5");
-        assertThat(body).contains("\"salePrice\":10.0");
+        assertThat(body).contains("\"salePrice\":10");
         assertThat(body).contains(productId.toString());
     }
 
@@ -137,7 +138,7 @@ public class SaleControllerE2ETest extends AbstractE2ETest {
 
         var response = client.post().uri(SALES_BASE_URL)
                 .header(HttpHeaders.AUTHORIZATION, authorizationHeader(employeeToken))
-                .contentType(APPLICATION_JSON).body(createSalePayload(productId, 3, 11.5))
+                .contentType(APPLICATION_JSON).body(createSalePayload(productId, 3, BigDecimal.valueOf(11.5)))
                 .exchange();
 
         response.expectStatus().isCreated();
@@ -153,7 +154,7 @@ public class SaleControllerE2ETest extends AbstractE2ETest {
         var response = client.post().uri(SALES_BASE_URL)
                 .header(HttpHeaders.AUTHORIZATION, authorizationHeader(adminAccessToken))
                 .contentType(APPLICATION_JSON)
-                .body(createSalePayload(UUID.randomUUID(), 5, 10.0)).exchange();
+                .body(createSalePayload(UUID.randomUUID(), 5, BigDecimal.valueOf(10.0))).exchange();
 
         response.expectStatus().isNotFound();
         String body = response.returnResult(String.class).getResponseBody();
@@ -168,7 +169,7 @@ public class SaleControllerE2ETest extends AbstractE2ETest {
 
         var response = client.post().uri(SALES_BASE_URL)
                 .header(HttpHeaders.AUTHORIZATION, authorizationHeader(adminAccessToken))
-                .contentType(APPLICATION_JSON).body(createSalePayload(productId, 30, 10.0))
+                .contentType(APPLICATION_JSON).body(createSalePayload(productId, 30, BigDecimal.valueOf(10.0)))
                 .exchange();
 
         response.expectStatus().isBadRequest();
@@ -203,7 +204,7 @@ public class SaleControllerE2ETest extends AbstractE2ETest {
 
         var createSaleResponse = client.post().uri(SALES_BASE_URL)
                 .header(HttpHeaders.AUTHORIZATION, authorizationHeader(employeeToken))
-                .contentType(APPLICATION_JSON).body(createSalePayload(productId, 3, 22.0))
+                .contentType(APPLICATION_JSON).body(createSalePayload(productId, 3, BigDecimal.valueOf(22.0)))
                 .exchange();
         createSaleResponse.expectStatus().isCreated();
 
@@ -219,7 +220,7 @@ public class SaleControllerE2ETest extends AbstractE2ETest {
         String body = getResponse.returnResult(String.class).getResponseBody();
         assertThat(body).contains(productId.toString());
         assertThat(body).contains("\"quantity\":3");
-        assertThat(body).contains("\"salePrice\":22.0");
+        assertThat(body).contains("\"salePrice\":22");
     }
 
     @Test
