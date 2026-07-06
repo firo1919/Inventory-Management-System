@@ -57,10 +57,11 @@ public class RestockServiceUnitTest {
 
     @Test
     void shouldCreateARestock() {
-        var request = RestockRequestDTO.builder().productId(UUID.randomUUID()).quantity(5).build();
+        var productId = UUID.randomUUID();
+        var request = RestockRequestDTO.builder().productId(productId).quantity(5).build();
         var response = RestockResponseDTO.builder().productId(request.getProductId())
                 .quantity(request.getQuantity()).message("Restock recorded successfully").build();
-        var product = getProduct();
+        var product = Product.builder().id(productId).name("Test Product").quantity(10).build();
         var user = getUser();
         var restock = Restock.builder().product(product).quantity(request.getQuantity())
                 .restockedBy(user).build();
@@ -68,7 +69,7 @@ public class RestockServiceUnitTest {
         when(restockMapper.toDTO(any())).thenReturn(response);
         when(restockMapper.toModel(request)).thenReturn(restock);
         when(restockRepository.save(any())).thenReturn(restock);
-        when(productRepository.findById(request.getProductId())).thenReturn(Optional.of(product));
+        when(productRepository.findById(productId)).thenReturn(Optional.of(product));
         when(userRepository.findByEmail("user@example.com")).thenReturn(Optional.of(user));
 
         var result = restockService.createRestock(request, "user@example.com");
