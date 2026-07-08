@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 
 export function useAuth() {
   const router = useRouter();
-  const { data: sessionData, isPending, error } = authClient.useSession();
+  const { data: sessionData, isPending, error, refetch: refetchSession } = authClient.useSession();
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -72,6 +72,6 @@ export function useAuth() {
     error,
     login,
     logout,
-    refetch: authClient.useSession
+    refetch: refetchSession,
   };
 }
