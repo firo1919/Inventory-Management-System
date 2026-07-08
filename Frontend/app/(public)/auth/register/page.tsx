@@ -30,8 +30,7 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      const apiURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
-      const response = await axios.post(`${apiURL}/api/v1/auth/admins`, formData);
+      const response = await axios.post("/api/v1/auth/admins", formData);
 
       // Successfully registered. Redirect to OTP verification with email query parameter.
       router.push(`/auth/verify-otp?email=${encodeURIComponent(formData.email)}`);

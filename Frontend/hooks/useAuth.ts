@@ -1,7 +1,6 @@
 "use client";
 
 import { authClient } from "@/lib/auth-client";
-import { setTokens, clearTokens } from "@/lib/api-client";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -37,12 +36,7 @@ export function useAuth() {
         throw new Error(response.error.message || "Failed to sign in");
       }
 
-      // If successful, extract tokens from the session metadata returned
-      const data = response.data as any;
-      const sessionObj = data?.session;
-      if (sessionObj?.accessToken && sessionObj?.refreshToken) {
-        setTokens(sessionObj.accessToken, sessionObj.refreshToken);
-      }
+      // Tokens are handled securely by server-side cookies, no localStorage needed.
       
       router.push("/dashboard");
       return response.data;
@@ -55,24 +49,13 @@ export function useAuth() {
   const logout = async () => {
     setLoading(true);
     try {
-      // Get refresh token for backend logout request if needed
-      const refreshToken = typeof window !== "undefined" ? localStorage.getItem("refresh_token") : null;
-      if (refreshToken) {
-        const apiURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
-        await fetch(`${apiURL}/api/v1/auth/logout`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ refreshToken }),
-        }).catch(() => {
-          // ignore logout errors on backend
-        });
-      }
+      // Notify backend via relative proxy endpoint
+      await fetch("/api/v1/auth/logout", {
+        method: "POST",
+      }).catch(() => {});
     } catch (e) {
       // ignore
     } finally {
-      clearTokens();
       await authClient.signOut();
       router.push("/auth/login");
       setLoading(false);

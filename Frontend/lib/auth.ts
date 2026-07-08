@@ -39,7 +39,7 @@ export const auth = betterAuth({
       async authorize(credentials: any) {
         const { email, password } = credentials || {};
         try {
-          const apiURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+          const apiURL = process.env.BACKEND_URL || "http://localhost:8080";
           const res = await fetch(`${apiURL}/api/v1/auth/login`, {
             method: "POST",
             headers: {
@@ -47,6 +47,7 @@ export const auth = betterAuth({
             },
             body: JSON.stringify({ email, password }),
           });
+
 
           if (!res.ok) {
             let errorMsg = "Invalid email or password";

@@ -43,8 +43,7 @@ function VerifyOtpPageInner() {
     setLoading(true);
 
     try {
-      const apiURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
-      const response = await axios.post(`${apiURL}/api/v1/auth/confirm-otp`, {
+      const response = await axios.post("/api/v1/auth/confirm-otp", {
         otp,
         email,
       });
@@ -68,8 +67,7 @@ function VerifyOtpPageInner() {
     setResending(true);
 
     try {
-      const apiURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
-      const response = await axios.post(`${apiURL}/api/v1/auth/resend-otp`, {
+      const response = await axios.post("/api/v1/auth/resend-otp", {
         email,
       });
 
