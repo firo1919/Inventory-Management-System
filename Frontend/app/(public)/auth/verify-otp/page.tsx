@@ -1,10 +1,13 @@
 "use client";
 
-import React, { useState, useEffect, Suspense } from "react";
+import React, { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { KeyRound, Mail, Loader2, ArrowLeft, RefreshCw } from "lucide-react";
-import axios from "axios";
+import { apiClient } from "@/lib/api-client";
+import { toast } from "sonner";
+
+const OTP_LENGTH = 6;
 
 function VerifyOtpPageInner() {
   const router = useRouter();
@@ -12,69 +15,101 @@ function VerifyOtpPageInner() {
   const emailParam = searchParams.get("email") || "";
 
   const [email, setEmail] = useState(emailParam);
-  const [otp, setOtp] = useState("");
-  const [error, setError] = useState("");
-  const [message, setMessage] = useState("");
+  const [digits, setDigits] = useState<string[]>(Array(OTP_LENGTH).fill(""));
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
   const [timer, setTimer] = useState(60);
 
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
   useEffect(() => {
-    if (emailParam) {
-      setEmail(emailParam);
-    }
+    if (emailParam) setEmail(emailParam);
   }, [emailParam]);
 
   // Countdown timer for resend button
   useEffect(() => {
-    let interval: any;
-    if (timer > 0) {
-      interval = setInterval(() => {
-        setTimer((prev) => prev - 1);
-      }, 1000);
-    }
+    if (timer <= 0) return;
+    const interval = setInterval(() => setTimer((t) => t - 1), 1000);
     return () => clearInterval(interval);
   }, [timer]);
 
+  // Auto-focus first box on mount
+  useEffect(() => {
+    inputRefs.current[0]?.focus();
+  }, []);
+
+  const otp = digits.join("");
+
+  const handleDigitChange = (index: number, value: string) => {
+    // Allow only digits
+    const digit = value.replace(/\D/g, "").slice(-1);
+    const next = [...digits];
+    next[index] = digit;
+    setDigits(next);
+
+    // Auto-advance focus
+    if (digit && index < OTP_LENGTH - 1) {
+      inputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Backspace") {
+      if (digits[index]) {
+        const next = [...digits];
+        next[index] = "";
+        setDigits(next);
+      } else if (index > 0) {
+        inputRefs.current[index - 1]?.focus();
+      }
+    } else if (e.key === "ArrowLeft" && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+    } else if (e.key === "ArrowRight" && index < OTP_LENGTH - 1) {
+      inputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, OTP_LENGTH);
+    if (!pasted) return;
+    const next = [...digits];
+    pasted.split("").forEach((ch, i) => { next[i] = ch; });
+    setDigits(next);
+    // Focus last filled box
+    const lastIdx = Math.min(pasted.length - 1, OTP_LENGTH - 1);
+    inputRefs.current[lastIdx]?.focus();
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
-    setMessage("");
+    if (otp.length < OTP_LENGTH) {
+      toast.error("Please enter all 6 digits.");
+      return;
+    }
     setLoading(true);
-
     try {
-      const response = await axios.post("/api/v1/auth/confirm-otp", {
-        otp,
-        email,
-      });
-
-      setMessage(response.data?.message || "OTP confirmed successfully!");
-      setLoading(false);
-      
-      // Delay redirect to login so the user can see success message
-      setTimeout(() => {
-        router.push("/auth/login");
-      }, 2000);
+      const response = await apiClient.post("/api/v1/auth/confirm-otp", { otp, email });
+      toast.success(response.data?.message || "OTP confirmed! Redirecting to login...");
+      setTimeout(() => router.push("/auth/login"), 2000);
     } catch (err: any) {
-      setError(err.response?.data?.message || err.message || "Failed to verify OTP");
+      toast.error(err.response?.data?.message || err.message || "Failed to verify OTP");
+    } finally {
       setLoading(false);
     }
   };
 
   const handleResend = async () => {
-    setError("");
-    setMessage("");
     setResending(true);
-
     try {
-      const response = await axios.post("/api/v1/auth/resend-otp", {
-        email,
-      });
-
-      setMessage(response.data?.message || "OTP resent successfully. Please check your email!");
-      setTimer(60); // Reset countdown timer
+      const response = await apiClient.post("/api/v1/auth/resend-otp", { email });
+      toast.success(response.data?.message || "OTP resent! Check your email.");
+      setTimer(60);
+      // Clear boxes and refocus
+      setDigits(Array(OTP_LENGTH).fill(""));
+      setTimeout(() => inputRefs.current[0]?.focus(), 100);
     } catch (err: any) {
-      setError(err.response?.data?.message || err.message || "Failed to resend OTP");
+      toast.error(err.response?.data?.message || err.message || "Failed to resend OTP");
     } finally {
       setResending(false);
     }
@@ -99,23 +134,12 @@ function VerifyOtpPageInner() {
           </div>
           <h1 className="text-2xl font-bold text-white tracking-tight">Verify OTP</h1>
           <p className="text-gray-400 text-sm mt-1.5 px-4">
-            Enter the confirmation code sent to <span className="text-indigo-300 font-medium break-all">{email || "your email"}</span>
+            Enter the 6-digit code sent to{" "}
+            <span className="text-indigo-300 font-medium break-all">{email || "your email"}</span>
           </p>
         </div>
 
-        {error && (
-          <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-sm p-3 rounded-lg mb-6">
-            <span className="font-semibold">Error:</span> {error}
-          </div>
-        )}
-
-        {message && (
-          <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm p-3 rounded-lg mb-6">
-            {message}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-6">
           {!emailParam && (
             <div>
               <label className="block text-gray-300 text-xs font-medium mb-1.5" htmlFor="email">
@@ -138,25 +162,37 @@ function VerifyOtpPageInner() {
             </div>
           )}
 
+          {/* 6-digit OTP input boxes */}
           <div>
-            <label className="block text-gray-300 text-xs font-medium mb-1.5" htmlFor="otp">
-              One-Time Password (OTP)
+            <label className="block text-gray-300 text-xs font-medium mb-3 text-center">
+              One-Time Password
             </label>
-            <input
-              id="otp"
-              type="text"
-              required
-              maxLength={6}
-              value={otp}
-              onChange={(e) => setOtp(e.target.value)}
-              placeholder="123456"
-              className="w-full text-center tracking-[0.5em] font-mono py-3 bg-[#0a0a0f]/60 border border-white/10 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all text-lg"
-            />
+            <div className="flex justify-center gap-3" onPaste={handlePaste}>
+              {digits.map((digit, i) => (
+                <input
+                  key={i}
+                  ref={(el) => { inputRefs.current[i] = el; }}
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={1}
+                  value={digit}
+                  onChange={(e) => handleDigitChange(i, e.target.value)}
+                  onKeyDown={(e) => handleKeyDown(i, e)}
+                  className={`w-12 h-14 text-center text-xl font-bold font-mono rounded-xl border transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500/70 focus:border-indigo-500 bg-[#0a0a0f]/60 text-white ${
+                    digit
+                      ? "border-indigo-500/60 bg-indigo-500/10"
+                      : "border-white/10"
+                  }`}
+                  aria-label={`OTP digit ${i + 1}`}
+                />
+              ))}
+            </div>
+            <p className="text-center text-[11px] text-gray-600 mt-2">Paste your code or type each digit</p>
           </div>
 
           <button
             type="submit"
-            disabled={loading || !otp}
+            disabled={loading || otp.length < OTP_LENGTH}
             className="w-full py-2.5 px-4 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-medium rounded-xl shadow-lg shadow-indigo-500/20 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all text-sm"
           >
             {loading ? (
@@ -172,7 +208,7 @@ function VerifyOtpPageInner() {
 
         <div className="mt-8 text-center text-xs text-gray-500">
           {timer > 0 ? (
-            <p>Resend OTP in {timer}s</p>
+            <p>Resend OTP in <span className="text-indigo-400 font-semibold">{timer}s</span></p>
           ) : (
             <button
               onClick={handleResend}
