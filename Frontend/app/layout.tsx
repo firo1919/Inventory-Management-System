@@ -1,6 +1,4 @@
 import type { Metadata } from "next";
-
-import { StoreProvider } from '@/store/provider'
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
@@ -20,17 +18,13 @@ export const metadata: Metadata = {
   description: "A modern inventory management platform for tracking products, sales, restocks, and employees.",
 };
 
-
-
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
       <body className="antialiased bg-background text-foreground font-sans">
-        <StoreProvider>
-          {children}
-          <Toaster position="top-right" richColors closeButton />
-        </StoreProvider>
+        {children}
+        <Toaster position="top-right" richColors closeButton />
       </body>
     </html>
-  )
+  );
 }
