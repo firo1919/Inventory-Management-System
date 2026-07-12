@@ -23,27 +23,27 @@ This is the Next.js frontend application for the **Inventory Management System**
 
 | Layer | Technology |
 | :--- | :--- |
-| **Framework** | Next.js 14+ (App Router) |
+| **Framework** | Next.js 15+ (App Router) |
 | **Language** | TypeScript |
 | **Styling** | Tailwind CSS |
 | **Authentication** | Better Auth Client |
 | **API Client** | Axios (configured with interceptors for JWT auth headers) |
-| **State Management** | Redux Toolkit & React Context |
+| **State Management** | React Context (with local storage & cookies) |
 
 ---
 
 ## 📂 Directory Structure
 
 ```bash
-src/
+Frontend/
 ├── app/                  # Next.js App Router Pages & Routing
 │   ├── (public)/         # Public pages (Login, Register)
 │   ├── (protected)/      # Authenticated dashboard, products, audit log pages
 │   └── layout.tsx
-├── components/           # Global reusable UI Components (cards, tables, modals)
+├── components/           # Global reusable UI Components (search select inputs, modals, layout)
 ├── constants/            # Configuration constants and endpoint paths
 ├── hooks/                # Custom React hooks (useAuth, useProducts, etc.)
-├── services/             # Core service layers & API calls
+├── lib/                  # Auth clients, Axios instance, and utilities
 └── utils/                # Helpers (token storage, date formatters)
 ```
 
@@ -58,9 +58,10 @@ src/
 ### 2. Configuration
 Create a `.env` file in the root of the `Frontend/` folder:
 ```env
-NEXT_PUBLIC_API_URL=http://localhost:8080
+BACKEND_URL=http://localhost:8080
+NEXT_PUBLIC_APP_URL=http://localhost:3000
 BETTER_AUTH_URL=http://localhost:3000
-BETTER_AUTH_SECRET=f53603ddb1c5c52f094cf7d510b66df2fcd583804b8a00893f668c27108321d6
+BETTER_AUTH_SECRET=inventory_management_system_secure_key_123456
 ```
 
 ### 3. Installation
