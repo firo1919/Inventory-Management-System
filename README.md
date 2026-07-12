@@ -44,7 +44,7 @@ The system operates as a decoupled architecture:
 | **Framework**            | Spring Boot 4.x / Spring Security         | Next.js 15.x / React 19 / Turbopack |
 | **Languages**            | Java 25                                   | TypeScript                          |
 | **Database & Migration** | PostgreSQL 16+, Flyway                    | -                                   |
-| **Cache & Session**      | Spring Data Redis                         | Redux Toolkit, Better Auth          |
+| **Cache & Session**      | Spring Data Redis                         | Better Auth                         |
 | **Storage / Assets**     | AWS S3 SDK (compatible with MinIO/RustFS) | Axios & Presigned PUT uploads       |
 | **Developer Tools**      | OpenAPI (SpringDoc), Mailhog, Docker      | Tailwind CSS, Lucide icons, Sonner  |
 
@@ -99,7 +99,8 @@ From the `Backend` directory:
 First, create an environment file. In `Frontend/.env`:
 
 ```env
-NEXT_PUBLIC_API_URL=http://localhost:8080
+BACKEND_URL=http://localhost:8080
+NEXT_PUBLIC_APP_URL=http://localhost:3000
 BETTER_AUTH_URL=http://localhost:3000
 BETTER_AUTH_SECRET=f53603ddb1c5c52f094cf7d510b66df2fcd583804b8a00893f668c27108321d6
 ```
