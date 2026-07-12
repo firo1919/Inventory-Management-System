@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { apiClient } from "@/lib/api-client";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import {
   Search,
   ChevronLeft,
@@ -87,8 +88,8 @@ export default function AuditLogsPage() {
       setLogs(res.data?.content || []);
       setTotalPages(res.data?.totalPages || 1);
       setTotalElements(res.data?.totalElements || 0);
-    } catch (err) {
-      console.error("Failed to load audit logs:", err);
+    } catch {
+      toast.error("Failed to load audit logs.");
     } finally {
       setLoading(false);
     }
@@ -100,8 +101,8 @@ export default function AuditLogsPage() {
       setStatsLoading(true);
       const res = await apiClient.get("/api/v1/admin/audit-logs/statistics");
       setStats(res.data);
-    } catch (err) {
-      console.error("Failed to load audit statistics:", err);
+    } catch {
+      toast.error("Failed to load audit statistics.");
     } finally {
       setStatsLoading(false);
     }
@@ -165,9 +166,8 @@ export default function AuditLogsPage() {
       document.body.appendChild(link);
       link.click();
       link.parentNode?.removeChild(link);
-    } catch (err) {
-      console.error("Failed to export logs:", err);
-      alert("Failed to export logs. Please try again.");
+    } catch {
+      toast.error("Failed to export logs. Please try again.");
     } finally {
       setExporting(false);
     }
@@ -190,10 +190,11 @@ export default function AuditLogsPage() {
       setIsDeleteModalOpen(false);
       setDeleteStartDate("");
       setDeleteEndDate("");
+      toast.success("Audit logs cleared successfully.");
       fetchLogs();
       fetchStats();
     } catch (err: any) {
-      alert(err.response?.data?.message || err.message || "Failed to clear logs");
+      toast.error(err.response?.data?.message || err.message || "Failed to clear logs");
     } finally {
       setLoading(false);
     }

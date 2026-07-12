@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { apiClient } from "@/lib/api-client";
 import { toast } from "sonner";
+import SearchableSelect from "@/components/SearchableSelect";
 import {
   Plus,
   ChevronLeft,
@@ -11,6 +12,7 @@ import {
   Trash2,
   AlertTriangle,
   Loader2,
+  Eye,
 } from "lucide-react";
 
 export default function RestocksPage() {
@@ -18,7 +20,6 @@ export default function RestocksPage() {
   
   // Data States
   const [restocks, setRestocks] = useState<any[]>([]);
-  const [products, setProducts] = useState<any[]>([]);
   const [productMap, setProductMap] = useState<Record<string, string>>({});
 
   // Pagination & Filters
@@ -33,36 +34,37 @@ export default function RestocksPage() {
   // Modal States
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   
-  // Selected Restock for Delete
+  // Selected Restock
   const [selectedRestock, setSelectedRestock] = useState<any>(null);
 
   // Form State
-  const [form, setForm] = useState({
-    productId: "",
-    quantity: "",
-  });
+  const [form, setForm] = useState({ productId: "", quantity: "" });
   const [formError, setFormError] = useState("");
   const [selectedProductDetails, setSelectedProductDetails] = useState<any>(null);
 
-  // Fetch all products (for mapping and select list)
+  // Fetch product names for table display map
   useEffect(() => {
-    async function fetchProducts() {
+    async function fetchProductNames() {
       try {
-        const res = await apiClient.get("/api/v1/products?page=0&size=100");
-        const content = res.data?.content || [];
-        setProducts(content);
-        
+        let allContent: any[] = [];
+        let p = 0;
+        let totalPgs = 1;
+        while (p < totalPgs && p < 5) {
+          const res = await apiClient.get(`/api/v1/products?page=${p}&size=20`);
+          allContent = allContent.concat(res.data?.content || []);
+          totalPgs = res.data?.totalPages || 1;
+          p++;
+        }
         const mapping: Record<string, string> = {};
-        content.forEach((p: any) => {
-          mapping[p.id] = p.name;
-        });
+        allContent.forEach((pr: any) => { mapping[pr.id] = pr.name; });
         setProductMap(mapping);
       } catch {
-        toast.error("Failed to load products for the dropdown.");
+        // non-critical
       }
     }
-    fetchProducts();
+    fetchProductNames();
   }, []);
 
   // Fetch Restocks Log
@@ -93,15 +95,11 @@ export default function RestocksPage() {
     fetchRestocks();
   }, [page, pageSize, isAdmin]);
 
-  // Update selected product details in form
-  useEffect(() => {
-    if (form.productId) {
-      const prod = products.find((p) => p.id === form.productId);
-      setSelectedProductDetails(prod || null);
-    } else {
-      setSelectedProductDetails(null);
-    }
-  }, [form.productId, products]);
+  // Update selected product details from SearchableSelect raw data
+  const handleProductSelect = (productId: string, rawProduct?: any) => {
+    setForm((prev) => ({ ...prev, productId }));
+    setSelectedProductDetails(rawProduct || null);
+  };
 
   // Add Restock Submit
   const handleAddRestock = async (e: React.FormEvent) => {
@@ -153,11 +151,13 @@ export default function RestocksPage() {
     setIsDeleteModalOpen(true);
   };
 
+  const openViewModal = (restock: any) => {
+    setSelectedRestock(restock);
+    setIsViewModalOpen(true);
+  };
+
   const resetForm = () => {
-    setForm({
-      productId: "",
-      quantity: "",
-    });
+    setForm({ productId: "", quantity: "" });
     setFormError("");
     setSelectedProductDetails(null);
   };
@@ -190,28 +190,32 @@ export default function RestocksPage() {
                 <th className="p-4">Product Name</th>
                 <th className="p-4 text-right">Quantity Restocked</th>
                 <th className="p-4">Date Logged</th>
-                {isAdmin && <th className="p-4 text-center">Actions</th>}
+                <th className="p-4 text-center">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-white/5">
               {loading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i} className="animate-pulse">
-                    <td colSpan={isAdmin ? 5 : 4} className="p-4 h-12 bg-slate-50/10 dark:bg-[#0e0e13]/10" />
+                    <td colSpan={5} className="p-4 h-12 bg-slate-50/10 dark:bg-[#0e0e13]/10" />
                   </tr>
                 ))
               ) : restocks.length === 0 ? (
                 <tr>
-                  <td colSpan={isAdmin ? 5 : 4} className="p-8 text-center text-slate-400">
+                  <td colSpan={5} className="p-8 text-center text-slate-400">
                     No restocks recorded yet.
                   </td>
                 </tr>
               ) : (
                 restocks.map((r) => (
-                  <tr key={r.id} className="hover:bg-slate-50/50 dark:hover:bg-[#1c1c24]/10 text-slate-600 dark:text-slate-300">
+                  <tr
+                    key={r.id}
+                    onClick={() => openViewModal(r)}
+                    className="hover:bg-slate-50/50 dark:hover:bg-[#1c1c24]/10 text-slate-600 dark:text-slate-300 cursor-pointer"
+                  >
                     <td className="p-4 font-mono text-xs text-indigo-400">{r.id.substring(0, 8)}...</td>
                     <td className="p-4 font-semibold text-slate-800 dark:text-white">
-                      {productMap[r.productId] || "Unknown Product"}
+                      {productMap[r.productId] || r.productName || "Unknown Product"}
                     </td>
                     <td className="p-4 text-right font-medium text-emerald-500">+{r.quantity}</td>
                     <td className="p-4 text-xs text-slate-400">
@@ -223,19 +227,26 @@ export default function RestocksPage() {
                         minute: "2-digit",
                       })}
                     </td>
-                    {isAdmin && (
-                      <td className="p-4">
-                        <div className="flex items-center justify-center">
+                    <td className="p-4" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center justify-center gap-1.5">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); openViewModal(r); }}
+                          title="View Details"
+                          className="p-1.5 rounded-lg border border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-[#0a0a0f] text-slate-400 hover:text-indigo-500 hover:bg-slate-100 transition-colors cursor-pointer"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        {isAdmin && (
                           <button
-                            onClick={() => openDeleteModal(r)}
-                            title="Delete restock record"
+                            onClick={(e) => { e.stopPropagation(); openDeleteModal(r); }}
+                            title="Delete record"
                             className="p-1.5 rounded-lg border border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-[#0a0a0f] text-slate-400 hover:text-red-500 hover:bg-slate-100 transition-colors cursor-pointer"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
-                        </div>
-                      </td>
-                    )}
+                        )}
+                      </div>
+                    </td>
                   </tr>
                 ))
               )}
@@ -283,22 +294,22 @@ export default function RestocksPage() {
                 </div>
               )}
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-1">Select Product *</label>
-                <select
-                  required
-                  value={form.productId}
-                  onChange={(e) => setForm({ ...form, productId: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-[#0a0a0f] border border-slate-200 dark:border-white/5 rounded-xl text-xs"
-                >
-                  <option value="">Choose product...</option>
-                  {products.map((p) => (
-                    <option key={p.id} value={p.id} disabled={!p.active}>
-                      {p.name} (currently {p.quantity} in stock)
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <SearchableSelect
+                endpoint="/api/v1/products"
+                mapItem={(p) => ({
+                  value: p.id,
+                  label: p.name,
+                  subLabel: `${p.quantity} currently in stock · cost $${p.costPrice?.toFixed(2)}`,
+                  disabled: !p.active,
+                  raw: p,
+                })}
+                value={form.productId}
+                onChange={handleProductSelect}
+                placeholder="Search & select product..."
+                label="Select Product"
+                required
+                pageSize={20}
+              />
 
               {selectedProductDetails && (
                 <div className="p-3 bg-indigo-500/5 border border-indigo-500/10 rounded-xl text-[11px] space-y-1 text-indigo-400">
@@ -368,6 +379,56 @@ export default function RestocksPage() {
                 className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-semibold transition-all shadow-md shadow-red-500/10"
               >
                 {loading ? "Deleting..." : "Delete Log"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* RESTOCK DETAIL VIEW MODAL */}
+      {isViewModalOpen && selectedRestock && (
+        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#13131a] border border-slate-200 dark:border-white/5 rounded-2xl w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white">Restock Details</h3>
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                RESTOCK
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 text-xs mb-4">
+              <div className="col-span-2">
+                <span className="text-[10px] text-slate-400 uppercase tracking-wider block mb-0.5">Transaction ID</span>
+                <span className="font-mono text-indigo-400">{selectedRestock.id}</span>
+              </div>
+              <div>
+                <span className="text-[10px] text-slate-400 uppercase tracking-wider block mb-0.5">Product</span>
+                <span className="font-semibold text-slate-800 dark:text-white">
+                  {productMap[selectedRestock.productId] || selectedRestock.productName || "Unknown"}
+                </span>
+              </div>
+              <div>
+                <span className="text-[10px] text-slate-400 uppercase tracking-wider block mb-0.5">Quantity Added</span>
+                <span className="font-bold text-emerald-500 text-lg">+{selectedRestock.quantity}</span>
+              </div>
+              <div className="col-span-2">
+                <span className="text-[10px] text-slate-400 uppercase tracking-wider block mb-0.5">Date Logged</span>
+                <span>{new Date(selectedRestock.timestamp || selectedRestock.restockDate || selectedRestock.createdAt).toLocaleString()}</span>
+              </div>
+              {selectedRestock.employeeName && (
+                <div>
+                  <span className="text-[10px] text-slate-400 uppercase tracking-wider block mb-0.5">Logged By</span>
+                  <span className="font-semibold">{selectedRestock.employeeName}</span>
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end pt-4 border-t border-slate-200 dark:border-white/5">
+              <button
+                onClick={() => setIsViewModalOpen(false)}
+                className="px-4 py-2 border border-slate-200 dark:border-white/10 text-slate-500 hover:text-slate-700 dark:text-slate-400 rounded-xl text-xs font-semibold"
+              >
+                Close
               </button>
             </div>
           </div>

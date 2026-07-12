@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { apiClient } from "@/lib/api-client";
 import { toast } from "sonner";
+import SearchableSelect from "@/components/SearchableSelect";
 import {
   Plus,
   ChevronLeft,
@@ -11,6 +12,7 @@ import {
   Trash2,
   AlertTriangle,
   Loader2,
+  Eye,
 } from "lucide-react";
 
 export default function SalesPage() {
@@ -18,7 +20,6 @@ export default function SalesPage() {
   
   // Data States
   const [sales, setSales] = useState<any[]>([]);
-  const [products, setProducts] = useState<any[]>([]);
   const [productMap, setProductMap] = useState<Record<string, string>>({});
 
   // Pagination & Filters
@@ -33,8 +34,9 @@ export default function SalesPage() {
   // Modal States
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   
-  // Selected Sale for Delete
+  // Selected Sale
   const [selectedSale, setSelectedSale] = useState<any>(null);
 
   // Form State
@@ -46,24 +48,27 @@ export default function SalesPage() {
   const [formError, setFormError] = useState("");
   const [selectedProductDetails, setSelectedProductDetails] = useState<any>(null);
 
-  // Fetch all products (for mapping and select list)
+  // Fetch all products for productMap (table name lookups) — small page of names
   useEffect(() => {
-    async function fetchProducts() {
+    async function fetchProductNames() {
       try {
-        const res = await apiClient.get("/api/v1/products?page=0&size=100");
-        const content = res.data?.content || [];
-        setProducts(content);
-        
+        let allContent: any[] = [];
+        let p = 0;
+        let totalPgs = 1;
+        while (p < totalPgs && p < 5) { // max 5 pages = 100 products for the map
+          const res = await apiClient.get(`/api/v1/products?page=${p}&size=20`);
+          allContent = allContent.concat(res.data?.content || []);
+          totalPgs = res.data?.totalPages || 1;
+          p++;
+        }
         const mapping: Record<string, string> = {};
-        content.forEach((p: any) => {
-          mapping[p.id] = p.name;
-        });
+        allContent.forEach((pr: any) => { mapping[pr.id] = pr.name; });
         setProductMap(mapping);
       } catch {
-        toast.error("Failed to load products for the dropdown.");
+        // non-critical
       }
     }
-    fetchProducts();
+    fetchProductNames();
   }, []);
 
   // Fetch Sales Log
@@ -94,18 +99,16 @@ export default function SalesPage() {
     fetchSales();
   }, [page, pageSize, isAdmin]);
 
-  // Update selected product price/limits in form
-  useEffect(() => {
-    if (form.productId) {
-      const prod = products.find((p) => p.id === form.productId);
-      setSelectedProductDetails(prod || null);
-      if (prod) {
-        setForm((prev) => ({ ...prev, salePrice: prod.sellingPrice.toString() }));
-      }
+  // Update selected product price/limits from the product raw data selected in SearchableSelect
+  const handleProductSelect = (productId: string, rawProduct?: any) => {
+    setForm((prev) => ({ ...prev, productId }));
+    if (rawProduct) {
+      setSelectedProductDetails(rawProduct);
+      setForm((prev) => ({ ...prev, productId, salePrice: rawProduct.sellingPrice?.toString() || "" }));
     } else {
       setSelectedProductDetails(null);
     }
-  }, [form.productId, products]);
+  };
 
   // Add Sale Submit
   const handleAddSale = async (e: React.FormEvent) => {
@@ -164,12 +167,13 @@ export default function SalesPage() {
     setIsDeleteModalOpen(true);
   };
 
+  const openViewModal = (sale: any) => {
+    setSelectedSale(sale);
+    setIsViewModalOpen(true);
+  };
+
   const resetForm = () => {
-    setForm({
-      productId: "",
-      quantity: "",
-      salePrice: "",
-    });
+    setForm({ productId: "", quantity: "", salePrice: "" });
     setFormError("");
     setSelectedProductDetails(null);
   };
@@ -224,10 +228,14 @@ export default function SalesPage() {
                 sales.map((s) => {
                   const totalPrice = s.quantity * (s.salePrice || 0);
                   return (
-                    <tr key={s.id} className="hover:bg-slate-50/50 dark:hover:bg-[#1c1c24]/10 text-slate-600 dark:text-slate-300">
+                    <tr
+                      key={s.id}
+                      onClick={() => openViewModal(s)}
+                      className="hover:bg-slate-50/50 dark:hover:bg-[#1c1c24]/10 text-slate-600 dark:text-slate-300 cursor-pointer"
+                    >
                       <td className="p-4 font-mono text-xs text-indigo-400">{s.id.substring(0, 8)}...</td>
                       <td className="p-4 font-semibold text-slate-800 dark:text-white">
-                        {productMap[s.productId] || "Unknown Product"}
+                        {productMap[s.productId] || s.productName || "Unknown Product"}
                       </td>
                       <td className="p-4 text-right font-medium">{s.quantity}</td>
                       <td className="p-4 text-right font-medium">${s.salePrice?.toFixed(2)}</td>
@@ -243,19 +251,26 @@ export default function SalesPage() {
                           minute: "2-digit",
                         })}
                       </td>
-                      {isAdmin && (
-                        <td className="p-4">
-                          <div className="flex items-center justify-center">
+                      <td className="p-4" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-center gap-1.5">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); openViewModal(s); }}
+                            title="View Details"
+                            className="p-1.5 rounded-lg border border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-[#0a0a0f] text-slate-400 hover:text-indigo-500 hover:bg-slate-100 transition-colors cursor-pointer"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          {isAdmin && (
                             <button
-                              onClick={() => openDeleteModal(s)}
-                              title="Delete sale record"
+                              onClick={(e) => { e.stopPropagation(); openDeleteModal(s); }}
+                              title="Delete Record"
                               className="p-1.5 rounded-lg border border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-[#0a0a0f] text-slate-400 hover:text-red-500 hover:bg-slate-100 transition-colors cursor-pointer"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
-                          </div>
-                        </td>
-                      )}
+                          )}
+                        </div>
+                      </td>
                     </tr>
                   );
                 })
@@ -304,22 +319,22 @@ export default function SalesPage() {
                 </div>
               )}
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-1">Select Product *</label>
-                <select
-                  required
-                  value={form.productId}
-                  onChange={(e) => setForm({ ...form, productId: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-[#0a0a0f] border border-slate-200 dark:border-white/5 rounded-xl text-xs"
-                >
-                  <option value="">Choose product...</option>
-                  {products.map((p) => (
-                    <option key={p.id} value={p.id} disabled={!p.active || p.quantity === 0}>
-                      {p.name} {p.quantity === 0 ? "(Out of stock)" : `(${p.quantity} available)`}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <SearchableSelect
+                endpoint="/api/v1/products"
+                mapItem={(p) => ({
+                  value: p.id,
+                  label: p.name,
+                  subLabel: p.quantity === 0 ? "Out of stock" : `${p.quantity} available · $${p.sellingPrice?.toFixed(2)}`,
+                  disabled: !p.active || p.quantity === 0,
+                  raw: p,
+                })}
+                value={form.productId}
+                onChange={handleProductSelect}
+                placeholder="Search & select product..."
+                label="Select Product"
+                required
+                pageSize={20}
+              />
 
               {selectedProductDetails && (
                 <div className="p-3 bg-indigo-500/5 border border-indigo-500/10 rounded-xl text-[11px] space-y-1 text-indigo-400">
@@ -403,6 +418,66 @@ export default function SalesPage() {
                 className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-semibold transition-all shadow-md shadow-red-500/10"
               >
                 {loading ? "Deleting..." : "Delete Log"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* SALE DETAIL VIEW MODAL */}
+      {isViewModalOpen && selectedSale && (
+        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#13131a] border border-slate-200 dark:border-white/5 rounded-2xl w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white">Sale Details</h3>
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                SALE
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 text-xs mb-4">
+              <div className="col-span-2">
+                <span className="text-[10px] text-slate-400 uppercase tracking-wider block mb-0.5">Transaction ID</span>
+                <span className="font-mono text-indigo-400">{selectedSale.id}</span>
+              </div>
+              <div>
+                <span className="text-[10px] text-slate-400 uppercase tracking-wider block mb-0.5">Product</span>
+                <span className="font-semibold text-slate-800 dark:text-white">
+                  {productMap[selectedSale.productId] || selectedSale.productName || "Unknown"}
+                </span>
+              </div>
+              <div>
+                <span className="text-[10px] text-slate-400 uppercase tracking-wider block mb-0.5">Quantity Sold</span>
+                <span className="font-bold text-slate-800 dark:text-white text-lg">{selectedSale.quantity}</span>
+              </div>
+              <div>
+                <span className="text-[10px] text-slate-400 uppercase tracking-wider block mb-0.5">Unit Sale Price</span>
+                <span className="font-semibold">${selectedSale.salePrice?.toFixed(2) ?? "—"}</span>
+              </div>
+              <div>
+                <span className="text-[10px] text-slate-400 uppercase tracking-wider block mb-0.5">Total Revenue</span>
+                <span className="font-bold text-emerald-500">
+                  ${(selectedSale.quantity * (selectedSale.salePrice || 0)).toFixed(2)}
+                </span>
+              </div>
+              <div className="col-span-2">
+                <span className="text-[10px] text-slate-400 uppercase tracking-wider block mb-0.5">Date Logged</span>
+                <span>{new Date(selectedSale.timestamp || selectedSale.saleDate || selectedSale.createdAt).toLocaleString()}</span>
+              </div>
+              {selectedSale.employeeName && (
+                <div>
+                  <span className="text-[10px] text-slate-400 uppercase tracking-wider block mb-0.5">Logged By</span>
+                  <span className="font-semibold">{selectedSale.employeeName}</span>
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end pt-4 border-t border-slate-200 dark:border-white/5">
+              <button
+                onClick={() => setIsViewModalOpen(false)}
+                className="px-4 py-2 border border-slate-200 dark:border-white/10 text-slate-500 hover:text-slate-700 dark:text-slate-400 rounded-xl text-xs font-semibold"
+              >
+                Close
               </button>
             </div>
           </div>

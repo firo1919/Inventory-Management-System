@@ -17,6 +17,7 @@ import {
   Shield,
   CheckCircle,
   XCircle,
+  Eye,
 } from "lucide-react";
 
 export default function EmployeesPage() {
@@ -47,6 +48,7 @@ export default function EmployeesPage() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
 
   // Selected Employee
   const [selectedEmployee, setSelectedEmployee] = useState<any>(null);
@@ -200,6 +202,11 @@ export default function EmployeesPage() {
     setIsDeleteModalOpen(true);
   };
 
+  const openViewModal = (emp: any) => {
+    setSelectedEmployee(emp);
+    setIsViewModalOpen(true);
+  };
+
   const resetForm = () => {
     setForm({
       firstName: "",
@@ -284,7 +291,11 @@ export default function EmployeesPage() {
                 </tr>
               ) : (
                 employees.map((emp) => (
-                  <tr key={emp.id} className="hover:bg-slate-50/50 dark:hover:bg-[#1c1c24]/10 text-slate-600 dark:text-slate-300">
+                  <tr
+                    key={emp.id}
+                    onClick={() => openViewModal(emp)}
+                    className="hover:bg-slate-50/50 dark:hover:bg-[#1c1c24]/10 text-slate-600 dark:text-slate-300 cursor-pointer"
+                  >
                     <td className="p-4 font-semibold text-slate-800 dark:text-white">
                       {emp.firstName} {emp.lastName}
                     </td>
@@ -303,7 +314,7 @@ export default function EmployeesPage() {
                         {emp.role?.name}
                       </span>
                     </td>
-                    <td className="p-4">
+                    <td className="p-4" onClick={(e) => e.stopPropagation()}>
                       <button
                         onClick={() => handleToggleActive(emp)}
                         className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase transition-all border ${
@@ -316,8 +327,15 @@ export default function EmployeesPage() {
                         {emp.active ? "Active" : "Deactivated"}
                       </button>
                     </td>
-                    <td className="p-4">
+                    <td className="p-4" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-center gap-1.5">
+                        <button
+                          onClick={() => openViewModal(emp)}
+                          title="View Details"
+                          className="p-1.5 rounded-lg border border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-[#0a0a0f] text-slate-400 hover:text-indigo-500 hover:bg-slate-100 transition-colors cursor-pointer"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
                         <button
                           onClick={() => openEditModal(emp)}
                           title="Edit details"
@@ -622,6 +640,75 @@ export default function EmployeesPage() {
                 className="px-4 py-2 bg-red-600 hover:bg-red-505 text-white rounded-xl text-xs font-semibold transition-all shadow-md shadow-red-500/10"
               >
                 {loading ? "Deleting..." : "Delete Account"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* EMPLOYEE VIEW DETAILS MODAL */}
+      {isViewModalOpen && selectedEmployee && (
+        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#13131a] border border-slate-200 dark:border-white/5 rounded-2xl w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white">Employee details</h3>
+              <span
+                className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase border ${
+                  selectedEmployee.role?.name === "ADMIN"
+                    ? "bg-purple-500/10 text-purple-500 border-purple-500/20"
+                    : "bg-blue-500/10 text-blue-500 border-blue-500/20"
+                }`}
+              >
+                <Shield className="w-3 h-3" />
+                {selectedEmployee.role?.name}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 text-xs mb-6">
+              <div>
+                <span className="text-[10px] text-slate-400 uppercase tracking-wider block mb-0.5">First Name</span>
+                <span className="font-semibold text-slate-800 dark:text-white">{selectedEmployee.firstName}</span>
+              </div>
+              <div>
+                <span className="text-[10px] text-slate-400 uppercase tracking-wider block mb-0.5">Last Name</span>
+                <span className="font-semibold text-slate-800 dark:text-white">{selectedEmployee.lastName}</span>
+              </div>
+              <div>
+                <span className="text-[10px] text-slate-400 uppercase tracking-wider block mb-0.5">Username</span>
+                <span className="font-mono">{selectedEmployee.username}</span>
+              </div>
+              <div>
+                <span className="text-[10px] text-slate-400 uppercase tracking-wider block mb-0.5">User ID</span>
+                <span className="font-mono text-slate-500">{selectedEmployee.id}</span>
+              </div>
+              <div className="col-span-2">
+                <span className="text-[10px] text-slate-400 uppercase tracking-wider block mb-0.5">Email Address</span>
+                <span className="font-semibold">{selectedEmployee.email}</span>
+              </div>
+              <div>
+                <span className="text-[10px] text-slate-400 uppercase tracking-wider block mb-0.5">Phone Number</span>
+                <span>{selectedEmployee.phone || "—"}</span>
+              </div>
+              <div>
+                <span className="text-[10px] text-slate-400 uppercase tracking-wider block mb-0.5">Account Status</span>
+                <span
+                  className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-[10px] font-bold uppercase border ${
+                    selectedEmployee.active
+                      ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                      : "bg-red-500/10 text-red-500 border-red-500/20"
+                  }`}
+                >
+                  {selectedEmployee.active ? "Active" : "Deactivated"}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-4 border-t border-slate-200 dark:border-white/5">
+              <button
+                onClick={() => setIsViewModalOpen(false)}
+                className="px-4 py-2 border border-slate-200 dark:border-white/10 text-slate-500 hover:text-slate-700 dark:text-slate-400 rounded-xl text-xs font-semibold"
+              >
+                Close
               </button>
             </div>
           </div>
