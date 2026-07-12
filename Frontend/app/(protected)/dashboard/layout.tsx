@@ -32,12 +32,26 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(true);
 
+  // Restore sidebar state from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem("sidebarCollapsed");
+    if (saved !== null) setSidebarCollapsed(saved === "true");
+  }, []);
+
+  // Persist sidebar state on change
+  const toggleSidebar = () => {
+    const next = !sidebarCollapsed;
+    setSidebarCollapsed(next);
+    localStorage.setItem("sidebarCollapsed", String(next));
+  };
+
   // Initialize theme on mount
   useEffect(() => {
     const root = window.document.documentElement;
     const initialDark = root.classList.contains("dark") || root.style.colorScheme === "dark";
     setDarkMode(initialDark);
   }, []);
+
 
   const toggleTheme = () => {
     const root = window.document.documentElement;
@@ -117,7 +131,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             )}
           </div>
           <button
-            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            onClick={toggleSidebar}
             className="hidden lg:block p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-white/5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
           >
             {sidebarCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
