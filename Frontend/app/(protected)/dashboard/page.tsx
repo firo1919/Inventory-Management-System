@@ -3,27 +3,19 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { apiClient } from "@/lib/api-client";
+import { toast } from "sonner";
 import {
   Package,
   AlertTriangle,
   DollarSign,
   TrendingUp,
+  BarChart2,
   ArrowUpRight,
   ArrowDownRight,
-  TrendingDown,
   Clock,
   Sparkles,
 } from "lucide-react";
 import Link from "next/link";
-import {
-  ResponsiveContainer,
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  Tooltip,
-  CartesianGrid,
-} from "recharts";
 
 interface Stats {
   totalProducts: number;
@@ -44,7 +36,6 @@ export default function DashboardOverview() {
   });
   const [lowStockProducts, setLowStockProducts] = useState<any[]>([]);
   const [recentTransactions, setRecentTransactions] = useState<any[]>([]);
-  const [chartData, setChartData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -150,20 +141,8 @@ export default function DashboardOverview() {
 
         setRecentTransactions(txList);
 
-        // Generate dummy chart data for layout display
-        const dummyChart = [
-          { name: "Mon", sales: 4000, restocks: 2400 },
-          { name: "Tue", sales: 3000, restocks: 1398 },
-          { name: "Wed", sales: 2000, restocks: 9800 },
-          { name: "Thu", sales: 2780, restocks: 3908 },
-          { name: "Fri", sales: 1890, restocks: 4800 },
-          { name: "Sat", sales: 2390, restocks: 3800 },
-          { name: "Sun", sales: 3490, restocks: 4300 },
-        ];
-        setChartData(dummyChart);
-
-      } catch (err) {
-        console.error("Dashboard Loading Error:", err);
+      } catch {
+        toast.error("Failed to load dashboard data. Please refresh.");
       } finally {
         setLoading(false);
       }
@@ -288,69 +267,34 @@ export default function DashboardOverview() {
 
       {/* CHART & ACTIVITY GRID */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* CHART SECTION */}
+        {/* ANALYTICS PLACEHOLDER */}
         <div className="lg:col-span-2 bg-white dark:bg-[#13131a] border border-slate-200 dark:border-white/5 rounded-2xl p-5 shadow-sm">
           <div className="flex items-center justify-between mb-6">
             <div>
               <h3 className="font-bold text-slate-900 dark:text-white text-base">Transactions Analytics</h3>
-              <p className="text-xs text-slate-400 mt-0.5">Weekly comparison overview</p>
-            </div>
-            <div className="flex gap-4 text-xs font-semibold">
-              <span className="flex items-center gap-1.5 text-indigo-500">
-                <span className="w-2.5 h-2.5 rounded-full bg-indigo-500 block" /> Sales
-              </span>
-              <span className="flex items-center gap-1.5 text-purple-500">
-                <span className="w-2.5 h-2.5 rounded-full bg-purple-500 block" /> Restocks
-              </span>
+              <p className="text-xs text-slate-400 mt-0.5">Weekly sales &amp; restock trends</p>
             </div>
           </div>
 
-          <div className="h-72 w-full">
-            {loading ? (
-              <div className="w-full h-full bg-slate-50 dark:bg-slate-900/30 rounded-xl animate-pulse" />
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={chartData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#6366f1" stopOpacity={0.2} />
-                      <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
-                    </linearGradient>
-                    <linearGradient id="colorRestocks" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#a855f7" stopOpacity={0.2} />
-                      <stop offset="95%" stopColor="#a855f7" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" dark-stroke="#ffffff08" />
-                  <XAxis dataKey="name" stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
-                  <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "#13131a",
-                      borderColor: "rgba(255, 255, 255, 0.05)",
-                      borderRadius: "0.75rem",
-                      color: "#fff",
-                    }}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="sales"
-                    stroke="#6366f1"
-                    strokeWidth={2}
-                    fillOpacity={1}
-                    fill="url(#colorSales)"
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="restocks"
-                    stroke="#a855f7"
-                    strokeWidth={2}
-                    fillOpacity={1}
-                    fill="url(#colorRestocks)"
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            )}
+          <div className="h-72 w-full flex flex-col items-center justify-center gap-4 rounded-xl border border-dashed border-slate-200 dark:border-white/10 bg-slate-50/50 dark:bg-white/[0.02]">
+            <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center">
+              <BarChart2 className="w-6 h-6 text-indigo-500" />
+            </div>
+            <div className="text-center">
+              <p className="text-sm font-semibold text-slate-700 dark:text-white">Analytics Coming Soon</p>
+              <p className="text-xs text-slate-400 mt-1 max-w-xs">
+                Real-time transaction charts will appear here once the backend analytics aggregation endpoint is available.
+                Your data is being recorded in the Sales and Restocks logs.
+              </p>
+            </div>
+            <div className="flex gap-6 text-xs text-slate-400">
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-indigo-500 block" /> {stats.salesCount} total sales
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-purple-500 block" /> {stats.restocksCount} total restocks
+              </span>
+            </div>
           </div>
         </div>
 
