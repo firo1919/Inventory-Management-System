@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { apiClient } from "@/lib/api-client";
+import { toast } from "sonner";
 import {
   Plus,
   ChevronLeft,
@@ -10,8 +11,6 @@ import {
   Trash2,
   AlertTriangle,
   Loader2,
-  Calendar,
-  ShoppingBag,
 } from "lucide-react";
 
 export default function RestocksPage() {
@@ -59,8 +58,8 @@ export default function RestocksPage() {
           mapping[p.id] = p.name;
         });
         setProductMap(mapping);
-      } catch (err) {
-        console.error("Failed to load products:", err);
+      } catch {
+        toast.error("Failed to load products for the dropdown.");
       }
     }
     fetchProducts();
@@ -83,8 +82,8 @@ export default function RestocksPage() {
       setRestocks(res.data?.content || []);
       setTotalPages(res.data?.totalPages || 1);
       setTotalElements(res.data?.totalElements || 0);
-    } catch (err) {
-      console.error("Failed to fetch restocks:", err);
+    } catch {
+      toast.error("Failed to fetch restocks.");
     } finally {
       setLoading(false);
     }
@@ -119,8 +118,10 @@ export default function RestocksPage() {
       await apiClient.post("/api/v1/restocks", payload);
       setIsAddModalOpen(false);
       resetForm();
+      toast.success("Restock recorded successfully!");
       fetchRestocks();
     } catch (err: any) {
+      toast.error(err.response?.data?.message || err.message || "Failed to record restock");
       setFormError(err.response?.data?.message || err.message || "Failed to record restock");
     } finally {
       setLoading(false);
@@ -133,9 +134,10 @@ export default function RestocksPage() {
     try {
       await apiClient.delete(`/api/v1/admin/restocks/${selectedRestock.id}`);
       setIsDeleteModalOpen(false);
+      toast.success("Restock record deleted.");
       fetchRestocks();
     } catch (err: any) {
-      alert(err.response?.data?.message || err.message || "Failed to delete restock record");
+      toast.error(err.response?.data?.message || err.message || "Failed to delete restock record");
     } finally {
       setLoading(false);
     }

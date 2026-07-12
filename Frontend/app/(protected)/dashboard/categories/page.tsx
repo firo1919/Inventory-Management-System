@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { apiClient } from "@/lib/api-client";
+import { toast } from "sonner";
 import {
   Plus,
   Search,
@@ -11,7 +12,6 @@ import {
   Edit2,
   Trash2,
   AlertTriangle,
-  Loader2,
 } from "lucide-react";
 
 export default function CategoriesPage() {
@@ -62,8 +62,8 @@ export default function CategoriesPage() {
       setCategories(content);
       setTotalPages(res.data?.totalPages || 1);
       setTotalElements(res.data?.totalElements || content.length);
-    } catch (err) {
-      console.error("Failed to fetch categories:", err);
+    } catch {
+      toast.error("Failed to fetch categories.");
     } finally {
       setLoading(false);
     }
@@ -88,9 +88,10 @@ export default function CategoriesPage() {
       });
       setIsAddModalOpen(false);
       setCategoryName("");
+      toast.success("Category created successfully!");
       fetchCategories();
     } catch (err: any) {
-      alert(err.response?.data?.message || err.message || "Failed to create category");
+      toast.error(err.response?.data?.message || err.message || "Failed to create category");
     } finally {
       setLoading(false);
     }
@@ -106,9 +107,10 @@ export default function CategoriesPage() {
       });
       setIsEditModalOpen(false);
       setCategoryName("");
+      toast.success("Category updated!");
       fetchCategories();
     } catch (err: any) {
-      alert(err.response?.data?.message || err.message || "Failed to update category");
+      toast.error(err.response?.data?.message || err.message || "Failed to update category");
     } finally {
       setLoading(false);
     }
@@ -120,9 +122,10 @@ export default function CategoriesPage() {
     try {
       await apiClient.delete(`/api/v1/admin/categories/${selectedCategory.id}`);
       setIsDeleteModalOpen(false);
+      toast.success("Category deleted.");
       fetchCategories();
     } catch (err: any) {
-      alert(err.response?.data?.message || err.message || "Failed to delete category");
+      toast.error(err.response?.data?.message || err.message || "Failed to delete category");
     } finally {
       setLoading(false);
     }

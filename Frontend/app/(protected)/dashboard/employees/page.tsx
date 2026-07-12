@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { apiClient } from "@/lib/api-client";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import {
   Plus,
   Search,
@@ -13,9 +14,6 @@ import {
   Trash2,
   AlertTriangle,
   Loader2,
-  User,
-  Mail,
-  Phone,
   Shield,
   CheckCircle,
   XCircle,
@@ -93,8 +91,8 @@ export default function EmployeesPage() {
       setEmployees(content);
       setTotalPages(res.data?.totalPages || 1);
       setTotalElements(res.data?.totalElements || content.length);
-    } catch (err) {
-      console.error("Failed to load employees:", err);
+    } catch {
+      toast.error("Failed to load employees.");
     } finally {
       setLoading(false);
     }
@@ -119,8 +117,10 @@ export default function EmployeesPage() {
       await apiClient.post("/api/v1/admin/employees", form);
       setIsAddModalOpen(false);
       resetForm();
+      toast.success("Employee registered successfully!");
       fetchEmployees();
     } catch (err: any) {
+      toast.error(err.response?.data?.message || err.message || "Failed to create employee");
       setFormError(err.response?.data?.message || err.message || "Failed to create employee");
     } finally {
       setLoading(false);
@@ -137,8 +137,10 @@ export default function EmployeesPage() {
       await apiClient.put(`/api/v1/admin/employees/${selectedEmployee.id}`, form);
       setIsEditModalOpen(false);
       resetForm();
+      toast.success("Employee updated!");
       fetchEmployees();
     } catch (err: any) {
+      toast.error(err.response?.data?.message || err.message || "Failed to update employee");
       setFormError(err.response?.data?.message || err.message || "Failed to update employee");
     } finally {
       setLoading(false);
@@ -151,9 +153,10 @@ export default function EmployeesPage() {
     try {
       await apiClient.delete(`/api/v1/admin/employees/${selectedEmployee.id}`);
       setIsDeleteModalOpen(false);
+      toast.success("Employee deleted.");
       fetchEmployees();
     } catch (err: any) {
-      alert(err.response?.data?.message || err.message || "Failed to delete employee");
+      toast.error(err.response?.data?.message || err.message || "Failed to delete employee");
     } finally {
       setLoading(false);
     }
@@ -166,9 +169,10 @@ export default function EmployeesPage() {
         employee.active ? "deactivate" : "activate"
       }`;
       await apiClient.post(endpoint);
+      toast.success(employee.active ? "Employee deactivated." : "Employee activated.");
       fetchEmployees();
     } catch (err: any) {
-      alert(err.response?.data?.message || err.message || "Failed to change active status");
+      toast.error(err.response?.data?.message || err.message || "Failed to change active status");
     }
   };
 

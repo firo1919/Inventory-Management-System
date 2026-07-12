@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { apiClient } from "@/lib/api-client";
+import { toast } from "sonner";
 import {
   Plus,
   ChevronLeft,
@@ -10,9 +11,6 @@ import {
   Trash2,
   AlertTriangle,
   Loader2,
-  Calendar,
-  DollarSign,
-  TrendingUp,
 } from "lucide-react";
 
 export default function SalesPage() {
@@ -61,8 +59,8 @@ export default function SalesPage() {
           mapping[p.id] = p.name;
         });
         setProductMap(mapping);
-      } catch (err) {
-        console.error("Failed to load products:", err);
+      } catch {
+        toast.error("Failed to load products for the dropdown.");
       }
     }
     fetchProducts();
@@ -85,8 +83,8 @@ export default function SalesPage() {
       setSales(res.data?.content || []);
       setTotalPages(res.data?.totalPages || 1);
       setTotalElements(res.data?.totalElements || 0);
-    } catch (err) {
-      console.error("Failed to fetch sales:", err);
+    } catch {
+      toast.error("Failed to fetch sales.");
     } finally {
       setLoading(false);
     }
@@ -131,8 +129,10 @@ export default function SalesPage() {
       await apiClient.post("/api/v1/sales", payload);
       setIsAddModalOpen(false);
       resetForm();
+      toast.success("Sale recorded successfully!");
       fetchSales();
     } catch (err: any) {
+      toast.error(err.response?.data?.message || err.message || "Failed to record sale");
       setFormError(err.response?.data?.message || err.message || "Failed to record sale");
     } finally {
       setLoading(false);
@@ -145,9 +145,10 @@ export default function SalesPage() {
     try {
       await apiClient.delete(`/api/v1/admin/sales/${selectedSale.id}`);
       setIsDeleteModalOpen(false);
+      toast.success("Sale record deleted.");
       fetchSales();
     } catch (err: any) {
-      alert(err.response?.data?.message || err.message || "Failed to delete sale record");
+      toast.error(err.response?.data?.message || err.message || "Failed to delete sale record");
     } finally {
       setLoading(false);
     }

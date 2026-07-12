@@ -3,10 +3,10 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { apiClient } from "@/lib/api-client";
+import { toast } from "sonner";
 import {
   Plus,
   Search,
-  SlidersHorizontal,
   ChevronLeft,
   ChevronRight,
   Edit2,
@@ -82,8 +82,8 @@ export default function ProductsPage() {
           mapping[cat.id] = cat.name;
         });
         setCategoryMap(mapping);
-      } catch (err) {
-        console.error("Failed to load categories:", err);
+      } catch {
+        toast.error("Failed to load categories.");
       }
     }
     fetchCategories();
@@ -133,8 +133,8 @@ export default function ProductsPage() {
       setProducts(content);
       setTotalPages(res.data?.totalPages || 1);
       setTotalElements(res.data?.totalElements || content.length);
-    } catch (err) {
-      console.error("Failed to load products:", err);
+    } catch {
+      toast.error("Failed to load products.");
     } finally {
       setLoading(false);
     }
@@ -166,9 +166,10 @@ export default function ProductsPage() {
       await apiClient.post("/api/v1/admin/products", payload);
       setIsAddModalOpen(false);
       resetForm();
+      toast.success("Product created successfully!");
       fetchProducts();
     } catch (err: any) {
-      alert(err.response?.data?.message || err.message || "Failed to create product");
+      toast.error(err.response?.data?.message || err.message || "Failed to create product");
     } finally {
       setLoading(false);
     }
@@ -193,9 +194,10 @@ export default function ProductsPage() {
       await apiClient.put(`/api/v1/admin/products/${selectedProduct.id}`, payload);
       setIsEditModalOpen(false);
       resetForm();
+      toast.success("Product updated!");
       fetchProducts();
     } catch (err: any) {
-      alert(err.response?.data?.message || err.message || "Failed to update product");
+      toast.error(err.response?.data?.message || err.message || "Failed to update product");
     } finally {
       setLoading(false);
     }
@@ -207,9 +209,10 @@ export default function ProductsPage() {
     try {
       await apiClient.delete(`/api/v1/admin/products/${selectedProduct.id}`);
       setIsDeleteModalOpen(false);
+      toast.success("Product deleted.");
       fetchProducts();
     } catch (err: any) {
-      alert(err.response?.data?.message || err.message || "Failed to delete product");
+      toast.error(err.response?.data?.message || err.message || "Failed to delete product");
     } finally {
       setLoading(false);
     }
@@ -222,9 +225,10 @@ export default function ProductsPage() {
         product.active ? "deactivate" : "activate"
       }`;
       await apiClient.post(endpoint);
+      toast.success(product.active ? "Product deactivated." : "Product activated.");
       fetchProducts();
     } catch (err: any) {
-      alert(err.response?.data?.message || err.message || "Failed to toggle status");
+      toast.error(err.response?.data?.message || err.message || "Failed to toggle status");
     }
   };
 
@@ -261,9 +265,10 @@ export default function ProductsPage() {
       setUploadProgress(100);
       setIsUploadModalOpen(false);
       setUploadFile(null);
+      toast.success("Image uploaded successfully!");
       fetchProducts();
     } catch (err: any) {
-      alert(err.response?.data?.message || err.message || "Failed to upload image");
+      toast.error(err.response?.data?.message || err.message || "Failed to upload image");
     } finally {
       setUploading(false);
       setUploadProgress(0);
