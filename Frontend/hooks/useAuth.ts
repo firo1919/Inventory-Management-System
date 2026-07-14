@@ -1,53 +1,40 @@
 "use client";
 
-import { authClient } from "@/lib/auth-client";
+import { useSession, signIn, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
 
 export function useAuth() {
   const router = useRouter();
-  const { data: sessionData, isPending, error, refetch: refetchSession } = authClient.useSession();
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!isPending) {
-      setLoading(false);
-    }
-  }, [isPending]);
+  const { data: sessionData, status, update } = useSession();
 
   const user = sessionData?.user;
-  const session = sessionData?.session;
-  
-  // Custom properties from session / user
-  const role = (user as any)?.role || "EMPLOYEE";
+  const session = sessionData;
+
+  const loading = status === "loading";
+  const role = user?.role || "EMPLOYEE";
   const isAdmin = role === "ADMIN";
   const isEmployee = role === "EMPLOYEE";
 
   const login = async (email: string, password: string) => {
-    setLoading(true);
     try {
-      const response = await authClient.signIn.email({
+      const response = await signIn("credentials", {
         email,
         password,
-        callbackURL: "/dashboard",
+        redirect: false,
       });
 
-      if (response.error) {
-        throw new Error(response.error.message || "Failed to sign in");
+      if (response?.error) {
+        throw new Error(response.error === "CredentialsSignin" ? "Invalid email or password" : response.error);
       }
 
-      // Tokens are handled securely by server-side cookies, no localStorage needed.
-      
       router.push("/dashboard");
-      return response.data;
+      return response;
     } catch (err: any) {
-      setLoading(false);
       throw err;
     }
   };
 
   const logout = async () => {
-    setLoading(true);
     try {
       // Notify backend via relative proxy endpoint
       await fetch("/api/v1/auth/logout", {
@@ -56,9 +43,7 @@ export function useAuth() {
     } catch (e) {
       // ignore
     } finally {
-      await authClient.signOut();
-      router.push("/auth/login");
-      setLoading(false);
+      await signOut({ callbackUrl: "/auth/login" });
     }
   };
 
@@ -69,9 +54,9 @@ export function useAuth() {
     isAdmin,
     isEmployee,
     loading,
-    error,
+    error: null,
     login,
     logout,
-    refetch: refetchSession,
+    refetch: update,
   };
 }

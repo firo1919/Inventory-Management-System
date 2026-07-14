@@ -5,6 +5,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { apiClient } from "@/lib/api-client";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 import {
   Plus,
   Search,
@@ -19,6 +22,18 @@ import {
   XCircle,
   Eye,
 } from "lucide-react";
+
+const employeeSchema = z.object({
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
+  username: z.string().min(3, "Username must be at least 3 characters"),
+  email: z.string().min(1, "Email is required").email("Invalid email address"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  phone: z.string().min(5, "Phone number must be at least 5 characters"),
+  role: z.enum(["EMPLOYEE", "ADMIN"]),
+});
+
+type EmployeeInput = z.infer<typeof employeeSchema>;
 
 export default function EmployeesPage() {
   const { isAdmin, loading: authLoading } = useAuth();
@@ -53,17 +68,26 @@ export default function EmployeesPage() {
   // Selected Employee
   const [selectedEmployee, setSelectedEmployee] = useState<any>(null);
 
-  // Form States
-  const [form, setForm] = useState({
-    firstName: "",
-    lastName: "",
-    username: "",
-    email: "",
-    password: "",
-    phone: "",
-    role: "EMPLOYEE",
-  });
   const [formError, setFormError] = useState("");
+
+  // React Hook Form
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<EmployeeInput>({
+    resolver: zodResolver(employeeSchema),
+    defaultValues: {
+      firstName: "",
+      lastName: "",
+      username: "",
+      email: "",
+      password: "",
+      phone: "",
+      role: "EMPLOYEE",
+    },
+  });
 
   const fetchEmployees = async () => {
     if (!isAdmin) return;
@@ -110,15 +134,13 @@ export default function EmployeesPage() {
   };
 
   // Add Employee
-  const handleAddEmployee = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleAddEmployee = async (data: EmployeeInput) => {
     setFormError("");
     setLoading(true);
-
     try {
-      await apiClient.post("/api/v1/admin/employees", form);
+      await apiClient.post("/api/v1/admin/employees", data);
       setIsAddModalOpen(false);
-      resetForm();
+      reset();
       toast.success("Employee registered successfully!");
       fetchEmployees();
     } catch (err: any) {
@@ -130,15 +152,13 @@ export default function EmployeesPage() {
   };
 
   // Edit Employee
-  const handleEditEmployee = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleEditEmployee = async (data: EmployeeInput) => {
     setFormError("");
     setLoading(true);
-
     try {
-      await apiClient.put(`/api/v1/admin/employees/${selectedEmployee.id}`, form);
+      await apiClient.put(`/api/v1/admin/employees/${selectedEmployee.id}`, data);
       setIsEditModalOpen(false);
-      resetForm();
+      reset();
       toast.success("Employee updated!");
       fetchEmployees();
     } catch (err: any) {
@@ -179,21 +199,31 @@ export default function EmployeesPage() {
   };
 
   const openAddModal = () => {
-    resetForm();
+    reset({
+      firstName: "",
+      lastName: "",
+      username: "",
+      email: "",
+      password: "",
+      phone: "",
+      role: "EMPLOYEE",
+    });
+    setFormError("");
     setIsAddModalOpen(true);
   };
 
   const openEditModal = (emp: any) => {
     setSelectedEmployee(emp);
-    setForm({
+    reset({
       firstName: emp.firstName,
       lastName: emp.lastName,
       username: emp.username,
       email: emp.email,
-      password: "", // Required fields in Update DTO
+      password: "", // User must re-enter or type new password for safety check
       phone: emp.phone || "",
       role: emp.role?.name || "EMPLOYEE",
     });
+    setFormError("");
     setIsEditModalOpen(true);
   };
 
@@ -205,19 +235,6 @@ export default function EmployeesPage() {
   const openViewModal = (emp: any) => {
     setSelectedEmployee(emp);
     setIsViewModalOpen(true);
-  };
-
-  const resetForm = () => {
-    setForm({
-      firstName: "",
-      lastName: "",
-      username: "",
-      email: "",
-      password: "",
-      phone: "",
-      role: "EMPLOYEE",
-    });
-    setFormError("");
   };
 
   if (authLoading || !isAdmin) {
@@ -391,7 +408,7 @@ export default function EmployeesPage() {
         <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-[#13131a] border border-slate-200 dark:border-white/5 rounded-2xl w-full max-w-md p-6 overflow-y-auto max-h-[90vh]">
             <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Register New Employee</h3>
-            <form onSubmit={handleAddEmployee} className="space-y-4">
+            <form onSubmit={handleSubmit(handleAddEmployee)} className="space-y-4">
               {formError && (
                 <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-xs p-3 rounded-lg flex items-center gap-1.5">
                   <AlertTriangle className="w-4 h-4" />
@@ -404,21 +421,23 @@ export default function EmployeesPage() {
                   <label className="block text-xs font-semibold text-slate-400 mb-1">First Name *</label>
                   <input
                     type="text"
-                    required
-                    value={form.firstName}
-                    onChange={(e) => setForm({ ...form, firstName: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-[#0a0a0f] border border-slate-200 dark:border-white/5 rounded-xl text-xs"
+                    {...register("firstName")}
+                    className="w-full px-3 py-2 bg-slate-50 dark:bg-[#0a0a0f] border border-slate-200 dark:border-white/5 rounded-xl text-xs text-slate-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
                   />
+                  {errors.firstName && (
+                    <p className="text-[10px] text-red-400 mt-1">{errors.firstName.message}</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-slate-400 mb-1">Last Name *</label>
                   <input
                     type="text"
-                    required
-                    value={form.lastName}
-                    onChange={(e) => setForm({ ...form, lastName: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-[#0a0a0f] border border-slate-200 dark:border-white/5 rounded-xl text-xs"
+                    {...register("lastName")}
+                    className="w-full px-3 py-2 bg-slate-50 dark:bg-[#0a0a0f] border border-slate-200 dark:border-white/5 rounded-xl text-xs text-slate-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
                   />
+                  {errors.lastName && (
+                    <p className="text-[10px] text-red-400 mt-1">{errors.lastName.message}</p>
+                  )}
                 </div>
               </div>
 
@@ -426,59 +445,63 @@ export default function EmployeesPage() {
                 <label className="block text-xs font-semibold text-slate-400 mb-1">Username *</label>
                 <input
                   type="text"
-                  required
-                  value={form.username}
-                  onChange={(e) => setForm({ ...form, username: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-[#0a0a0f] border border-slate-200 dark:border-white/5 rounded-xl text-xs"
+                  {...register("username")}
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-[#0a0a0f] border border-slate-200 dark:border-white/5 rounded-xl text-xs text-slate-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 />
+                {errors.username && (
+                  <p className="text-[10px] text-red-400 mt-1">{errors.username.message}</p>
+                )}
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-slate-400 mb-1">Email Address *</label>
                 <input
                   type="email"
-                  required
-                  value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-[#0a0a0f] border border-slate-200 dark:border-white/5 rounded-xl text-xs"
+                  {...register("email")}
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-[#0a0a0f] border border-slate-200 dark:border-white/5 rounded-xl text-xs text-slate-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 />
+                {errors.email && (
+                  <p className="text-[10px] text-red-400 mt-1">{errors.email.message}</p>
+                )}
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-slate-400 mb-1">Temporary Password (min 8 chars) *</label>
                 <input
                   type="password"
-                  required
-                  minLength={8}
-                  value={form.password}
-                  onChange={(e) => setForm({ ...form, password: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-[#0a0a0f] border border-slate-200 dark:border-white/5 rounded-xl text-xs"
+                  {...register("password")}
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-[#0a0a0f] border border-slate-200 dark:border-white/5 rounded-xl text-xs text-slate-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 />
+                {errors.password && (
+                  <p className="text-[10px] text-red-400 mt-1">{errors.password.message}</p>
+                )}
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-slate-400 mb-1">Phone Number *</label>
                 <input
                   type="text"
-                  required
-                  value={form.phone}
-                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-[#0a0a0f] border border-slate-200 dark:border-white/5 rounded-xl text-xs"
+                  {...register("phone")}
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-[#0a0a0f] border border-slate-200 dark:border-white/5 rounded-xl text-xs text-slate-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
                   placeholder="+1234567890"
                 />
+                {errors.phone && (
+                  <p className="text-[10px] text-red-400 mt-1">{errors.phone.message}</p>
+                )}
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-slate-400 mb-1">Select Role *</label>
                 <select
-                  required
-                  value={form.role}
-                  onChange={(e) => setForm({ ...form, role: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-[#0a0a0f] border border-slate-200 dark:border-white/5 rounded-xl text-xs font-semibold"
+                  {...register("role")}
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-[#0a0a0f] border border-slate-200 dark:border-white/5 rounded-xl text-xs font-semibold text-slate-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 >
                   <option value="EMPLOYEE">EMPLOYEE</option>
                   <option value="ADMIN">ADMIN</option>
                 </select>
+                {errors.role && (
+                  <p className="text-[10px] text-red-400 mt-1">{errors.role.message}</p>
+                )}
               </div>
 
               <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 dark:border-white/5">
@@ -492,7 +515,7 @@ export default function EmployeesPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold transition-all shadow-md shadow-indigo-500/10"
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold transition-all shadow-md shadow-indigo-500/10 cursor-pointer"
                 >
                   {loading ? "Registering..." : "Add Employee"}
                 </button>
@@ -507,7 +530,7 @@ export default function EmployeesPage() {
         <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-[#13131a] border border-slate-200 dark:border-white/5 rounded-2xl w-full max-w-md p-6 overflow-y-auto max-h-[90vh]">
             <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Edit Employee Details</h3>
-            <form onSubmit={handleEditEmployee} className="space-y-4">
+            <form onSubmit={handleSubmit(handleEditEmployee)} className="space-y-4">
               {formError && (
                 <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-xs p-3 rounded-lg flex items-center gap-1.5">
                   <AlertTriangle className="w-4 h-4" />
@@ -520,21 +543,23 @@ export default function EmployeesPage() {
                   <label className="block text-xs font-semibold text-slate-400 mb-1">First Name *</label>
                   <input
                     type="text"
-                    required
-                    value={form.firstName}
-                    onChange={(e) => setForm({ ...form, firstName: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-[#0a0a0f] border border-slate-200 dark:border-white/5 rounded-xl text-xs"
+                    {...register("firstName")}
+                    className="w-full px-3 py-2 bg-slate-50 dark:bg-[#0a0a0f] border border-slate-200 dark:border-white/5 rounded-xl text-xs text-slate-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
                   />
+                  {errors.firstName && (
+                    <p className="text-[10px] text-red-400 mt-1">{errors.firstName.message}</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-slate-400 mb-1">Last Name *</label>
                   <input
                     type="text"
-                    required
-                    value={form.lastName}
-                    onChange={(e) => setForm({ ...form, lastName: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-[#0a0a0f] border border-slate-200 dark:border-white/5 rounded-xl text-xs"
+                    {...register("lastName")}
+                    className="w-full px-3 py-2 bg-slate-50 dark:bg-[#0a0a0f] border border-slate-200 dark:border-white/5 rounded-xl text-xs text-slate-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
                   />
+                  {errors.lastName && (
+                    <p className="text-[10px] text-red-400 mt-1">{errors.lastName.message}</p>
+                  )}
                 </div>
               </div>
 
@@ -542,59 +567,63 @@ export default function EmployeesPage() {
                 <label className="block text-xs font-semibold text-slate-400 mb-1">Username *</label>
                 <input
                   type="text"
-                  required
-                  value={form.username}
-                  onChange={(e) => setForm({ ...form, username: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-[#0a0a0f] border border-slate-200 dark:border-white/5 rounded-xl text-xs"
+                  {...register("username")}
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-[#0a0a0f] border border-slate-200 dark:border-white/5 rounded-xl text-xs text-slate-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 />
+                {errors.username && (
+                  <p className="text-[10px] text-red-400 mt-1">{errors.username.message}</p>
+                )}
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-slate-400 mb-1">Email Address *</label>
                 <input
                   type="email"
-                  required
-                  value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-[#0a0a0f] border border-slate-200 dark:border-white/5 rounded-xl text-xs"
+                  {...register("email")}
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-[#0a0a0f] border border-slate-200 dark:border-white/5 rounded-xl text-xs text-slate-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 />
+                {errors.email && (
+                  <p className="text-[10px] text-red-400 mt-1">{errors.email.message}</p>
+                )}
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-slate-400 mb-1">Password (Required for update validation) *</label>
                 <input
                   type="password"
-                  required
-                  minLength={8}
-                  value={form.password}
-                  onChange={(e) => setForm({ ...form, password: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-[#0a0a0f] border border-slate-200 dark:border-white/5 rounded-xl text-xs"
+                  {...register("password")}
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-[#0a0a0f] border border-slate-200 dark:border-white/5 rounded-xl text-xs text-slate-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
                   placeholder="Re-enter or type new password"
                 />
+                {errors.password && (
+                  <p className="text-[10px] text-red-400 mt-1">{errors.password.message}</p>
+                )}
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-slate-400 mb-1">Phone Number *</label>
                 <input
                   type="text"
-                  required
-                  value={form.phone}
-                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-[#0a0a0f] border border-slate-200 dark:border-white/5 rounded-xl text-xs"
+                  {...register("phone")}
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-[#0a0a0f] border border-slate-200 dark:border-white/5 rounded-xl text-xs text-slate-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 />
+                {errors.phone && (
+                  <p className="text-[10px] text-red-400 mt-1">{errors.phone.message}</p>
+                )}
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-slate-400 mb-1">Select Role *</label>
                 <select
-                  required
-                  value={form.role}
-                  onChange={(e) => setForm({ ...form, role: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-[#0a0a0f] border border-slate-200 dark:border-white/5 rounded-xl text-xs font-semibold"
+                  {...register("role")}
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-[#0a0a0f] border border-slate-200 dark:border-white/5 rounded-xl text-xs font-semibold text-slate-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 >
                   <option value="EMPLOYEE">EMPLOYEE</option>
                   <option value="ADMIN">ADMIN</option>
                 </select>
+                {errors.role && (
+                  <p className="text-[10px] text-red-400 mt-1">{errors.role.message}</p>
+                )}
               </div>
 
               <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 dark:border-white/5">
@@ -607,8 +636,8 @@ export default function EmployeesPage() {
                 </button>
                 <button
                   type="submit"
-                  disabled={loading || !form.password}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-505 text-white rounded-xl text-xs font-semibold transition-all shadow-md shadow-indigo-500/10"
+                  disabled={loading}
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-505 text-white rounded-xl text-xs font-semibold transition-all shadow-md shadow-indigo-500/10 cursor-pointer"
                 >
                   {loading ? "Saving..." : "Save Changes"}
                 </button>
@@ -637,7 +666,7 @@ export default function EmployeesPage() {
               <button
                 onClick={handleDeleteEmployee}
                 disabled={loading}
-                className="px-4 py-2 bg-red-600 hover:bg-red-505 text-white rounded-xl text-xs font-semibold transition-all shadow-md shadow-red-500/10"
+                className="px-4 py-2 bg-red-600 hover:bg-red-505 text-white rounded-xl text-xs font-semibold transition-all shadow-md shadow-red-500/10 cursor-pointer"
               >
                 {loading ? "Deleting..." : "Delete Account"}
               </button>
@@ -706,7 +735,7 @@ export default function EmployeesPage() {
             <div className="flex justify-end pt-4 border-t border-slate-200 dark:border-white/5">
               <button
                 onClick={() => setIsViewModalOpen(false)}
-                className="px-4 py-2 border border-slate-200 dark:border-white/10 text-slate-500 hover:text-slate-700 dark:text-slate-400 rounded-xl text-xs font-semibold"
+                className="px-4 py-2 border border-slate-200 dark:border-white/10 text-slate-505 hover:text-slate-700 dark:text-slate-400 rounded-xl text-xs font-semibold"
               >
                 Close
               </button>

@@ -9,18 +9,13 @@ async function handleProxy(
   const pathStr = path.join("/");
 
   // 1. Get the session to retrieve the access token
-  const session = await auth.api.getSession({
-    headers: request.headers,
-  });
-
-  const sessionObj = session?.session as any;
+  const session = await auth();
+  const user = session?.user;
   const accessToken =
-    sessionObj?.accessToken ||
-    sessionObj?.additionalFields?.accessToken ||
+    user?.accessToken ||
     request.cookies.get("backend_access_token")?.value;
   const refreshToken =
-    sessionObj?.refreshToken ||
-    sessionObj?.additionalFields?.refreshToken ||
+    user?.refreshToken ||
     request.cookies.get("backend_refresh_token")?.value;
 
   const backendUrl = process.env.BACKEND_URL || "http://localhost:8080";

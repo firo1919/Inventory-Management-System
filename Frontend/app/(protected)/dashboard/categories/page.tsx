@@ -4,6 +4,9 @@ import React, { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { apiClient } from "@/lib/api-client";
 import { toast } from "sonner";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 import {
   Plus,
   Search,
@@ -13,6 +16,12 @@ import {
   Trash2,
   AlertTriangle,
 } from "lucide-react";
+
+const categorySchema = z.object({
+  name: z.string().min(1, "Category name is required").max(50, "Category name cannot exceed 50 characters"),
+});
+
+type CategoryInput = z.infer<typeof categorySchema>;
 
 export default function CategoriesPage() {
   const { isAdmin } = useAuth();
@@ -38,8 +47,18 @@ export default function CategoriesPage() {
   // Selected Category State
   const [selectedCategory, setSelectedCategory] = useState<any>(null);
 
-  // Form State
-  const [categoryName, setCategoryName] = useState("");
+  // React Hook Form
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<CategoryInput>({
+    resolver: zodResolver(categorySchema),
+    defaultValues: {
+      name: "",
+    },
+  });
 
   const fetchCategories = async () => {
     try {
@@ -79,15 +98,14 @@ export default function CategoriesPage() {
   };
 
   // Add Category
-  const handleAddCategory = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleAddCategory = async (data: CategoryInput) => {
     setLoading(true);
     try {
       await apiClient.post("/api/v1/admin/categories", {
-        name: categoryName,
+        name: data.name,
       });
       setIsAddModalOpen(false);
-      setCategoryName("");
+      reset({ name: "" });
       toast.success("Category created successfully!");
       fetchCategories();
     } catch (err: any) {
@@ -98,15 +116,14 @@ export default function CategoriesPage() {
   };
 
   // Edit Category
-  const handleEditCategory = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleEditCategory = async (data: CategoryInput) => {
     setLoading(true);
     try {
       await apiClient.put(`/api/v1/admin/categories/${selectedCategory.id}`, {
-        name: categoryName,
+        name: data.name,
       });
       setIsEditModalOpen(false);
-      setCategoryName("");
+      reset({ name: "" });
       toast.success("Category updated!");
       fetchCategories();
     } catch (err: any) {
@@ -132,13 +149,13 @@ export default function CategoriesPage() {
   };
 
   const openAddModal = () => {
-    setCategoryName("");
+    reset({ name: "" });
     setIsAddModalOpen(true);
   };
 
   const openEditModal = (category: any) => {
     setSelectedCategory(category);
-    setCategoryName(category.name);
+    reset({ name: category.name });
     setIsEditModalOpen(true);
   };
 
@@ -269,31 +286,32 @@ export default function CategoriesPage() {
         <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-[#13131a] border border-slate-200 dark:border-white/5 rounded-2xl w-full max-w-sm p-6">
             <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Create Category</h3>
-            <form onSubmit={handleAddCategory} className="space-y-4">
+            <form onSubmit={handleSubmit(handleAddCategory)} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-slate-400 mb-1">Category Name *</label>
                 <input
                   type="text"
-                  required
-                  value={categoryName}
-                  onChange={(e) => setCategoryName(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-[#0a0a0f] border border-slate-200 dark:border-white/5 rounded-xl text-xs"
+                  {...register("name")}
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-[#0a0a0f] border border-slate-200 dark:border-white/5 rounded-xl text-xs text-slate-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
                   placeholder="e.g. Office Supplies"
                 />
+                {errors.name && (
+                  <p className="text-[10px] text-red-400 mt-1">{errors.name.message}</p>
+                )}
               </div>
 
               <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 dark:border-white/5">
                 <button
                   type="button"
                   onClick={() => setIsAddModalOpen(false)}
-                  className="px-4 py-2 border border-slate-200 dark:border-white/10 text-slate-500 hover:text-slate-700 dark:text-slate-400 rounded-xl text-xs"
+                  className="px-4 py-2 border border-slate-200 dark:border-white/10 text-slate-505 hover:text-slate-700 dark:text-slate-400 rounded-xl text-xs"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={loading || !categoryName}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold transition-all shadow-md shadow-indigo-500/10"
+                  disabled={loading}
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold transition-all shadow-md shadow-indigo-500/10 cursor-pointer"
                 >
                   {loading ? "Creating..." : "Create Category"}
                 </button>
@@ -308,30 +326,31 @@ export default function CategoriesPage() {
         <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-[#13131a] border border-slate-200 dark:border-white/5 rounded-2xl w-full max-w-sm p-6">
             <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Edit Category</h3>
-            <form onSubmit={handleEditCategory} className="space-y-4">
+            <form onSubmit={handleSubmit(handleEditCategory)} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-slate-400 mb-1">Category Name *</label>
                 <input
                   type="text"
-                  required
-                  value={categoryName}
-                  onChange={(e) => setCategoryName(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-[#0a0a0f] border border-slate-200 dark:border-white/5 rounded-xl text-xs"
+                  {...register("name")}
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-[#0a0a0f] border border-slate-200 dark:border-white/5 rounded-xl text-xs text-slate-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 />
+                {errors.name && (
+                  <p className="text-[10px] text-red-400 mt-1">{errors.name.message}</p>
+                )}
               </div>
 
               <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 dark:border-white/5">
                 <button
                   type="button"
                   onClick={() => setIsEditModalOpen(false)}
-                  className="px-4 py-2 border border-slate-200 dark:border-white/10 text-slate-500 hover:text-slate-700 dark:text-slate-400 rounded-xl text-xs"
+                  className="px-4 py-2 border border-slate-200 dark:border-white/10 text-slate-505 hover:text-slate-700 dark:text-slate-400 rounded-xl text-xs"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={loading || !categoryName}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold transition-all shadow-md shadow-indigo-500/10"
+                  disabled={loading}
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold transition-all shadow-md shadow-indigo-500/10 cursor-pointer"
                 >
                   {loading ? "Saving..." : "Save Changes"}
                 </button>
@@ -353,14 +372,14 @@ export default function CategoriesPage() {
             <div className="flex justify-center gap-3">
               <button
                 onClick={() => setIsDeleteModalOpen(false)}
-                className="px-4 py-2 border border-slate-200 dark:border-white/10 text-slate-500 hover:text-slate-700 dark:text-slate-400 rounded-xl text-xs"
+                className="px-4 py-2 border border-slate-200 dark:border-white/10 text-slate-505 hover:text-slate-700 dark:text-slate-400 rounded-xl text-xs"
               >
                 Cancel
               </button>
               <button
                 onClick={handleDeleteCategory}
                 disabled={loading}
-                className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-semibold transition-all shadow-md shadow-red-500/10"
+                className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-semibold transition-all shadow-md shadow-red-500/10 cursor-pointer"
               >
                 {loading ? "Deleting..." : "Delete Category"}
               </button>

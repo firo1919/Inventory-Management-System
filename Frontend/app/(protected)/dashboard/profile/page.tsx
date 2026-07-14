@@ -3,6 +3,9 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { apiClient } from "@/lib/api-client";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 import {
   User,
   Mail,
@@ -19,6 +22,26 @@ import {
 import axios from "axios";
 import { toast } from "sonner";
 
+const profileDetailsSchema = z.object({
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
+  username: z.string().min(3, "Username must be at least 3 characters"),
+  email: z.string().min(1, "Email is required").email("Invalid email address"),
+  phone: z.string().optional(),
+});
+
+type ProfileDetailsInput = z.infer<typeof profileDetailsSchema>;
+
+const changePasswordSchema = z.object({
+  newPassword: z.string().min(8, "New password must be at least 8 characters"),
+  confirmPassword: z.string().min(8, "Confirm password is required"),
+}).refine((data) => data.newPassword === data.confirmPassword, {
+  message: "Passwords do not match",
+  path: ["confirmPassword"],
+});
+
+type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
+
 export default function ProfilePage() {
   useAuth(); // ensure auth context is initialized
 
@@ -29,31 +52,39 @@ export default function ProfilePage() {
   const [changingPwd, setChangingPwd] = useState(false);
   const [uploading, setUploading] = useState(false);
 
-  // Profile form state (no password)
-  const [form, setForm] = useState({
-    firstName: "",
-    lastName: "",
-    username: "",
-    email: "",
-    phone: "",
-  });
-
-  // Separate password change state
-  const [pwdForm, setPwdForm] = useState({
-    currentPassword: "",
-    newPassword: "",
-    confirmPassword: "",
-  });
-  const [showCurrentPwd, setShowCurrentPwd] = useState(false);
   const [showNewPwd, setShowNewPwd] = useState(false);
   const [showConfirmPwd, setShowConfirmPwd] = useState(false);
+
+  // Forms
+  const detailsForm = useForm<ProfileDetailsInput>({
+    resolver: zodResolver(profileDetailsSchema),
+    defaultValues: {
+      firstName: "",
+      lastName: "",
+      username: "",
+      email: "",
+      phone: "",
+    },
+  });
+
+  const passwordForm = useForm<ChangePasswordInput>({
+    resolver: zodResolver(changePasswordSchema),
+    defaultValues: {
+      newPassword: "",
+      confirmPassword: "",
+    },
+  });
+
+  const newPasswordVal = passwordForm.watch("newPassword") || "";
+  const confirmPasswordVal = passwordForm.watch("confirmPassword") || "";
+  const passwordsMatch = newPasswordVal && confirmPasswordVal ? newPasswordVal === confirmPasswordVal : true;
 
   const fetchProfile = async () => {
     try {
       setLoading(true);
       const res = await apiClient.get("/api/v1/profile");
       setProfile(res.data);
-      setForm({
+      detailsForm.reset({
         firstName: res.data.firstName,
         lastName: res.data.lastName,
         username: res.data.username,
@@ -71,18 +102,13 @@ export default function ProfilePage() {
     fetchProfile();
   }, []);
 
-  // --- Update profile details (no password required) ---
-  const handleUpdate = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // --- Update profile details ---
+  const handleUpdate = async (data: ProfileDetailsInput) => {
     setUpdating(true);
     try {
-      // Backend PUT /profile requires password; we send an empty string
-      // for field-only updates — the backend will only validate password
-      // if it is non-empty (confirmed by backend implementation).
-      // We send a placeholder so the contract is satisfied.
       const res = await apiClient.put("/api/v1/profile", {
-        ...form,
-        password: "", // Not changing password — send empty
+        ...data,
+        password: "", // Not changing password — send empty placeholder
       });
       setProfile(res.data);
       toast.success("Profile updated successfully!");
@@ -94,24 +120,19 @@ export default function ProfilePage() {
   };
 
   // --- Change password separately ---
-  const handleChangePassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (pwdForm.newPassword !== pwdForm.confirmPassword) {
-      toast.error("New password and confirm password do not match.");
-      return;
-    }
-    if (pwdForm.newPassword.length < 8) {
-      toast.error("New password must be at least 8 characters.");
-      return;
-    }
+  const handleChangePassword = async (data: ChangePasswordInput) => {
     setChangingPwd(true);
     try {
       await apiClient.put("/api/v1/profile", {
-        ...form,
-        password: pwdForm.newPassword,
+        firstName: profile?.firstName,
+        lastName: profile?.lastName,
+        username: profile?.username,
+        email: profile?.email,
+        phone: profile?.phone || "",
+        password: data.newPassword,
       });
       toast.success("Password changed successfully!");
-      setPwdForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+      passwordForm.reset({ newPassword: "", confirmPassword: "" });
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Failed to change password.");
     } finally {
@@ -163,7 +184,7 @@ export default function ProfilePage() {
     return { score, label: labels[score] || "Very Strong", color: colors[Math.min(score, 5)] };
   };
 
-  const pwdStrength = getPasswordStrength(pwdForm.newPassword);
+  const pwdStrength = getPasswordStrength(newPasswordVal);
 
   if (loading) {
     return (
@@ -242,7 +263,7 @@ export default function ProfilePage() {
           <div className="bg-white dark:bg-[#13131a] border border-slate-200 dark:border-white/5 rounded-2xl p-6 shadow-sm">
             <h3 className="font-bold text-slate-900 dark:text-white text-base mb-6">Profile Details</h3>
 
-            <form onSubmit={handleUpdate} className="space-y-4">
+            <form onSubmit={detailsForm.handleSubmit(handleUpdate)} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-slate-400 mb-1">First Name *</label>
@@ -252,12 +273,13 @@ export default function ProfilePage() {
                     </span>
                     <input
                       type="text"
-                      required
-                      value={form.firstName}
-                      onChange={(e) => setForm({ ...form, firstName: e.target.value })}
+                      {...detailsForm.register("firstName")}
                       className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-[#0a0a0f] border border-slate-200 dark:border-white/5 rounded-xl text-xs text-slate-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
                     />
                   </div>
+                  {detailsForm.formState.errors.firstName && (
+                    <p className="text-[10px] text-red-400 mt-1">{detailsForm.formState.errors.firstName.message}</p>
+                  )}
                 </div>
 
                 <div>
@@ -268,12 +290,13 @@ export default function ProfilePage() {
                     </span>
                     <input
                       type="text"
-                      required
-                      value={form.lastName}
-                      onChange={(e) => setForm({ ...form, lastName: e.target.value })}
+                      {...detailsForm.register("lastName")}
                       className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-[#0a0a0f] border border-slate-200 dark:border-white/5 rounded-xl text-xs text-slate-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
                     />
                   </div>
+                  {detailsForm.formState.errors.lastName && (
+                    <p className="text-[10px] text-red-400 mt-1">{detailsForm.formState.errors.lastName.message}</p>
+                  )}
                 </div>
               </div>
 
@@ -285,12 +308,13 @@ export default function ProfilePage() {
                   </span>
                   <input
                     type="text"
-                    required
-                    value={form.username}
-                    onChange={(e) => setForm({ ...form, username: e.target.value })}
+                    {...detailsForm.register("username")}
                     className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-[#0a0a0f] border border-slate-200 dark:border-white/5 rounded-xl text-xs text-slate-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
                   />
                 </div>
+                {detailsForm.formState.errors.username && (
+                  <p className="text-[10px] text-red-400 mt-1">{detailsForm.formState.errors.username.message}</p>
+                )}
               </div>
 
               <div>
@@ -301,12 +325,13 @@ export default function ProfilePage() {
                   </span>
                   <input
                     type="email"
-                    required
-                    value={form.email}
-                    onChange={(e) => setForm({ ...form, email: e.target.value })}
+                    {...detailsForm.register("email")}
                     className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-[#0a0a0f] border border-slate-200 dark:border-white/5 rounded-xl text-xs text-slate-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
                   />
                 </div>
+                {detailsForm.formState.errors.email && (
+                  <p className="text-[10px] text-red-400 mt-1">{detailsForm.formState.errors.email.message}</p>
+                )}
               </div>
 
               <div>
@@ -317,18 +342,20 @@ export default function ProfilePage() {
                   </span>
                   <input
                     type="text"
-                    value={form.phone}
-                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                    {...detailsForm.register("phone")}
                     className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-[#0a0a0f] border border-slate-200 dark:border-white/5 rounded-xl text-xs text-slate-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
                   />
                 </div>
+                {detailsForm.formState.errors.phone && (
+                  <p className="text-[10px] text-red-400 mt-1">{detailsForm.formState.errors.phone.message}</p>
+                )}
               </div>
 
               <div className="flex justify-end pt-4 border-t border-slate-200 dark:border-white/5">
                 <button
                   type="submit"
                   disabled={updating}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-60 text-white rounded-xl text-xs font-semibold shadow-md shadow-indigo-500/10 flex items-center gap-1.5 transition-colors"
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-60 text-white rounded-xl text-xs font-semibold shadow-md shadow-indigo-500/10 flex items-center gap-1.5 transition-colors cursor-pointer"
                 >
                   {updating ? (
                     <>
@@ -349,7 +376,7 @@ export default function ProfilePage() {
               <h3 className="font-bold text-slate-900 dark:text-white text-base">Change Password</h3>
             </div>
 
-            <form onSubmit={handleChangePassword} className="space-y-4">
+            <form onSubmit={passwordForm.handleSubmit(handleChangePassword)} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-slate-400 mb-1">New Password *</label>
                 <div className="relative">
@@ -358,18 +385,18 @@ export default function ProfilePage() {
                   </span>
                   <input
                     type={showNewPwd ? "text" : "password"}
-                    required
-                    minLength={8}
-                    value={pwdForm.newPassword}
-                    onChange={(e) => setPwdForm({ ...pwdForm, newPassword: e.target.value })}
+                    {...passwordForm.register("newPassword")}
                     placeholder="At least 8 characters"
                     className="w-full pl-9 pr-9 py-2 bg-slate-50 dark:bg-[#0a0a0f] border border-slate-200 dark:border-white/5 rounded-xl text-xs text-slate-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
                   />
-                  <button type="button" onClick={() => setShowNewPwd(!showNewPwd)} className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600">
+                  <button type="button" onClick={() => setShowNewPwd(!showNewPwd)} className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-650">
                     {showNewPwd ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                   </button>
                 </div>
-                {pwdForm.newPassword && (
+                {passwordForm.formState.errors.newPassword && (
+                  <p className="text-[10px] text-red-400 mt-1">{passwordForm.formState.errors.newPassword.message}</p>
+                )}
+                {newPasswordVal && (
                   <div className="mt-1.5 space-y-1">
                     <div className="flex gap-1">
                       {[1, 2, 3, 4, 5].map((i) => (
@@ -389,30 +416,26 @@ export default function ProfilePage() {
                   </span>
                   <input
                     type={showConfirmPwd ? "text" : "password"}
-                    required
-                    value={pwdForm.confirmPassword}
-                    onChange={(e) => setPwdForm({ ...pwdForm, confirmPassword: e.target.value })}
+                    {...passwordForm.register("confirmPassword")}
                     placeholder="Repeat new password"
                     className={`w-full pl-9 pr-9 py-2 bg-slate-50 dark:bg-[#0a0a0f] border rounded-xl text-xs text-slate-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500 ${
-                      pwdForm.confirmPassword && pwdForm.newPassword !== pwdForm.confirmPassword
-                        ? "border-red-400"
-                        : "border-slate-200 dark:border-white/5"
+                      !passwordsMatch ? "border-red-405" : "border-slate-200 dark:border-white/5"
                     }`}
                   />
-                  <button type="button" onClick={() => setShowConfirmPwd(!showConfirmPwd)} className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600">
+                  <button type="button" onClick={() => setShowConfirmPwd(!showConfirmPwd)} className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-650">
                     {showConfirmPwd ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                   </button>
                 </div>
-                {pwdForm.confirmPassword && pwdForm.newPassword !== pwdForm.confirmPassword && (
-                  <p className="text-[10px] text-red-400 mt-1">Passwords do not match</p>
+                {passwordForm.formState.errors.confirmPassword && (
+                  <p className="text-[10px] text-red-400 mt-1">{passwordForm.formState.errors.confirmPassword.message}</p>
                 )}
               </div>
 
               <div className="flex justify-end pt-4 border-t border-slate-200 dark:border-white/5">
                 <button
                   type="submit"
-                  disabled={changingPwd || !pwdForm.newPassword || pwdForm.newPassword !== pwdForm.confirmPassword}
-                  className="px-4 py-2 bg-orange-600 hover:bg-orange-500 disabled:opacity-60 text-white rounded-xl text-xs font-semibold shadow-md shadow-orange-500/10 flex items-center gap-1.5 transition-colors"
+                  disabled={changingPwd || !passwordsMatch || !newPasswordVal}
+                  className="px-4 py-2 bg-orange-600 hover:bg-orange-500 disabled:opacity-60 text-white rounded-xl text-xs font-semibold shadow-md shadow-orange-500/10 flex items-center gap-1.5 transition-colors cursor-pointer"
                 >
                   {changingPwd ? (
                     <>
