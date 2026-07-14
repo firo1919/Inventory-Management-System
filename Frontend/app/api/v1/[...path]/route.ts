@@ -76,7 +76,10 @@ async function handleProxy(
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ refreshToken }),
+        body: JSON.stringify({
+          refreshToken,
+          email: user?.email || ""
+        }),
       });
 
       if (refreshRes.ok) {
