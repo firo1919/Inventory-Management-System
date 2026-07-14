@@ -4,24 +4,11 @@ import React, { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { categoriesService } from "@/services/categories";
 import { toast } from "sonner";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import {
-  Plus,
-  Search,
-  ChevronLeft,
-  ChevronRight,
-  Edit2,
-  Trash2,
-  AlertTriangle,
-} from "lucide-react";
-
-const categorySchema = z.object({
-  name: z.string().min(1, "Category name is required").max(50, "Category name cannot exceed 50 characters"),
-});
-
-type CategoryInput = z.infer<typeof categorySchema>;
+import { Plus, Search, Edit2, Trash2 } from "lucide-react";
+import { CategoryFormModal } from "./_components/CategoryFormModal";
+import { DeleteCategoryModal } from "./_components/DeleteCategoryModal";
+import { Pagination } from "@/components/ui/Pagination";
+import { CategoryInput } from "./schema";
 
 export default function CategoriesPage() {
   const { isAdmin } = useAuth();
@@ -38,6 +25,7 @@ export default function CategoriesPage() {
 
   // Loading States
   const [loading, setLoading] = useState(true);
+  const [modalLoading, setModalLoading] = useState(false);
 
   // Modal States
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -46,19 +34,6 @@ export default function CategoriesPage() {
 
   // Selected Category State
   const [selectedCategory, setSelectedCategory] = useState<any>(null);
-
-  // React Hook Form
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<CategoryInput>({
-    resolver: zodResolver(categorySchema),
-    defaultValues: {
-      name: "",
-    },
-  });
 
   const fetchCategories = async () => {
     try {
@@ -97,43 +72,41 @@ export default function CategoriesPage() {
 
   // Add Category
   const handleAddCategory = async (data: CategoryInput) => {
-    setLoading(true);
+    setModalLoading(true);
     try {
       await categoriesService.createCategory({
         name: data.name,
       });
       setIsAddModalOpen(false);
-      reset({ name: "" });
       toast.success("Category created successfully!");
       fetchCategories();
     } catch (err: any) {
       toast.error(err.response?.data?.message || err.message || "Failed to create category");
     } finally {
-      setLoading(false);
+      setModalLoading(false);
     }
   };
 
   // Edit Category
   const handleEditCategory = async (data: CategoryInput) => {
-    setLoading(true);
+    setModalLoading(true);
     try {
       await categoriesService.updateCategory(selectedCategory.id, {
         name: data.name,
       });
       setIsEditModalOpen(false);
-      reset({ name: "" });
       toast.success("Category updated!");
       fetchCategories();
     } catch (err: any) {
       toast.error(err.response?.data?.message || err.message || "Failed to update category");
     } finally {
-      setLoading(false);
+      setModalLoading(false);
     }
   };
 
   // Delete Category
   const handleDeleteCategory = async () => {
-    setLoading(true);
+    setModalLoading(true);
     try {
       await categoriesService.deleteCategory(selectedCategory.id);
       setIsDeleteModalOpen(false);
@@ -142,18 +115,16 @@ export default function CategoriesPage() {
     } catch (err: any) {
       toast.error(err.response?.data?.message || err.message || "Failed to delete category");
     } finally {
-      setLoading(false);
+      setModalLoading(false);
     }
   };
 
   const openAddModal = () => {
-    reset({ name: "" });
     setIsAddModalOpen(true);
   };
 
   const openEditModal = (category: any) => {
     setSelectedCategory(category);
-    reset({ name: category.name });
     setIsEditModalOpen(true);
   };
 
@@ -173,7 +144,7 @@ export default function CategoriesPage() {
         {isAdmin && (
           <button
             onClick={openAddModal}
-            className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-505 text-white text-xs font-semibold rounded-xl transition-all shadow-md shadow-indigo-500/10 cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl transition-all shadow-md shadow-indigo-500/10 cursor-pointer"
           >
             <Plus className="w-4 h-4" /> Add Category
           </button>
@@ -253,138 +224,46 @@ export default function CategoriesPage() {
         </div>
 
         {/* PAGINATION */}
-        <div className="p-4 border-t border-slate-200 dark:border-white/5 flex items-center justify-between text-xs text-slate-400 bg-slate-50/50 dark:bg-[#0a0a0f]/50">
-          <p>
-            Showing {categories.length} of {totalElements} categories
-          </p>
-          <div className="flex gap-2">
-            <button
-              disabled={page === 0 || loading}
-              onClick={() => setPage(page - 1)}
-              className="p-1.5 rounded-lg border border-slate-200 dark:border-white/5 disabled:opacity-50"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <span className="py-1 px-3 bg-slate-100 dark:bg-white/5 rounded-lg font-semibold text-slate-700 dark:text-white">
-              Page {page + 1} of {totalPages}
-            </span>
-            <button
-              disabled={page >= totalPages - 1 || loading}
-              onClick={() => setPage(page + 1)}
-              className="p-1.5 rounded-lg border border-slate-200 dark:border-white/5 disabled:opacity-50"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
+        <Pagination
+          page={page}
+          pageSize={pageSize}
+          totalPages={totalPages}
+          totalElements={totalElements}
+          onPageChange={setPage}
+          loading={loading}
+          itemName="categories"
+        />
       </div>
 
       {/* CREATE MODAL */}
-      {isAddModalOpen && (
-        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#13131a] border border-slate-200 dark:border-white/5 rounded-2xl w-full max-w-sm p-6">
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Create Category</h3>
-            <form onSubmit={handleSubmit(handleAddCategory)} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-1">Category Name *</label>
-                <input
-                  type="text"
-                  {...register("name")}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-[#0a0a0f] border border-slate-200 dark:border-white/5 rounded-xl text-xs text-slate-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                  placeholder="e.g. Office Supplies"
-                />
-                {errors.name && (
-                  <p className="text-[10px] text-red-400 mt-1">{errors.name.message}</p>
-                )}
-              </div>
-
-              <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 dark:border-white/5">
-                <button
-                  type="button"
-                  onClick={() => setIsAddModalOpen(false)}
-                  className="px-4 py-2 border border-slate-200 dark:border-white/10 text-slate-505 hover:text-slate-700 dark:text-slate-400 rounded-xl text-xs"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold transition-all shadow-md shadow-indigo-500/10 cursor-pointer"
-                >
-                  {loading ? "Creating..." : "Create Category"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <CategoryFormModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onSubmit={handleAddCategory}
+        loading={modalLoading}
+        title="Create Category"
+        submitLabel="Create Category"
+      />
 
       {/* EDIT MODAL */}
-      {isEditModalOpen && selectedCategory && (
-        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#13131a] border border-slate-200 dark:border-white/5 rounded-2xl w-full max-w-sm p-6">
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Edit Category</h3>
-            <form onSubmit={handleSubmit(handleEditCategory)} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-1">Category Name *</label>
-                <input
-                  type="text"
-                  {...register("name")}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-[#0a0a0f] border border-slate-200 dark:border-white/5 rounded-xl text-xs text-slate-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                />
-                {errors.name && (
-                  <p className="text-[10px] text-red-400 mt-1">{errors.name.message}</p>
-                )}
-              </div>
-
-              <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 dark:border-white/5">
-                <button
-                  type="button"
-                  onClick={() => setIsEditModalOpen(false)}
-                  className="px-4 py-2 border border-slate-200 dark:border-white/10 text-slate-505 hover:text-slate-700 dark:text-slate-400 rounded-xl text-xs"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold transition-all shadow-md shadow-indigo-500/10 cursor-pointer"
-                >
-                  {loading ? "Saving..." : "Save Changes"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <CategoryFormModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        onSubmit={handleEditCategory}
+        initialData={selectedCategory ? { name: selectedCategory.name } : null}
+        loading={modalLoading}
+        title="Edit Category"
+        submitLabel="Save Changes"
+      />
 
       {/* DELETE MODAL */}
-      {isDeleteModalOpen && selectedCategory && (
-        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#13131a] border border-slate-200 dark:border-white/5 rounded-2xl w-full max-w-sm p-6 text-center">
-            <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">Delete Category</h3>
-            <p className="text-xs text-slate-400 mb-6">
-              Are you sure you want to delete <span className="font-semibold text-slate-700 dark:text-white">{selectedCategory.name}</span>? This will detach the category classification from all linked products.
-            </p>
-            <div className="flex justify-center gap-3">
-              <button
-                onClick={() => setIsDeleteModalOpen(false)}
-                className="px-4 py-2 border border-slate-200 dark:border-white/10 text-slate-505 hover:text-slate-700 dark:text-slate-400 rounded-xl text-xs"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDeleteCategory}
-                disabled={loading}
-                className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-semibold transition-all shadow-md shadow-red-500/10 cursor-pointer"
-              >
-                {loading ? "Deleting..." : "Delete Category"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <DeleteCategoryModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={handleDeleteCategory}
+        categoryName={selectedCategory?.name || ""}
+        loading={modalLoading}
+      />
     </div>
   );
 }
