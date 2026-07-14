@@ -74,7 +74,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: "Categories", href: "/dashboard/categories", icon: Tag, role: "ALL" },
     { name: "Sales Log", href: "/dashboard/sales", icon: TrendingUp, role: "ALL" },
     { name: "Restocks Log", href: "/dashboard/restocks", icon: ShoppingBag, role: "ALL" },
-    { name: "My Profile", href: "/dashboard/profile", icon: UserCircle, role: "ALL" },
     { name: "Employees", href: "/dashboard/employees", icon: Users, role: "ADMIN" },
     { name: "Audit Logs", href: "/dashboard/audit-logs", icon: FileSpreadsheet, role: "ADMIN" },
   ];
@@ -102,7 +101,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <div className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-white/80 dark:bg-[#13131a]/80 backdrop-blur-md border-b border-slate-200 dark:border-white/5 z-50 flex items-center justify-between px-4">
         <div className="flex items-center gap-2">
           <Warehouse className="w-6 h-6 text-indigo-500" />
-          <span className="font-bold text-lg text-slate-900 dark:text-white">StockFlow</span>
+          <span className="font-bold text-lg text-slate-900 dark:text-white">Inventory System</span>
         </div>
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -126,7 +125,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
             {!sidebarCollapsed && (
               <span className="font-bold text-base text-slate-900 dark:text-white tracking-tight">
-                StockFlow
+                Inventory System
               </span>
             )}
           </div>
@@ -222,7 +221,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="h-16 flex items-center justify-between px-6 border-b border-slate-200 dark:border-white/5">
           <div className="flex items-center gap-2">
             <Warehouse className="w-6 h-6 text-indigo-500" />
-            <span className="font-bold text-lg text-slate-900 dark:text-white">StockFlow</span>
+            <span className="font-bold text-lg text-slate-900 dark:text-white">Inventory System</span>
           </div>
           <button
             onClick={() => setMobileMenuOpen(false)}

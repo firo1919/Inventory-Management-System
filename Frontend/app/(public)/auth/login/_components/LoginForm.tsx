@@ -31,8 +31,10 @@ export function LoginForm({ onSubmit, loading, error }: LoginFormProps) {
         <div className="w-12 h-12 bg-gradient-to-tr from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20 mb-3">
           <Warehouse className="w-6 h-6 text-white" />
         </div>
-        <h1 className="text-2xl font-bold text-white tracking-tight">StockFlow</h1>
-        <p className="text-gray-400 text-sm mt-1">Inventory Management System</p>
+        <h1 className="text-xl font-bold text-white tracking-tight text-center">
+          Inventory Management System
+        </h1>
+        <p className="text-gray-400 text-sm mt-1">Sign in to your account</p>
       </div>
 
       {error && (
