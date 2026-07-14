@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { apiClient } from "@/lib/api-client";
+import { categoriesService } from "@/services/categories";
 import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -63,14 +63,12 @@ export default function CategoriesPage() {
   const fetchCategories = async () => {
     try {
       setLoading(true);
-      const res = await apiClient.get("/api/v1/categories", {
-        params: {
-          page,
-          size: pageSize,
-        },
+      const data = await categoriesService.getCategories({
+        page,
+        size: pageSize,
       });
 
-      let content = res.data?.content || [];
+      let content = data?.content || [];
 
       // Client side filtering for search query if needed
       if (search) {
@@ -79,8 +77,8 @@ export default function CategoriesPage() {
       }
 
       setCategories(content);
-      setTotalPages(res.data?.totalPages || 1);
-      setTotalElements(res.data?.totalElements || content.length);
+      setTotalPages(data?.totalPages || 1);
+      setTotalElements(data?.totalElements || content.length);
     } catch {
       toast.error("Failed to fetch categories.");
     } finally {
@@ -101,7 +99,7 @@ export default function CategoriesPage() {
   const handleAddCategory = async (data: CategoryInput) => {
     setLoading(true);
     try {
-      await apiClient.post("/api/v1/admin/categories", {
+      await categoriesService.createCategory({
         name: data.name,
       });
       setIsAddModalOpen(false);
@@ -119,7 +117,7 @@ export default function CategoriesPage() {
   const handleEditCategory = async (data: CategoryInput) => {
     setLoading(true);
     try {
-      await apiClient.put(`/api/v1/admin/categories/${selectedCategory.id}`, {
+      await categoriesService.updateCategory(selectedCategory.id, {
         name: data.name,
       });
       setIsEditModalOpen(false);
@@ -137,7 +135,7 @@ export default function CategoriesPage() {
   const handleDeleteCategory = async () => {
     setLoading(true);
     try {
-      await apiClient.delete(`/api/v1/admin/categories/${selectedCategory.id}`);
+      await categoriesService.deleteCategory(selectedCategory.id);
       setIsDeleteModalOpen(false);
       toast.success("Category deleted.");
       fetchCategories();

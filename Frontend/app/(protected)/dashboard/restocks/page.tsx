@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { apiClient } from "@/lib/api-client";
+import { restocksService } from "@/services/restocks";
+import { productsService } from "@/services/products";
 import { toast } from "sonner";
 import SearchableSelect from "@/components/ui/SearchableSelect";
 import { useForm } from "react-hook-form";
@@ -80,11 +81,12 @@ export default function RestocksPage() {
                 let p = 0;
                 let totalPgs = 1;
                 while (p < totalPgs && p < 5) {
-                    const res = await apiClient.get(
-                        `/api/v1/products?page=${p}&size=20`,
-                    );
-                    allContent = allContent.concat(res.data?.content || []);
-                    totalPgs = res.data?.totalPages || 1;
+                    const data = await productsService.getProducts({
+                        page: p,
+                        size: 20,
+                    });
+                    allContent = allContent.concat(data?.content || []);
+                    totalPgs = data?.totalPages || 1;
                     p++;
                 }
                 const mapping: Record<string, string> = {};
@@ -103,21 +105,16 @@ export default function RestocksPage() {
     const fetchRestocks = async (showToast = false) => {
         try {
             setLoading(true);
-            const endpoint = isAdmin
-                ? "/api/v1/admin/restocks"
-                : "/api/v1/employee/restocks";
-            const res = await apiClient.get(endpoint, {
-                params: {
-                    page,
-                    size: pageSize,
-                    sortBy: "timestamp",
-                    sortDirection: "desc",
-                },
+            const data = await restocksService.getRestocks(isAdmin, {
+                page,
+                size: pageSize,
+                sortBy: "timestamp",
+                sortDirection: "desc",
             });
 
-            setRestocks(res.data?.content || []);
-            setTotalPages(res.data?.totalPages || 1);
-            setTotalElements(res.data?.totalElements || 0);
+            setRestocks(data?.content || []);
+            setTotalPages(data?.totalPages || 1);
+            setTotalElements(data?.totalElements || 0);
         } catch {
             toast.error("Failed to fetch restocks.");
         } finally {
@@ -140,7 +137,7 @@ export default function RestocksPage() {
         setFormError("");
         setLoading(true);
         try {
-            await apiClient.post("/api/v1/restocks", data);
+            await restocksService.createRestock(data);
             setIsAddModalOpen(false);
             reset();
             setSelectedProductDetails(null);
@@ -166,9 +163,7 @@ export default function RestocksPage() {
     const handleDeleteRestock = async () => {
         setLoading(true);
         try {
-            await apiClient.delete(
-                `/api/v1/admin/restocks/${selectedRestock.id}`,
-            );
+            await restocksService.deleteRestock(selectedRestock.id);
             setIsDeleteModalOpen(false);
             toast.success("Restock record deleted.");
             fetchRestocks();

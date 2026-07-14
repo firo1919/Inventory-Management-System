@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { apiClient } from "@/lib/api-client";
+import { auditLogsService } from "@/services/audit-logs";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
@@ -83,13 +83,11 @@ export default function AuditLogsPage() {
             if (startDate) params.startDate = `${startDate}T00:00:00`;
             if (endDate) params.endDate = `${endDate}T23:59:59`;
 
-            const res = await apiClient.get("/api/v1/admin/audit-logs", {
-                params,
-            });
+            const data = await auditLogsService.getAuditLogs(params);
 
-            setLogs(res.data?.content || []);
-            setTotalPages(res.data?.totalPages || 1);
-            setTotalElements(res.data?.totalElements || 0);
+            setLogs(data?.content || []);
+            setTotalPages(data?.totalPages || 1);
+            setTotalElements(data?.totalElements || 0);
         } catch {
             toast.error("Failed to load audit logs.");
         } finally {
@@ -101,10 +99,8 @@ export default function AuditLogsPage() {
         if (!isAdmin) return;
         try {
             setStatsLoading(true);
-            const res = await apiClient.get(
-                "/api/v1/admin/audit-logs/statistics",
-            );
-            setStats(res.data);
+            const data = await auditLogsService.getAuditStatistics();
+            setStats(data);
         } catch {
             toast.error("Failed to load audit statistics.");
         } finally {
@@ -154,14 +150,10 @@ export default function AuditLogsPage() {
             if (startDate) filterPayload.startDate = `${startDate}T00:00:00`;
             if (endDate) filterPayload.endDate = `${endDate}T23:59:59`;
 
-            const res = await apiClient.post(
-                `/api/v1/admin/audit-logs/export/${format}`,
-                filterPayload,
-                { responseType: "blob" },
-            );
+            const data = await auditLogsService.exportAuditLogs(format, filterPayload);
 
             // Create browser download link
-            const blob = new Blob([res.data], {
+            const blob = new Blob([data], {
                 type: format === "csv" ? "text/csv" : "application/json",
             });
             const url = window.URL.createObjectURL(blob);
@@ -188,11 +180,9 @@ export default function AuditLogsPage() {
 
         setLoading(true);
         try {
-            await apiClient.delete("/api/v1/admin/audit-logs", {
-                params: {
-                    startDate: `${deleteStartDate}T00:00:00`,
-                    endDate: `${deleteEndDate}T23:59:59`,
-                },
+            await auditLogsService.deleteAuditLogs({
+                startDate: `${deleteStartDate}T00:00:00`,
+                endDate: `${deleteEndDate}T23:59:59`,
             });
 
             setIsDeleteModalOpen(false);

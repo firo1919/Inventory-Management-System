@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { apiClient } from "@/lib/api-client";
+import { salesService } from "@/services/sales";
+import { productsService } from "@/services/products";
 import { toast } from "sonner";
 import SearchableSelect from "@/components/ui/SearchableSelect";
 import { useForm } from "react-hook-form";
@@ -83,11 +84,12 @@ export default function SalesPage() {
                 let totalPgs = 1;
                 while (p < totalPgs && p < 5) {
                     // max 5 pages = 100 products for the map
-                    const res = await apiClient.get(
-                        `/api/v1/products?page=${p}&size=20`,
-                    );
-                    allContent = allContent.concat(res.data?.content || []);
-                    totalPgs = res.data?.totalPages || 1;
+                    const data = await productsService.getProducts({
+                        page: p,
+                        size: 20,
+                    });
+                    allContent = allContent.concat(data?.content || []);
+                    totalPgs = data?.totalPages || 1;
                     p++;
                 }
                 const mapping: Record<string, string> = {};
@@ -106,21 +108,16 @@ export default function SalesPage() {
     const fetchSales = async () => {
         try {
             setLoading(true);
-            const endpoint = isAdmin
-                ? "/api/v1/admin/sales"
-                : "/api/v1/employee/sales";
-            const res = await apiClient.get(endpoint, {
-                params: {
-                    page,
-                    size: pageSize,
-                    sortBy: "timestamp",
-                    sortDirection: "desc",
-                },
+            const data = await salesService.getSales(isAdmin, {
+                page,
+                size: pageSize,
+                sortBy: "timestamp",
+                sortDirection: "desc",
             });
 
-            setSales(res.data?.content || []);
-            setTotalPages(res.data?.totalPages || 1);
-            setTotalElements(res.data?.totalElements || 0);
+            setSales(data?.content || []);
+            setTotalPages(data?.totalPages || 1);
+            setTotalElements(data?.totalElements || 0);
         } catch {
             toast.error("Failed to fetch sales.");
         } finally {
@@ -159,7 +156,7 @@ export default function SalesPage() {
 
         setLoading(true);
         try {
-            await apiClient.post("/api/v1/sales", data);
+            await salesService.createSale(data);
             setIsAddModalOpen(false);
             reset();
             setSelectedProductDetails(null);
@@ -185,7 +182,7 @@ export default function SalesPage() {
     const handleDeleteSale = async () => {
         setLoading(true);
         try {
-            await apiClient.delete(`/api/v1/admin/sales/${selectedSale.id}`);
+            await salesService.deleteSale(selectedSale.id);
             setIsDeleteModalOpen(false);
             toast.success("Sale record deleted.");
             fetchSales();

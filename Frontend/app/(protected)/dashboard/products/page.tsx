@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { apiClient } from "@/lib/api-client";
+import { productsService } from "@/services/products";
+import { categoriesService } from "@/services/categories";
 import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -110,8 +111,8 @@ export default function ProductsPage() {
   useEffect(() => {
     async function fetchCategories() {
       try {
-        const res = await apiClient.get("/api/v1/categories?page=0&size=100");
-        const content = res.data?.content || [];
+        const data = await categoriesService.getCategories({ page: 0, size: 100 });
+        const content = data?.content || [];
         setCategories(content);
         const mapping: Record<string, string> = {};
         content.forEach((cat: any) => {
@@ -129,21 +130,21 @@ export default function ProductsPage() {
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      let endpoint = "/api/v1/products";
+      const params = {
+        page,
+        size: pageSize,
+        sortBy,
+        sortDirection: sortDir,
+      };
+
+      let data;
       if (stockFilter === "LOW") {
-        endpoint = "/api/v1/products/low-stock";
+        data = await productsService.getLowStockProducts(params);
+      } else {
+        data = await productsService.getProducts(params);
       }
 
-      const res = await apiClient.get(endpoint, {
-        params: {
-          page,
-          size: pageSize,
-          sortBy,
-          sortDirection: sortDir,
-        },
-      });
-
-      let content = res.data?.content || [];
+      let content = data?.content || [];
 
       // Manual client-side filtering if search or category is active (since mock backend might not support extensive filtering queries)
       if (search) {
@@ -167,8 +168,8 @@ export default function ProductsPage() {
       }
 
       setProducts(content);
-      setTotalPages(res.data?.totalPages || 1);
-      setTotalElements(res.data?.totalElements || content.length);
+      setTotalPages(data?.totalPages || 1);
+      setTotalElements(data?.totalElements || content.length);
     } catch {
       toast.error("Failed to load products.");
     } finally {
@@ -189,7 +190,7 @@ export default function ProductsPage() {
   const handleAddProduct = async (data: ProductInput) => {
     setLoading(true);
     try {
-      await apiClient.post("/api/v1/admin/products", data);
+      await productsService.createProduct(data);
       setIsAddModalOpen(false);
       reset();
       toast.success("Product created successfully!");
@@ -205,7 +206,7 @@ export default function ProductsPage() {
   const handleEditProduct = async (data: ProductInput) => {
     setLoading(true);
     try {
-      await apiClient.put(`/api/v1/admin/products/${selectedProduct.id}`, data);
+      await productsService.updateProduct(selectedProduct.id, data);
       setIsEditModalOpen(false);
       reset();
       toast.success("Product updated!");
@@ -221,7 +222,7 @@ export default function ProductsPage() {
   const handleDeleteProduct = async () => {
     setLoading(true);
     try {
-      await apiClient.delete(`/api/v1/admin/products/${selectedProduct.id}`);
+      await productsService.deleteProduct(selectedProduct.id);
       setIsDeleteModalOpen(false);
       toast.success("Product deleted.");
       fetchProducts();
@@ -235,8 +236,7 @@ export default function ProductsPage() {
   // Toggle Active/Inactive Status
   const handleToggleStatus = async (productId: string, currentStatus: boolean) => {
     try {
-      const action = currentStatus ? "deactivate" : "activate";
-      await apiClient.post(`/api/v1/admin/products/${productId}/${action}`);
+      await productsService.toggleProductStatus(productId, currentStatus);
       toast.success(currentStatus ? "Product deactivated." : "Product activated.");
       fetchProducts();
     } catch (err: any) {
@@ -257,15 +257,7 @@ export default function ProductsPage() {
       formData.append("file", uploadFile);
 
       setUploadProgress(40);
-      const res = await apiClient.post(
-        `/api/v1/admin/products/${selectedProduct.id}/image`,
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
+      await productsService.uploadProductImage(selectedProduct.id, formData);
 
       setUploadProgress(100);
       toast.success("Image uploaded!");

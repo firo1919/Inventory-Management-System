@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { KeyRound, Mail, Loader2, ArrowLeft, RefreshCw } from "lucide-react";
-import { apiClient } from "@/lib/api-client";
+import { authService } from "@/services/auth";
 import { toast } from "sonner";
 
 const OTP_LENGTH = 5;
@@ -97,12 +97,12 @@ function VerifyOtpPageInner() {
         }
         setLoading(true);
         try {
-            const response = await apiClient.post("/api/v1/auth/confirm-otp", {
+            const data = await authService.confirmOtp({
                 otp,
                 email,
             });
             toast.success(
-                response.data?.message ||
+                data?.message ||
                     "OTP confirmed! Redirecting to login...",
             );
             setTimeout(() => router.push("/auth/login"), 2000);
@@ -120,11 +120,11 @@ function VerifyOtpPageInner() {
     const handleResend = async () => {
         setResending(true);
         try {
-            const response = await apiClient.post("/api/v1/auth/resend-otp", {
+            const data = await authService.resendOtp({
                 email,
             });
             toast.success(
-                response.data?.message || "OTP resent! Check your email.",
+                data?.message || "OTP resent! Check your email.",
             );
             setTimer(60);
             // Clear boxes and refocus

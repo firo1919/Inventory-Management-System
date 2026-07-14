@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { apiClient } from "@/lib/api-client";
+import { employeesService } from "@/services/employees";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useForm } from "react-hook-form";
@@ -93,14 +93,12 @@ export default function EmployeesPage() {
     if (!isAdmin) return;
     try {
       setLoading(true);
-      const res = await apiClient.get("/api/v1/admin/employees", {
-        params: {
-          page,
-          size: pageSize,
-        },
+      const data = await employeesService.getEmployees({
+        page,
+        size: pageSize,
       });
 
-      let content = res.data?.content || [];
+      let content = data?.content || [];
 
       // Client-side search filtering
       if (search) {
@@ -115,8 +113,8 @@ export default function EmployeesPage() {
       }
 
       setEmployees(content);
-      setTotalPages(res.data?.totalPages || 1);
-      setTotalElements(res.data?.totalElements || content.length);
+      setTotalPages(data?.totalPages || 1);
+      setTotalElements(data?.totalElements || content.length);
     } catch {
       toast.error("Failed to load employees.");
     } finally {
@@ -138,7 +136,7 @@ export default function EmployeesPage() {
     setFormError("");
     setLoading(true);
     try {
-      await apiClient.post("/api/v1/admin/employees", data);
+      await employeesService.createEmployee(data);
       setIsAddModalOpen(false);
       reset();
       toast.success("Employee registered successfully!");
@@ -156,7 +154,7 @@ export default function EmployeesPage() {
     setFormError("");
     setLoading(true);
     try {
-      await apiClient.put(`/api/v1/admin/employees/${selectedEmployee.id}`, data);
+      await employeesService.updateEmployee(selectedEmployee.id, data);
       setIsEditModalOpen(false);
       reset();
       toast.success("Employee updated!");
@@ -173,7 +171,7 @@ export default function EmployeesPage() {
   const handleDeleteEmployee = async () => {
     setLoading(true);
     try {
-      await apiClient.delete(`/api/v1/admin/employees/${selectedEmployee.id}`);
+      await employeesService.deleteEmployee(selectedEmployee.id);
       setIsDeleteModalOpen(false);
       toast.success("Employee deleted.");
       fetchEmployees();
@@ -187,10 +185,7 @@ export default function EmployeesPage() {
   // Toggle Active/Deactive Employee Status
   const handleToggleActive = async (employee: any) => {
     try {
-      const endpoint = `/api/v1/admin/employees/${employee.id}/${
-        employee.active ? "deactivate" : "activate"
-      }`;
-      await apiClient.post(endpoint);
+      await employeesService.toggleEmployeeStatus(employee.id, employee.active);
       toast.success(employee.active ? "Employee deactivated." : "Employee activated.");
       fetchEmployees();
     } catch (err: any) {

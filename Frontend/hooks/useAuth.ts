@@ -3,6 +3,8 @@
 import { useSession, signIn, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
+import { authService } from "@/services/auth";
+
 export function useAuth() {
   const router = useRouter();
   const { data: sessionData, status, update } = useSession();
@@ -36,10 +38,7 @@ export function useAuth() {
 
   const logout = async () => {
     try {
-      // Notify backend via relative proxy endpoint
-      await fetch("/api/v1/auth/logout", {
-        method: "POST",
-      }).catch(() => {});
+      await authService.logout();
     } catch (e) {
       // ignore
     } finally {

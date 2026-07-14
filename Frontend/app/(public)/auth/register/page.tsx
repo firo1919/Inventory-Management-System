@@ -14,7 +14,7 @@ import {
     Eye,
     EyeOff,
 } from "lucide-react";
-import { apiClient } from "@/lib/api-client";
+import { authService } from "@/services/auth";
 import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -105,7 +105,7 @@ export default function RegisterPage() {
         setLoading(true);
         try {
             const { confirmPassword, ...payload } = data;
-            await apiClient.post("/api/v1/auth/admins", payload);
+            await authService.registerAdmin(payload);
             toast.success(
                 "Admin registered! Check your email for the OTP code.",
             );

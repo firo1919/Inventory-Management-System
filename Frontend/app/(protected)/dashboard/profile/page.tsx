@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { apiClient } from "@/lib/api-client";
+import { profileService } from "@/services/profile";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -82,14 +82,14 @@ export default function ProfilePage() {
   const fetchProfile = async () => {
     try {
       setLoading(true);
-      const res = await apiClient.get("/api/v1/profile");
-      setProfile(res.data);
+      const data = await profileService.getProfile();
+      setProfile(data);
       detailsForm.reset({
-        firstName: res.data.firstName,
-        lastName: res.data.lastName,
-        username: res.data.username,
-        email: res.data.email,
-        phone: res.data.phone || "",
+        firstName: data.firstName,
+        lastName: data.lastName,
+        username: data.username,
+        email: data.email,
+        phone: data.phone || "",
       });
     } catch {
       toast.error("Failed to load profile. Please refresh the page.");
@@ -106,11 +106,11 @@ export default function ProfilePage() {
   const handleUpdate = async (data: ProfileDetailsInput) => {
     setUpdating(true);
     try {
-      const res = await apiClient.put("/api/v1/profile", {
+      const updatedData = await profileService.updateProfile({
         ...data,
         password: "", // Not changing password — send empty placeholder
       });
-      setProfile(res.data);
+      setProfile(updatedData);
       toast.success("Profile updated successfully!");
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Failed to update profile.");
@@ -123,7 +123,7 @@ export default function ProfilePage() {
   const handleChangePassword = async (data: ChangePasswordInput) => {
     setChangingPwd(true);
     try {
-      await apiClient.put("/api/v1/profile", {
+      await profileService.updateProfile({
         firstName: profile?.firstName,
         lastName: profile?.lastName,
         username: profile?.username,
@@ -148,20 +148,15 @@ export default function ProfilePage() {
     setUploading(true);
     const toastId = toast.loading("Uploading avatar...");
     try {
-      const presignRes = await apiClient.post("/api/v1/uploads/presign", {
-        filename: file.name,
-        contentType: file.type,
-      });
-      const { objectKey, uploadUrl } = presignRes.data;
+      const presignData = await profileService.getPresignedUrl(file.name, file.type);
+      const { objectKey, uploadUrl } = presignData;
 
       await axios.put(uploadUrl, file, {
         headers: { "Content-Type": file.type },
       });
 
-      const updateRes = await apiClient.post("/api/v1/profile/profile-picture", {
-        objectKey,
-      });
-      setProfile(updateRes.data);
+      const updatedProfile = await profileService.updateProfilePicture(objectKey);
+      setProfile(updatedProfile);
       toast.success("Profile picture updated!", { id: toastId });
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Failed to upload avatar.", { id: toastId });

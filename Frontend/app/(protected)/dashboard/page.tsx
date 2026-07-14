@@ -2,7 +2,10 @@
 
 import React, { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { apiClient } from "@/lib/api-client";
+import { productsService } from "@/services/products";
+import { dashboardService } from "@/services/dashboard";
+import { salesService } from "@/services/sales";
+import { restocksService } from "@/services/restocks";
 import { toast } from "sonner";
 import {
   Package,
@@ -44,13 +47,13 @@ export default function DashboardOverview() {
         setLoading(true);
         
         // 1) Fetch products (for total count)
-        const productsRes = await apiClient.get("/api/v1/products?page=0&size=1");
-        const totalProducts = productsRes.data?.totalElements || 0;
+        const productsData = await productsService.getProducts({ page: 0, size: 1 });
+        const totalProducts = productsData?.totalElements || 0;
 
         // 2) Fetch low stock count & list
-        const lowStockRes = await apiClient.get("/api/v1/products/low-stock?page=0&size=5");
-        const lowStockCount = lowStockRes.data?.totalElements || 0;
-        setLowStockProducts(lowStockRes.data?.content || []);
+        const lowStockData = await productsService.getLowStockProducts({ page: 0, size: 5 });
+        const lowStockCount = lowStockData?.totalElements || 0;
+        setLowStockProducts(lowStockData?.content || []);
 
         // 3) Fetch role-specific details
         let inventoryValue = 0;
@@ -60,16 +63,16 @@ export default function DashboardOverview() {
 
         if (isAdmin) {
           // Admin specific APIs
-          const valRes = await apiClient.get("/api/v1/admin/inventory/value").catch(() => null);
-          inventoryValue = valRes?.data?.totalValue || 0;
+          const valRes = await dashboardService.getInventoryValue().catch(() => null);
+          inventoryValue = valRes?.totalValue || 0;
 
-          const salesRes = await apiClient.get("/api/v1/admin/sales?page=0&size=10").catch(() => null);
-          salesCount = salesRes?.data?.totalElements || 0;
-          const salesList = salesRes?.data?.content || [];
+          const salesData = await salesService.getSales(true, { page: 0, size: 10 }).catch(() => null);
+          salesCount = salesData?.totalElements || 0;
+          const salesList = salesData?.content || [];
 
-          const restocksRes = await apiClient.get("/api/v1/admin/restocks?page=0&size=10").catch(() => null);
-          restocksCount = restocksRes?.data?.totalElements || 0;
-          const restocksList = restocksRes?.data?.content || [];
+          const restocksData = await restocksService.getRestocks(true, { page: 0, size: 10 }).catch(() => null);
+          restocksCount = restocksData?.totalElements || 0;
+          const restocksList = restocksData?.content || [];
 
           // Merge sales and restocks into recent transactions
           const formattedSales = salesList.map((s: any) => ({
@@ -98,13 +101,13 @@ export default function DashboardOverview() {
 
         } else {
           // Employee specific APIs
-          const salesRes = await apiClient.get("/api/v1/employee/sales?page=0&size=10").catch(() => null);
-          salesCount = salesRes?.data?.totalElements || 0;
-          const salesList = salesRes?.data?.content || [];
+          const salesData = await salesService.getSales(false, { page: 0, size: 10 }).catch(() => null);
+          salesCount = salesData?.totalElements || 0;
+          const salesList = salesData?.content || [];
 
-          const restocksRes = await apiClient.get("/api/v1/employee/restocks?page=0&size=10").catch(() => null);
-          restocksCount = restocksRes?.data?.totalElements || 0;
-          const restocksList = restocksRes?.data?.content || [];
+          const restocksData = await restocksService.getRestocks(false, { page: 0, size: 10 }).catch(() => null);
+          restocksCount = restocksData?.totalElements || 0;
+          const restocksList = restocksData?.content || [];
 
           const formattedSales = salesList.map((s: any) => ({
             id: s.id,
