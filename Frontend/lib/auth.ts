@@ -34,10 +34,19 @@ export const auth = betterAuth({
       },
     },
   },
-  credentials: {
-    emailAndPassword: {
-      async authorize(credentials: any) {
-        const { email, password } = credentials || {};
+  emailAndPassword: {
+    enabled: true,
+    password: {
+      verify: async () => {
+        // Verified dynamically in the custom before hook; fallback only
+        return true;
+      },
+    },
+  },
+  hooks: {
+    before: async (ctx: any) => {
+      if (ctx.path === "/sign-in/email" && ctx.request.method === "POST") {
+        const { email, password } = (ctx.body || {}) as any;
         try {
           const apiURL = process.env.BACKEND_URL || "http://localhost:8080";
           const res = await fetch(`${apiURL}/api/v1/auth/login`, {
@@ -48,7 +57,6 @@ export const auth = betterAuth({
             body: JSON.stringify({ email, password }),
           });
 
-
           if (!res.ok) {
             let errorMsg = "Invalid email or password";
             try {
@@ -57,26 +65,64 @@ export const auth = betterAuth({
                 errorMsg = err.message;
               }
             } catch (e) {
-              // ignore json parse error
+              // ignore
             }
-            throw new Error(errorMsg);
+            return ctx.json({
+              error: {
+                message: errorMsg,
+              }
+            }, { status: 400 });
           }
 
-          const data = await res.json(); // LoginResponseDTO: role, accessToken, refreshToken, username, email
-          
-          return {
-            id: data.email, // Use email as unique id since it's the subject
-            name: data.username,
-            email: data.email,
-            role: data.role, // 'ADMIN' or 'EMPLOYEE'
-            accessToken: data.accessToken,
-            refreshToken: data.refreshToken,
-          };
+          const data = await res.json(); // role, accessToken, refreshToken, username, email
+
+          // Find or create the user in Better Auth memory DB
+          const userResult = await ctx.context.internalAdapter.findUserByEmail(data.email);
+          let user = userResult?.user;
+          if (!user) {
+            user = await ctx.context.internalAdapter.createUser({
+              email: data.email,
+              name: data.username,
+              emailVerified: true,
+              role: data.role,
+            });
+          } else {
+            // Sync role if updated
+            user = await ctx.context.internalAdapter.updateUser(user.id, {
+              role: data.role,
+            });
+          }
+
+          // Create Session inside Better Auth
+          const session = await ctx.context.internalAdapter.createSession(
+            user.id,
+            false,
+            {
+              accessToken: data.accessToken,
+              refreshToken: data.refreshToken,
+              role: data.role,
+            }
+          );
+
+          // Set session cookie in headers/context
+          await ctx.context.setNewSession({
+            session,
+            user,
+          });
+
+          return ctx.json({
+            session,
+            user,
+          });
         } catch (error: any) {
-          console.error("Authorize Callback Exception:", error);
-          throw new Error(error.message || "Authentication failed");
+          console.error("Stateless Custom Login Exception:", error);
+          return ctx.json({
+            error: {
+              message: error.message || "Authentication failed",
+            }
+          }, { status: 500 });
         }
-      },
+      }
     },
   },
 });
