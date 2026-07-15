@@ -1,41 +1,69 @@
-<div align="center">
+# 📦 Inventory Management System
 
-# Inventory Management System
+A production-ready, full-stack Inventory Management System featuring a high-performance **Spring Boot 4 backend** and a modern, responsive **Next.js 15+ frontend** dashboard. Manage your catalog, category hierarchies, transactions, users, role-based controls, audits, and uploads under a unified workflow.
 
-A Spring Boot backend for inventory, sales, and restock workflows with PostgreSQL, S3-compatible storage, and email notifications.
+---
 
-</div>
+## 🏗️ Architecture Overview
 
-## Overview
+The system operates as a decoupled architecture:
 
-This repository contains the backend for an inventory management system. It provides REST APIs for authentication, product and category management, employee and profile management, sales and restock operations, and file uploads.
+- **Frontend**: Next.js App Router (using React, TypeScript, Tailwind CSS) communicating via a secure server-side Next.js route proxy (`/api/v1/*`) to the backend.
+- **Backend**: Spring Boot 4 REST API utilizing PostgreSQL, JPA Hibernate, and Flyway migrations, configured behind Spring Security OAuth2 resource-server mechanisms.
 
-## Features
+---
 
-- Auth and profile management with OAuth2 resource server support
-- Product and category lifecycle, sales, and restock flows
-- Employee management and admin endpoints
-- Email notifications and scheduled reporting
-- S3-compatible storage integration
-- OpenAPI UI in dev at `/docs`
-- Flyway-based database migrations
+## 🚀 Key Features
 
-## Tech stack
+### 🔐 Authentication & Security
 
-- Java 25, Spring Boot 4
-- PostgreSQL, Flyway, JPA
-- Spring Security (OAuth2 resource server)
-- SpringDoc OpenAPI UI
-- AWS S3 SDK (compatible with local RustFS)
+- **Auth.js / Spring Security JWT Integration**: Secure session management using Access and Refresh tokens.
+- **Multi-Factor Admin Signups**: Administrator signups require an OTP code sent via SMTP (monitored locally via Mailhog).
+- **Role-Based Guards**: Hard separation between `ADMIN` and `EMPLOYEE` permissions on both server-side security rules and client-side view states.
+- **Internal Proxying**: All client API requests go through Next.js route handlers rather than exposing Java backend endpoints directly to the browser.
 
-> [!NOTE]
-> This repo currently contains the backend only. There is no frontend in this workspace.
+### 🛍️ Core Operations
 
-## Quickstart (development)
+- **Product Catalog**: Paginated catalog lookup, low-stock warnings, threshold filters, multi-category tags, and object-key S3-compatible image association.
+- **Advanced Selectors**: Uses a reusable custom **SearchableSelect** dropdown component with debounced server-side loading to easily handle massive item registries without freezing the UI.
+- **Category Tree**: Nested categories to catalog items dynamically.
+- **Sales Logging**: Record transactions, auto-suggest selling price, validate availability constraints, and view exact transactional data details.
+- **Inbound Restocks**: Fast log interface for catalog inventory replenishment.
 
-### 1) Start infrastructure services
+### 📝 System Audits & Management
 
-From [Backend](Backend), start the dev services (PostgreSQL, MailHog, RustFS, and SQL Studio):
+- **System Audit Log**: Automatic tracking of creation, editing, status changes, and deletion transactions across the system with Correlation ID linkage.
+- **Employee Directory**: Register staff members, assign credentials/roles, and deactivate or activate account access instantly.
+
+---
+
+## 🛠️ Technology Stack
+
+| Domain                   | Backend                                   | Frontend                            |
+| :----------------------- | :---------------------------------------- | :---------------------------------- |
+| **Framework**            | Spring Boot 4.x / Spring Security         | Next.js 15.x / React 19 / Turbopack |
+| **Languages**            | Java 25                                   | TypeScript                          |
+| **Database & Migration** | PostgreSQL 16+, Flyway                    | -                                   |
+| **Cache & Session**      | Spring Data Redis                         | Auth.js                         |
+| **Storage / Assets**     | AWS S3 SDK (compatible with MinIO/RustFS) | Axios & Presigned PUT uploads       |
+| **Developer Tools**      | OpenAPI (SpringDoc), Mailhog, Docker      | Tailwind CSS, Lucide icons, Sonner  |
+
+---
+
+## ⚙️ Getting Started & Setup
+
+Follow these steps to spin up the local development environment.
+
+### 1. Prerequisites
+
+- **Node.js** v18+ or v20+
+- **Java SDK** v25
+- **Docker & Docker Compose**
+
+### 2. Infrastructure Setup (Docker Compose)
+
+First, spin up database, mailing, and S3 mock services.
+From the workspace root directory:
 
 ```bash
 cd Backend
@@ -43,88 +71,87 @@ cp example.env .env
 docker compose -f docker-compose-dev.yaml up -d
 ```
 
-Services exposed locally:
+#### Dev Services Exposed Locally:
 
-- PostgreSQL: `localhost:5432`
-- MailHog UI: `http://localhost:8025`
-- RustFS S3 API: `http://localhost:9000`
-- RustFS Console: `http://localhost:9001`
-- SQL Studio: `http://localhost:3030`
+- **PostgreSQL**: `localhost:5432` (Database: `inventory`)
+- **Mailhog UI**: `http://localhost:8025` (Inbound dev signup OTP emails)
+- **RustFS S3 API**: `http://localhost:9000` (File uploads)
+- **RustFS Console**: `http://localhost:9001`
+- **SQL Studio**: `http://localhost:3030`
 
-### 2) Run the API
+---
+
+### 3. Running the Backend
+
+From the `Backend` directory:
 
 ```bash
-cd Backend
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
 ```
 
-The API runs on `http://localhost:8080`.
+- **API Endpoint**: `http://localhost:8080`
+- **Swagger OpenAPI Docs**: `http://localhost:8080/docs` (available under dev profile)
 
-> [!TIP]
-> OpenAPI UI is available at `http://localhost:8080/docs` when the `dev` profile is active.
+---
 
-## Configuration
+### 4. Running the Frontend
 
-Configuration is profile-based and lives under [Backend/src/main/resources](Backend/src/main/resources).
+First, create an environment file. In `Frontend/.env`:
 
-### Dev profile
+```env
+BACKEND_URL=http://localhost:8080
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+BETTER_AUTH_URL=http://localhost:3000
+BETTER_AUTH_SECRET=f53603ddb1c5c52f094cf7d510b66df2fcd583804b8a00893f668c27108321d6
+```
 
-Defaults are set in [Backend/src/main/resources/application-dev.properties](Backend/src/main/resources/application-dev.properties).
+Then install dependencies and start the hot-reloading dev server from the `Frontend` directory:
 
-Key dev defaults include:
+```bash
+cd ../Frontend
+npm install
+npm run dev
+```
 
-- PostgreSQL URL: `jdbc:postgresql://localhost:5432/inventory`
-- MailHog SMTP: `localhost:1025`
-- RustFS endpoint: `http://localhost:9000`
+- **Development Client Portal**: `http://localhost:3000`
 
-### Prod profile
+---
 
-Production configuration uses environment variables set via Docker or a process manager. See [Backend/docker-compose.yaml](Backend/docker-compose.yaml) for the full list.
-
-Required variables include:
-
-| Name                                    | Purpose              |
-| --------------------------------------- | -------------------- |
-| `SPRING_DATASOURCE_URL`                 | PostgreSQL JDBC URL  |
-| `SPRING_DATASOURCE_USERNAME`            | Database username    |
-| `SPRING_DATASOURCE_PASSWORD`            | Database password    |
-| `AUTH_SECRET`                           | JWT signing secret   |
-| `CORS_ORIGINS`                          | Allowed CORS origins |
-| `AWS_ACCESS_KEY` / `AWS_SECRET_KEY`     | S3 credentials       |
-| `AWS_REGION` / `AWS_S3_ENDPOINT`        | S3 configuration     |
-| `S3_BUCKET_NAME`                        | Default bucket name  |
-| `SPRING_MAIL_HOST` / `SPRING_MAIL_PORT` | SMTP configuration   |
-
-## Project structure
+## 📂 Repository Structure
 
 ```text
 Inventory-Management-System/
-	Backend/
-		src/main/java/com/firomsa/inventory/
-			v1/controller/   # REST controllers
-			v1/service/      # Business logic
-			repository/      # JPA repositories
-			model/           # Entities and domain models
-			security/        # Security configuration and JWT utilities
-		src/main/resources/
-			application.properties
-			application-dev.properties
-			application-prod.properties
+├── Backend/                 # Java Spring Boot 4 Backend APIs
+│   ├── src/main/java/       # Controller, service, and security layers
+│   ├── src/main/resources/  # Properties files, Flyway schema migrations
+│   ├── Dockerfile           # Backend container setup
+│   └── docker-compose.yaml  # Multi-container orchestration config
+│
+├── Frontend/                # Next.js 15 App Router Frontend
+│   ├── app/                 # Next.js pages & proxy API routes
+│   ├── components/          # Reusable component library (search inputs, modals, layout)
+│   ├── hooks/               # Custom context, session handlers, and lifecycle hooks
+│   ├── lib/                 # apiClient interceptor logic
+│   ├── services/            # API communication modules
+│   ├── types/               # TypeScript interfaces
+│   └── public/              # Static frontend assets
 ```
 
-## Testing
+---
+
+## 🧪 Testing
+
+To run backend unit and integration tests:
 
 ```bash
 cd Backend
 ./mvnw test
 ```
 
-Coverage reports are generated via JaCoCo after tests complete.
+To perform frontend linting and static checks:
 
-## API modules (v1)
-
-Endpoints are grouped under controllers in [Backend/src/main/java/com/firomsa/inventory/v1/controller](Backend/src/main/java/com/firomsa/inventory/v1/controller):
-
-- Auth, profile, and admin
-- Products, categories, sales, and restock
-- Employees and uploads
+```bash
+cd Frontend
+npm run lint
+npx tsc --noEmit
+```
