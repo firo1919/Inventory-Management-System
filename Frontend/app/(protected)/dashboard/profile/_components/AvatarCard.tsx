@@ -1,9 +1,10 @@
 import React from "react";
 import { Camera, Shield, CheckCircle, XCircle } from "lucide-react";
 import { Loader } from "@/components/ui/Loader";
+import { Employee } from "@/types";
 
 interface AvatarCardProps {
-  profile: any;
+  profile: Employee | null;
   uploading: boolean;
   onAvatarChange: (e: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
 }

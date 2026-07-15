@@ -1,11 +1,12 @@
 import React from "react";
 import { Shield } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
+import { Employee } from "@/types";
 
 interface EmployeeViewModalProps {
   isOpen: boolean;
   onClose: () => void;
-  employee: any;
+  employee: Employee | null;
 }
 
 export function EmployeeViewModal({
@@ -21,13 +22,13 @@ export function EmployeeViewModal({
         <h3 className="text-lg font-bold text-slate-900 dark:text-white">Employee details</h3>
         <span
           className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase border ${
-            employee.role?.name === "ADMIN"
+            employee.role === "ADMIN"
               ? "bg-purple-500/10 text-purple-500 border-purple-500/20"
               : "bg-blue-500/10 text-blue-500 border-blue-500/20"
           }`}
         >
           <Shield className="w-3 h-3" />
-          {employee.role?.name}
+          {employee.role}
         </span>
       </div>
 

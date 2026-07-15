@@ -1,10 +1,11 @@
 import React from "react";
 import { Modal } from "@/components/ui/Modal";
+import { Sale } from "@/types";
 
 interface SaleViewModalProps {
   isOpen: boolean;
   onClose: () => void;
-  sale: any;
+  sale: Sale | null;
   productMap: Record<string, string>;
 }
 
@@ -69,7 +70,7 @@ export function SaleViewModal({ isOpen, onClose, sale, productMap }: SaleViewMod
           </span>
           <span>
             {new Date(
-              sale.timestamp || sale.saleDate || sale.createdAt
+              sale.timestamp || sale.saleDate || sale.createdAt || ""
             ).toLocaleString()}
           </span>
         </div>

@@ -12,6 +12,7 @@ import { EmployeeViewModal } from "./_components/EmployeeViewModal";
 import { Pagination } from "@/components/ui/Pagination";
 import { Loader } from "@/components/ui/Loader";
 import { EmployeeInput } from "./schema";
+import { Employee } from "@/types";
 
 export default function EmployeesPage() {
   const { isAdmin, loading: authLoading } = useAuth();
@@ -25,11 +26,11 @@ export default function EmployeesPage() {
   }, [isAdmin, authLoading, router]);
 
   // Data States
-  const [employees, setEmployees] = useState<any[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
 
   // Pagination & Search
   const [page, setPage] = useState(0);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
   const [search, setSearch] = useState("");
@@ -45,7 +46,7 @@ export default function EmployeesPage() {
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
 
   // Selected Employee
-  const [selectedEmployee, setSelectedEmployee] = useState<any>(null);
+  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [formError, setFormError] = useState("");
 
   const fetchEmployees = async () => {
@@ -63,11 +64,11 @@ export default function EmployeesPage() {
       if (search) {
         const query = search.toLowerCase();
         content = content.filter(
-          (emp: any) =>
+          (emp: Employee) =>
             emp.firstName.toLowerCase().includes(query) ||
             emp.lastName.toLowerCase().includes(query) ||
             emp.email.toLowerCase().includes(query) ||
-            emp.username.toLowerCase().includes(query)
+            emp.username?.toLowerCase().includes(query)
         );
       }
 
@@ -82,8 +83,11 @@ export default function EmployeesPage() {
   };
 
   useEffect(() => {
-    fetchEmployees();
-  }, [page, pageSize, isAdmin]);
+    const load = async () => {
+      await fetchEmployees();
+    };
+    load();
+  }, [page, pageSize, isAdmin]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -99,9 +103,10 @@ export default function EmployeesPage() {
       setIsAddModalOpen(false);
       toast.success("Employee registered successfully!");
       fetchEmployees();
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || err.message || "Failed to create employee");
-      setFormError(err.response?.data?.message || err.message || "Failed to create employee");
+    } catch (err: unknown) {
+      const errorMsg = (err as { response?: { data?: { message?: string } } }).response?.data?.message || (err as Error).message || "Failed to create employee";
+      toast.error(errorMsg);
+      setFormError(errorMsg);
     } finally {
       setModalLoading(false);
     }
@@ -112,13 +117,15 @@ export default function EmployeesPage() {
     setFormError("");
     setModalLoading(true);
     try {
+      if (!selectedEmployee) return;
       await employeesService.updateEmployee(selectedEmployee.id, data);
       setIsEditModalOpen(false);
       toast.success("Employee updated!");
       fetchEmployees();
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || err.message || "Failed to update employee");
-      setFormError(err.response?.data?.message || err.message || "Failed to update employee");
+    } catch (err: unknown) {
+      const errorMsg = (err as { response?: { data?: { message?: string } } }).response?.data?.message || (err as Error).message || "Failed to update employee";
+      toast.error(errorMsg);
+      setFormError(errorMsg);
     } finally {
       setModalLoading(false);
     }
@@ -128,25 +135,26 @@ export default function EmployeesPage() {
   const handleDeleteEmployee = async () => {
     setModalLoading(true);
     try {
+      if (!selectedEmployee) return;
       await employeesService.deleteEmployee(selectedEmployee.id);
       setIsDeleteModalOpen(false);
       toast.success("Employee deleted.");
       fetchEmployees();
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || err.message || "Failed to delete employee");
+    } catch (err: unknown) {
+      toast.error((err as { response?: { data?: { message?: string } } }).response?.data?.message || (err as Error).message || "Failed to delete employee");
     } finally {
       setModalLoading(false);
     }
   };
 
   // Toggle Active/Deactive Employee Status
-  const handleToggleActive = async (employee: any) => {
+  const handleToggleActive = async (employee: Employee) => {
     try {
       await employeesService.toggleEmployeeStatus(employee.id, employee.active);
       toast.success(employee.active ? "Employee deactivated." : "Employee activated.");
       fetchEmployees();
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || err.message || "Failed to change active status");
+    } catch (err: unknown) {
+      toast.error((err as { response?: { data?: { message?: string } } }).response?.data?.message || (err as Error).message || "Failed to change active status");
     }
   };
 
@@ -155,18 +163,18 @@ export default function EmployeesPage() {
     setIsAddModalOpen(true);
   };
 
-  const openEditModal = (emp: any) => {
+  const openEditModal = (emp: Employee) => {
     setSelectedEmployee(emp);
     setFormError("");
     setIsEditModalOpen(true);
   };
 
-  const openDeleteModal = (emp: any) => {
+  const openDeleteModal = (emp: Employee) => {
     setSelectedEmployee(emp);
     setIsDeleteModalOpen(true);
   };
 
-  const openViewModal = (emp: any) => {
+  const openViewModal = (emp: Employee) => {
     setSelectedEmployee(emp);
     setIsViewModalOpen(true);
   };
@@ -255,13 +263,13 @@ export default function EmployeesPage() {
                     <td className="p-4">
                       <span
                         className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-[10px] font-bold uppercase ${
-                          emp.role?.name === "ADMIN"
+                          emp.role === "ADMIN"
                             ? "bg-purple-500/10 text-purple-500 border border-purple-500/20"
                             : "bg-blue-500/10 text-blue-500 border border-blue-500/20"
                         }`}
                       >
                         <Shield className="w-3 h-3" />
-                        {emp.role?.name}
+                        {emp.role}
                       </span>
                     </td>
                     <td className="p-4" onClick={(e) => e.stopPropagation()}>
@@ -340,11 +348,11 @@ export default function EmployeesPage() {
         initialData={selectedEmployee ? {
           firstName: selectedEmployee.firstName,
           lastName: selectedEmployee.lastName,
-          username: selectedEmployee.username,
+          username: selectedEmployee.username || "",
           email: selectedEmployee.email,
           password: "",
           phone: selectedEmployee.phone || "",
-          role: selectedEmployee.role?.name || "EMPLOYEE",
+          role: selectedEmployee.role === "ADMIN" ? "ADMIN" : "EMPLOYEE",
         } : null}
         loading={modalLoading}
         title="Edit Employee Details"

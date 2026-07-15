@@ -11,17 +11,18 @@ import { DeleteSaleModal } from "./_components/DeleteSaleModal";
 import { SaleViewModal } from "./_components/SaleViewModal";
 import { Pagination } from "@/components/ui/Pagination";
 import { SaleInput } from "./schema";
+import { Sale, Product } from "@/types";
 
 export default function SalesPage() {
   const { isAdmin } = useAuth();
 
   // Data States
-  const [sales, setSales] = useState<any[]>([]);
+  const [sales, setSales] = useState<Sale[]>([]);
   const [productMap, setProductMap] = useState<Record<string, string>>({});
 
   // Pagination & Filters
   const [page, setPage] = useState(0);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
 
@@ -35,14 +36,14 @@ export default function SalesPage() {
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
 
   // Selected Sale
-  const [selectedSale, setSelectedSale] = useState<any>(null);
+  const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
   const [formError, setFormError] = useState("");
 
   // Fetch all products for productMap (table name lookups) — small page of names
   useEffect(() => {
     async function fetchProductNames() {
       try {
-        let allContent: any[] = [];
+        let allContent: Product[] = [];
         let p = 0;
         let totalPgs = 1;
         while (p < totalPgs && p < 5) {
@@ -56,7 +57,7 @@ export default function SalesPage() {
           p++;
         }
         const mapping: Record<string, string> = {};
-        allContent.forEach((pr: any) => {
+        allContent.forEach((pr: Product) => {
           mapping[pr.id] = pr.name;
         });
         setProductMap(mapping);
@@ -89,8 +90,11 @@ export default function SalesPage() {
   };
 
   useEffect(() => {
-    fetchSales();
-  }, [page, pageSize, isAdmin]);
+    const load = async () => {
+      await fetchSales();
+    };
+    load();
+  }, [page, pageSize, isAdmin]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Add Sale Submit
   const handleAddSale = async (data: SaleInput) => {
@@ -101,9 +105,10 @@ export default function SalesPage() {
       setIsAddModalOpen(false);
       toast.success("Sale recorded successfully!");
       fetchSales();
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || err.message || "Failed to record sale");
-      setFormError(err.response?.data?.message || err.message || "Failed to record sale");
+    } catch (err: unknown) {
+      const errorMsg = (err as { response?: { data?: { message?: string } } }).response?.data?.message || (err as Error).message || "Failed to record sale";
+      toast.error(errorMsg);
+      setFormError(errorMsg);
     } finally {
       setModalLoading(false);
     }
@@ -113,12 +118,13 @@ export default function SalesPage() {
   const handleDeleteSale = async () => {
     setModalLoading(true);
     try {
+      if (!selectedSale) return;
       await salesService.deleteSale(selectedSale.id);
       setIsDeleteModalOpen(false);
       toast.success("Sale record deleted.");
       fetchSales();
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || err.message || "Failed to delete sale record");
+    } catch (err: unknown) {
+      toast.error((err as { response?: { data?: { message?: string } } }).response?.data?.message || (err as Error).message || "Failed to delete sale record");
     } finally {
       setModalLoading(false);
     }
@@ -129,12 +135,12 @@ export default function SalesPage() {
     setIsAddModalOpen(true);
   };
 
-  const openDeleteModal = (sale: any) => {
+  const openDeleteModal = (sale: Sale) => {
     setSelectedSale(sale);
     setIsDeleteModalOpen(true);
   };
 
-  const openViewModal = (sale: any) => {
+  const openViewModal = (sale: Sale) => {
     setSelectedSale(sale);
     setIsViewModalOpen(true);
   };
@@ -210,7 +216,7 @@ export default function SalesPage() {
                     </td>
                     <td className="p-4 text-xs">
                       {new Date(
-                        sale.timestamp || sale.saleDate || sale.createdAt
+                        sale.timestamp || sale.saleDate || sale.createdAt || ""
                       ).toLocaleString()}
                     </td>
                     <td className="p-4" onClick={(e) => e.stopPropagation()}>

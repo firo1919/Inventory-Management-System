@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { Image as ImageIcon, Calendar, Percent, Tag, ShieldCheck } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
+import { Product } from "@/types";
 
 interface ProductViewModalProps {
   isOpen: boolean;
   onClose: () => void;
-  product: any;
+  product: Product | null;
 }
 
 export function ProductViewModal({ isOpen, onClose, product }: ProductViewModalProps) {
@@ -14,14 +15,14 @@ export function ProductViewModal({ isOpen, onClose, product }: ProductViewModalP
   // Reset active image index when modal opens or product changes
   useEffect(() => {
     if (isOpen) {
-      setActiveImageIndex(0);
+      setTimeout(() => setActiveImageIndex(0), 0);
     }
   }, [isOpen, product]);
 
   if (!product) return null;
 
   const hasImages = product.imageUrls && product.imageUrls.length > 0;
-  const currentImageUrl = hasImages ? product.imageUrls[activeImageIndex] : null;
+  const currentImageUrl = hasImages ? product.imageUrls![activeImageIndex] : null;
 
   // Calculations
   const profit = product.sellingPrice - product.costPrice;
@@ -65,9 +66,9 @@ export function ProductViewModal({ isOpen, onClose, product }: ProductViewModalP
             </div>
 
             {/* Thumbnails list */}
-            {hasImages && product.imageUrls.length > 1 && (
+            {hasImages && product.imageUrls!.length > 1 && (
               <div className="flex gap-2 overflow-x-auto py-1 custom-scrollbar">
-                {product.imageUrls.map((url: string, index: number) => (
+                {product.imageUrls!.map((url: string, index: number) => (
                   <button
                     key={index}
                     onClick={() => setActiveImageIndex(index)}

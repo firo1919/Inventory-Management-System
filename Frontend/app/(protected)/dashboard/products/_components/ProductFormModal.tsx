@@ -1,15 +1,17 @@
+/* eslint-disable react-hooks/incompatible-library */
 import React, { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { productSchema, ProductInput } from "../schema";
 import { Modal } from "@/components/ui/Modal";
+import { Category } from "@/types";
 
 interface ProductFormModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (data: ProductInput) => Promise<void>;
   initialData?: ProductInput | null;
-  categories: any[];
+  categories: Category[];
   loading: boolean;
   title: string;
   submitLabel: string;

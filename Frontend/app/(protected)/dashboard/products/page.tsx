@@ -14,18 +14,20 @@ import { ImageUploadModal } from "./_components/ImageUploadModal";
 import { DeleteProductModal } from "./_components/DeleteProductModal";
 import { Pagination } from "@/components/ui/Pagination";
 import { ProductInput } from "./schema";
+import { Product, Category } from "@/types";
+import Image from "next/image";
 
 export default function ProductsPage() {
   const { isAdmin } = useAuth();
   
   // States for products table
-  const [products, setProducts] = useState<any[]>([]);
-  const [categories, setCategories] = useState<any[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [categoryMap, setCategoryMap] = useState<Record<string, string>>({});
   
   // Pagination & Filters
   const [page, setPage] = useState(0);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
   const [search, setSearch] = useState("");
@@ -46,7 +48,7 @@ export default function ProductsPage() {
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
 
   // Selected Product State for Modals
-  const [selectedProduct, setSelectedProduct] = useState<any>(null);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   // Broken image fallback state
   const [brokenImages, setBrokenImages] = useState<Record<string, boolean>>({});
@@ -63,7 +65,7 @@ export default function ProductsPage() {
         const content = data?.content || [];
         setCategories(content);
         const mapping: Record<string, string> = {};
-        content.forEach((cat: any) => {
+        content.forEach((cat: Category) => {
           mapping[cat.id] = cat.name;
         });
         setCategoryMap(mapping);
@@ -98,7 +100,7 @@ export default function ProductsPage() {
       if (search) {
         const query = search.toLowerCase();
         content = content.filter(
-          (p: any) =>
+          (p: Product) =>
             p.name.toLowerCase().includes(query) ||
             p.sku.toLowerCase().includes(query) ||
             (p.description && p.description.toLowerCase().includes(query))
@@ -106,13 +108,13 @@ export default function ProductsPage() {
       }
 
       if (selectedCategory) {
-        content = content.filter((p: any) =>
+        content = content.filter((p: Product) =>
           p.categoryIds?.includes(selectedCategory)
         );
       }
 
       if (stockFilter === "OUT") {
-        content = content.filter((p: any) => p.quantity === 0);
+        content = content.filter((p: Product) => p.quantity === 0);
       }
 
       setProducts(content);
@@ -126,8 +128,11 @@ export default function ProductsPage() {
   };
 
   useEffect(() => {
-    fetchProducts();
-  }, [page, pageSize, stockFilter, sortBy, sortDir, selectedCategory]);
+    const load = async () => {
+      await fetchProducts();
+    };
+    load();
+  }, [page, pageSize, stockFilter, sortBy, sortDir, selectedCategory]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -142,8 +147,8 @@ export default function ProductsPage() {
       setIsAddModalOpen(false);
       toast.success("Product created successfully!");
       fetchProducts();
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || err.message || "Failed to create product");
+    } catch (err: unknown) {
+      toast.error((err as { response?: { data?: { message?: string } } }).response?.data?.message || (err as Error).message || "Failed to create product");
     } finally {
       setModalLoading(false);
     }
@@ -153,12 +158,13 @@ export default function ProductsPage() {
   const handleEditProduct = async (data: ProductInput) => {
     setModalLoading(true);
     try {
+      if (!selectedProduct) return;
       await productsService.updateProduct(selectedProduct.id, data);
       setIsEditModalOpen(false);
       toast.success("Product updated!");
       fetchProducts();
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || err.message || "Failed to update product");
+    } catch (err: unknown) {
+      toast.error((err as { response?: { data?: { message?: string } } }).response?.data?.message || (err as Error).message || "Failed to update product");
     } finally {
       setModalLoading(false);
     }
@@ -168,12 +174,13 @@ export default function ProductsPage() {
   const handleDeleteProduct = async () => {
     setModalLoading(true);
     try {
+      if (!selectedProduct) return;
       await productsService.deleteProduct(selectedProduct.id);
       setIsDeleteModalOpen(false);
       toast.success("Product deleted.");
       fetchProducts();
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || err.message || "Failed to delete product");
+    } catch (err: unknown) {
+      toast.error((err as { response?: { data?: { message?: string } } }).response?.data?.message || (err as Error).message || "Failed to delete product");
     } finally {
       setModalLoading(false);
     }
@@ -185,8 +192,8 @@ export default function ProductsPage() {
       await productsService.toggleProductStatus(productId, currentStatus);
       toast.success(currentStatus ? "Product deactivated." : "Product activated.");
       fetchProducts();
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || err.message || "Failed to toggle status");
+    } catch (err: unknown) {
+      toast.error((err as { response?: { data?: { message?: string } } }).response?.data?.message || (err as Error).message || "Failed to toggle status");
     }
   };
 
@@ -211,14 +218,15 @@ export default function ProductsPage() {
 
       // 3. Link object key to the product on the backend
       setUploadProgress(90);
+      if (!selectedProduct) return;
       await productsService.uploadProductImage(selectedProduct.id, objectKey);
 
       setUploadProgress(100);
       toast.success("Image uploaded!");
       setIsUploadModalOpen(false);
       fetchProducts();
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || err.message || "Failed to upload image");
+    } catch (err: unknown) {
+      toast.error((err as { response?: { data?: { message?: string } } }).response?.data?.message || (err as Error).message || "Failed to upload image");
     } finally {
       setUploading(false);
       setUploadProgress(0);
@@ -229,22 +237,22 @@ export default function ProductsPage() {
     setIsAddModalOpen(true);
   };
 
-  const openEditModal = (p: any) => {
+  const openEditModal = (p: Product) => {
     setSelectedProduct(p);
     setIsEditModalOpen(true);
   };
 
-  const openUploadModal = (p: any) => {
+  const openUploadModal = (p: Product) => {
     setSelectedProduct(p);
     setIsUploadModalOpen(true);
   };
 
-  const openDeleteModal = (p: any) => {
+  const openDeleteModal = (p: Product) => {
     setSelectedProduct(p);
     setIsDeleteModalOpen(true);
   };
 
-  const openViewModal = (p: any) => {
+  const openViewModal = (p: Product) => {
     setSelectedProduct(p);
     setIsViewModalOpen(true);
   };
@@ -383,12 +391,13 @@ export default function ProductsPage() {
                     >
                       <td className="py-4 px-5 align-middle">
                         <div className="flex items-center gap-4">
-                          <div className="w-16 h-16 bg-slate-100 dark:bg-[#0a0a0f] rounded-xl flex items-center justify-center border border-slate-200 dark:border-white/5 overflow-hidden shrink-0 shadow-sm">
+                          <div className="w-16 h-16 relative bg-slate-100 dark:bg-[#0a0a0f] rounded-xl flex items-center justify-center border border-slate-200 dark:border-white/5 overflow-hidden shrink-0 shadow-sm">
                             {p.imageUrls && p.imageUrls.length > 0 && !brokenImages[p.id] ? (
-                              <img
+                              <Image
                                 src={p.imageUrls[0]}
                                 alt={p.name}
-                                className="w-full h-full object-cover"
+                                fill
+                                className="object-cover"
                                 onError={() => setBrokenImages((prev) => ({ ...prev, [p.id]: true }))}
                               />
                             ) : (

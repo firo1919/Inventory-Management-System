@@ -11,17 +11,18 @@ import { DeleteRestockModal } from "./_components/DeleteRestockModal";
 import { RestockViewModal } from "./_components/RestockViewModal";
 import { Pagination } from "@/components/ui/Pagination";
 import { RestockInput } from "./schema";
+import { Restock, Product } from "@/types";
 
 export default function RestocksPage() {
   const { isAdmin } = useAuth();
 
   // Data States
-  const [restocks, setRestocks] = useState<any[]>([]);
+  const [restocks, setRestocks] = useState<Restock[]>([]);
   const [productMap, setProductMap] = useState<Record<string, string>>({});
 
   // Pagination & Filters
   const [page, setPage] = useState(0);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
 
@@ -35,14 +36,14 @@ export default function RestocksPage() {
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
 
   // Selected Restock
-  const [selectedRestock, setSelectedRestock] = useState<any>(null);
+  const [selectedRestock, setSelectedRestock] = useState<Restock | null>(null);
   const [formError, setFormError] = useState("");
 
   // Fetch product names for table display map
   useEffect(() => {
     async function fetchProductNames() {
       try {
-        let allContent: any[] = [];
+        let allContent: Product[] = [];
         let p = 0;
         let totalPgs = 1;
         while (p < totalPgs && p < 5) {
@@ -55,7 +56,7 @@ export default function RestocksPage() {
           p++;
         }
         const mapping: Record<string, string> = {};
-        allContent.forEach((pr: any) => {
+        allContent.forEach((pr: Product) => {
           mapping[pr.id] = pr.name;
         });
         setProductMap(mapping);
@@ -88,8 +89,11 @@ export default function RestocksPage() {
   };
 
   useEffect(() => {
-    fetchRestocks();
-  }, [page, pageSize, isAdmin]);
+    const load = async () => {
+      await fetchRestocks();
+    };
+    load();
+  }, [page, pageSize, isAdmin]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Log Restock Submit
   const handleAddRestock = async (data: RestockInput) => {
@@ -100,9 +104,10 @@ export default function RestocksPage() {
       setIsAddModalOpen(false);
       toast.success("Restock transaction recorded!");
       fetchRestocks();
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || err.message || "Failed to record restock");
-      setFormError(err.response?.data?.message || err.message || "Failed to record restock");
+    } catch (err: unknown) {
+      const errorMsg = (err as { response?: { data?: { message?: string } } }).response?.data?.message || (err as Error).message || "Failed to record restock";
+      toast.error(errorMsg);
+      setFormError(errorMsg);
     } finally {
       setModalLoading(false);
     }
@@ -112,12 +117,13 @@ export default function RestocksPage() {
   const handleDeleteRestock = async () => {
     setModalLoading(true);
     try {
+      if (!selectedRestock) return;
       await restocksService.deleteRestock(selectedRestock.id);
       setIsDeleteModalOpen(false);
       toast.success("Restock record deleted.");
       fetchRestocks();
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || err.message || "Failed to delete restock record");
+    } catch (err: unknown) {
+      toast.error((err as { response?: { data?: { message?: string } } }).response?.data?.message || (err as Error).message || "Failed to delete restock record");
     } finally {
       setModalLoading(false);
     }
@@ -128,12 +134,12 @@ export default function RestocksPage() {
     setIsAddModalOpen(true);
   };
 
-  const openDeleteModal = (restock: any) => {
+  const openDeleteModal = (restock: Restock) => {
     setSelectedRestock(restock);
     setIsDeleteModalOpen(true);
   };
 
-  const openViewModal = (restock: any) => {
+  const openViewModal = (restock: Restock) => {
     setSelectedRestock(restock);
     setIsViewModalOpen(true);
   };
@@ -198,7 +204,7 @@ export default function RestocksPage() {
                     </td>
                     <td className="p-4 text-xs">
                       {new Date(
-                        restock.timestamp || restock.restockDate || restock.createdAt
+                        restock.timestamp || restock.restockDate || restock.createdAt || ""
                       ).toLocaleString()}
                     </td>
                     <td className="p-4" onClick={(e) => e.stopPropagation()}>

@@ -1,10 +1,11 @@
 import React from "react";
 import { Modal } from "@/components/ui/Modal";
+import { Restock } from "@/types";
 
 interface RestockViewModalProps {
   isOpen: boolean;
   onClose: () => void;
-  restock: any;
+  restock: Restock | null;
   productMap: Record<string, string>;
 }
 
@@ -53,7 +54,7 @@ export function RestockViewModal({ isOpen, onClose, restock, productMap }: Resto
           </span>
           <span>
             {new Date(
-              restock.timestamp || restock.restockDate || restock.createdAt
+              restock.timestamp || restock.restockDate || restock.createdAt || ""
             ).toLocaleString()}
           </span>
         </div>

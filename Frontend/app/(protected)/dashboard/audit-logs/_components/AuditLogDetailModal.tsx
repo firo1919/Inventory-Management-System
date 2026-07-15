@@ -1,10 +1,11 @@
 import React from "react";
 import { Modal } from "@/components/ui/Modal";
+import { AuditLog } from "@/types";
 
 interface AuditLogDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
-  log: any;
+  log: AuditLog | null;
 }
 
 export function AuditLogDetailModal({ isOpen, onClose, log }: AuditLogDetailModalProps) {
@@ -19,7 +20,7 @@ export function AuditLogDetailModal({ isOpen, onClose, log }: AuditLogDetailModa
               Timestamp
             </span>
             <span className="font-semibold">
-              {new Date(log.timestamp).toLocaleString()}
+              {new Date(log.timestamp || "").toLocaleString()}
             </span>
           </div>
           <div>

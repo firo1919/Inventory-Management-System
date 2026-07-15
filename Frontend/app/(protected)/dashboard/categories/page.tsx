@@ -9,16 +9,17 @@ import { CategoryFormModal } from "./_components/CategoryFormModal";
 import { DeleteCategoryModal } from "./_components/DeleteCategoryModal";
 import { Pagination } from "@/components/ui/Pagination";
 import { CategoryInput } from "./schema";
+import { Category } from "@/types";
 
 export default function CategoriesPage() {
   const { isAdmin } = useAuth();
   
   // Data States
-  const [categories, setCategories] = useState<any[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   
   // Pagination & Search
   const [page, setPage] = useState(0);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
   const [search, setSearch] = useState("");
@@ -33,7 +34,7 @@ export default function CategoriesPage() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   // Selected Category State
-  const [selectedCategory, setSelectedCategory] = useState<any>(null);
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
 
   const fetchCategories = async () => {
     try {
@@ -48,7 +49,7 @@ export default function CategoriesPage() {
       // Client side filtering for search query if needed
       if (search) {
         const query = search.toLowerCase();
-        content = content.filter((c: any) => c.name.toLowerCase().includes(query));
+        content = content.filter((c: Category) => c.name.toLowerCase().includes(query));
       }
 
       setCategories(content);
@@ -62,8 +63,11 @@ export default function CategoriesPage() {
   };
 
   useEffect(() => {
-    fetchCategories();
-  }, [page, pageSize]);
+    const load = async () => {
+      await fetchCategories();
+    };
+    load();
+  }, [page, pageSize]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,8 +84,8 @@ export default function CategoriesPage() {
       setIsAddModalOpen(false);
       toast.success("Category created successfully!");
       fetchCategories();
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || err.message || "Failed to create category");
+    } catch (err: unknown) {
+      toast.error((err as { response?: { data?: { message?: string } } }).response?.data?.message || (err as Error).message || "Failed to create category");
     } finally {
       setModalLoading(false);
     }
@@ -91,14 +95,15 @@ export default function CategoriesPage() {
   const handleEditCategory = async (data: CategoryInput) => {
     setModalLoading(true);
     try {
+      if (!selectedCategory) return;
       await categoriesService.updateCategory(selectedCategory.id, {
         name: data.name,
       });
       setIsEditModalOpen(false);
       toast.success("Category updated!");
       fetchCategories();
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || err.message || "Failed to update category");
+    } catch (err: unknown) {
+      toast.error((err as { response?: { data?: { message?: string } } }).response?.data?.message || (err as Error).message || "Failed to update category");
     } finally {
       setModalLoading(false);
     }
@@ -108,12 +113,13 @@ export default function CategoriesPage() {
   const handleDeleteCategory = async () => {
     setModalLoading(true);
     try {
+      if (!selectedCategory) return;
       await categoriesService.deleteCategory(selectedCategory.id);
       setIsDeleteModalOpen(false);
       toast.success("Category deleted.");
       fetchCategories();
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || err.message || "Failed to delete category");
+    } catch (err: unknown) {
+      toast.error((err as { response?: { data?: { message?: string } } }).response?.data?.message || (err as Error).message || "Failed to delete category");
     } finally {
       setModalLoading(false);
     }
@@ -123,12 +129,12 @@ export default function CategoriesPage() {
     setIsAddModalOpen(true);
   };
 
-  const openEditModal = (category: any) => {
+  const openEditModal = (category: Category) => {
     setSelectedCategory(category);
     setIsEditModalOpen(true);
   };
 
-  const openDeleteModal = (category: any) => {
+  const openDeleteModal = (category: Category) => {
     setSelectedCategory(category);
     setIsDeleteModalOpen(true);
   };

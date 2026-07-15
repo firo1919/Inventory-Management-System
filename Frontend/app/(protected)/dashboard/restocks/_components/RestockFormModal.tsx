@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/incompatible-library */
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -6,6 +7,7 @@ import { restockSchema, RestockInput } from "../schema";
 import SearchableSelect from "@/components/ui/SearchableSelect";
 import { Loader } from "@/components/ui/Loader";
 import { Modal } from "@/components/ui/Modal";
+import { Product } from "@/types";
 
 interface RestockFormModalProps {
   isOpen: boolean;
@@ -22,7 +24,7 @@ export function RestockFormModal({
   loading,
   formError,
 }: RestockFormModalProps) {
-  const [selectedProductDetails, setSelectedProductDetails] = useState<any>(null);
+  const [selectedProductDetails, setSelectedProductDetails] = useState<Product | null>(null);
 
   const {
     register,
@@ -49,7 +51,7 @@ export function RestockFormModal({
     }
   }, [isOpen, reset]);
 
-  const handleProductSelect = (productId: string, rawProduct?: any) => {
+  const handleProductSelect = (productId: string, rawProduct?: Product) => {
     setValue("productId", productId);
     if (rawProduct) {
       setSelectedProductDetails(rawProduct);
@@ -71,7 +73,7 @@ export function RestockFormModal({
         <div>
           <SearchableSelect
             endpoint="/api/v1/products"
-            mapItem={(p: any) => ({
+            mapItem={(p: Product) => ({
               value: p.id,
               label: p.name,
               subLabel: `${p.quantity} currently in stock · cost $${p.costPrice?.toFixed(2)}`,

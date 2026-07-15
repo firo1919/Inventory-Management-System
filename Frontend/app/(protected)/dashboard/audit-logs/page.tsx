@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { auditLogsService } from "@/services/audit-logs";
+import { auditLogsService, AuditLogParams } from "@/services/audit-logs";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Trash2, Download, Filter, Eye, Activity, CheckCircle, XCircle, Clock } from "lucide-react";
@@ -10,6 +10,7 @@ import { AuditLogDetailModal } from "./_components/AuditLogDetailModal";
 import { BulkClearLogsModal } from "./_components/BulkClearLogsModal";
 import { Pagination } from "@/components/ui/Pagination";
 import { Loader } from "@/components/ui/Loader";
+import { AuditLog } from "@/types";
 
 export default function AuditLogsPage() {
   const { isAdmin, loading: authLoading } = useAuth();
@@ -23,12 +24,12 @@ export default function AuditLogsPage() {
   }, [isAdmin, authLoading, router]);
 
   // Data States
-  const [logs, setLogs] = useState<any[]>([]);
-  const [stats, setStats] = useState<any>(null);
+  const [logs, setLogs] = useState<AuditLog[]>([]);
+  const [stats, setStats] = useState<Record<string, number> | null>(null);
 
   // Pagination & Filters
   const [page, setPage] = useState(0);
-  const [pageSize, setPageSize] = useState(20);
+  const [pageSize] = useState(20);
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
 
@@ -47,7 +48,7 @@ export default function AuditLogsPage() {
   const [clearLoading, setClearLoading] = useState(false);
 
   // Selected Log for details modal
-  const [selectedLog, setSelectedLog] = useState<any>(null);
+  const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
   // Bulk Delete state
@@ -58,7 +59,7 @@ export default function AuditLogsPage() {
     try {
       setLoading(true);
 
-      const params: any = {
+      const params: AuditLogParams = {
         page,
         size: pageSize,
         sort: "timestamp,desc",
@@ -97,9 +98,12 @@ export default function AuditLogsPage() {
   };
 
   useEffect(() => {
-    fetchLogs();
-    fetchStats();
-  }, [page, pageSize, isAdmin]);
+    const load = async () => {
+      await fetchLogs();
+      await fetchStats();
+    };
+    load();
+  }, [page, pageSize, isAdmin]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleFilterSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -124,7 +128,7 @@ export default function AuditLogsPage() {
   const handleExport = async (format: "csv" | "json") => {
     setExporting(true);
     try {
-      const filterPayload: any = {
+      const filterPayload: Record<string, unknown> = {
         page: 0,
         size: 10000, // Export up to 10k logs
         sort: "timestamp,desc",
@@ -172,14 +176,14 @@ export default function AuditLogsPage() {
       toast.success("Audit logs cleared successfully.");
       fetchLogs();
       fetchStats();
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || err.message || "Failed to clear logs");
+    } catch (err: unknown) {
+      toast.error((err as { response?: { data?: { message?: string } } }).response?.data?.message || (err as Error).message || "Failed to clear logs");
     } finally {
       setClearLoading(false);
     }
   };
 
-  const openDetailModal = (logItem: any) => {
+  const openDetailModal = (logItem: AuditLog) => {
     setSelectedLog(logItem);
     setIsDetailModalOpen(true);
   };
@@ -422,7 +426,7 @@ export default function AuditLogsPage() {
                     className="hover:bg-slate-50/50 dark:hover:bg-[#1c1c24]/10 text-slate-600 dark:text-slate-300"
                   >
                     <td className="p-4 text-xs font-medium text-slate-400">
-                      {new Date(item.timestamp).toLocaleString(undefined, {
+                      {new Date(item.timestamp || "").toLocaleString(undefined, {
                         month: "short",
                         day: "numeric",
                         hour: "2-digit",

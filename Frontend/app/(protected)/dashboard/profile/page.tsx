@@ -11,30 +11,34 @@ import { ChangePasswordForm } from "./_components/ChangePasswordForm";
 import { Loader } from "@/components/ui/Loader";
 import { ProfileDetailsInput, ChangePasswordInput } from "./schema";
 
+import { Employee } from "@/types";
+
 export default function ProfilePage() {
   useAuth(); // ensure auth context is initialized
 
   // Data States
-  const [profile, setProfile] = useState<any>(null);
+  const [profile, setProfile] = useState<Employee | null>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [changingPwd, setChangingPwd] = useState(false);
   const [uploading, setUploading] = useState(false);
 
-  const fetchProfile = async () => {
-    try {
-      setLoading(true);
-      const data = await profileService.getProfile();
-      setProfile(data);
-    } catch {
-      toast.error("Failed to load profile. Please refresh the page.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    fetchProfile();
+    let mounted = true;
+    const init = async () => {
+      try {
+        const data = await profileService.getProfile();
+        if (mounted) {
+          setProfile(data);
+          setLoading(false);
+        }
+      } catch {
+        toast.error("Failed to load profile. Please refresh the page.");
+        if (mounted) setLoading(false);
+      }
+    };
+    init();
+    return () => { mounted = false; };
   }, []);
 
   // --- Update profile details ---
@@ -47,8 +51,9 @@ export default function ProfilePage() {
       });
       setProfile(updatedData);
       toast.success("Profile updated successfully!");
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || "Failed to update profile.");
+    } catch (err: unknown) {
+      const errorObj = err as { response?: { data?: { message?: string } } };
+      toast.error(errorObj.response?.data?.message || "Failed to update profile.");
     } finally {
       setUpdating(false);
     }
@@ -59,16 +64,17 @@ export default function ProfilePage() {
     setChangingPwd(true);
     try {
       await profileService.updateProfile({
-        firstName: profile?.firstName,
-        lastName: profile?.lastName,
-        username: profile?.username,
-        email: profile?.email,
+        firstName: profile?.firstName || "",
+        lastName: profile?.lastName || "",
+        username: profile?.username || "",
+        email: profile?.email || "",
         phone: profile?.phone || "",
         password: data.newPassword,
       });
       toast.success("Password changed successfully!");
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || "Failed to change password.");
+    } catch (err: unknown) {
+      const errorObj = err as { response?: { data?: { message?: string } } };
+      toast.error(errorObj.response?.data?.message || "Failed to change password.");
     } finally {
       setChangingPwd(false);
     }
@@ -92,8 +98,9 @@ export default function ProfilePage() {
       const updatedProfile = await profileService.updateProfilePicture(objectKey);
       setProfile(updatedProfile);
       toast.success("Profile picture updated!", { id: toastId });
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || "Failed to upload avatar.", { id: toastId });
+    } catch (err: unknown) {
+      const errorObj = err as { response?: { data?: { message?: string } } };
+      toast.error(errorObj.response?.data?.message || "Failed to upload avatar.", { id: toastId });
     } finally {
       setUploading(false);
     }
@@ -128,7 +135,7 @@ export default function ProfilePage() {
             initialData={profile ? {
               firstName: profile.firstName,
               lastName: profile.lastName,
-              username: profile.username,
+              username: profile.username || "",
               email: profile.email,
               phone: profile.phone || "",
             } : null}
