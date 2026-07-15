@@ -41,10 +41,11 @@ Frontend/
 │   ├── (protected)/      # Authenticated dashboard, products, audit log pages
 │   └── layout.tsx
 ├── components/           # Global reusable UI Components (search select inputs, modals, layout)
-├── constants/            # Configuration constants and endpoint paths
 ├── hooks/                # Custom React hooks (useAuth, useProducts, etc.)
 ├── lib/                  # Auth clients, Axios instance, and utilities
-└── utils/                # Helpers (token storage, date formatters)
+├── services/             # API communication services (axios calls to /api/v1/* proxy)
+├── types/                # TypeScript global/context interfaces
+└── public/               # Static frontend assets
 ```
 
 ---

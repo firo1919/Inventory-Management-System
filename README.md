@@ -132,6 +132,8 @@ Inventory-Management-System/
 │   ├── components/          # Reusable component library (search inputs, modals, layout)
 │   ├── hooks/               # Custom context, session handlers, and lifecycle hooks
 │   ├── lib/                 # apiClient interceptor logic
+│   ├── services/            # API communication modules
+│   ├── types/               # TypeScript interfaces
 │   └── public/              # Static frontend assets
 ```
 
