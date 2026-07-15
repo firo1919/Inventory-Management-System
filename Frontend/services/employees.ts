@@ -1,4 +1,5 @@
 import { apiClient } from "@/lib/api-client";
+import { EmployeeInput } from "@/app/(protected)/dashboard/employees/schema";
 
 export interface EmployeeParams {
   page: number;
@@ -11,12 +12,12 @@ export const employeesService = {
     return res.data;
   },
 
-  async createEmployee(data: any) {
+  async createEmployee(data: EmployeeInput) {
     const res = await apiClient.post("/api/v1/admin/employees", data);
     return res.data;
   },
 
-  async updateEmployee(id: string, data: any) {
+  async updateEmployee(id: string, data: EmployeeInput) {
     const res = await apiClient.put(`/api/v1/admin/employees/${id}`, data);
     return res.data;
   },

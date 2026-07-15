@@ -1,7 +1,8 @@
 import { apiClient } from "@/lib/api-client";
+import { RegisterInput } from "@/app/(public)/auth/register/schema";
 
 export const authService = {
-  async registerAdmin(payload: any) {
+  async registerAdmin(payload: Omit<RegisterInput, "confirmPassword">) {
     const res = await apiClient.post("/api/v1/auth/admins", payload);
     return res.data;
   },

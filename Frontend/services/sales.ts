@@ -1,7 +1,17 @@
 import { apiClient } from "@/lib/api-client";
+import { SaleInput } from "@/app/(protected)/dashboard/sales/schema";
+
+export interface SaleParams {
+  page: number;
+  size: number;
+  sortBy?: string;
+  sortDirection?: string;
+  startDate?: string;
+  endDate?: string;
+}
 
 export const salesService = {
-  async getSales(isAdmin: boolean, params: any) {
+  async getSales(isAdmin: boolean, params: SaleParams) {
     const endpoint = isAdmin
       ? "/api/v1/admin/sales"
       : "/api/v1/employee/sales";
@@ -9,7 +19,7 @@ export const salesService = {
     return res.data;
   },
 
-  async createSale(data: any) {
+  async createSale(data: SaleInput) {
     const res = await apiClient.post("/api/v1/sales", data);
     return res.data;
   },

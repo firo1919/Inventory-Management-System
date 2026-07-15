@@ -1,4 +1,5 @@
 import { apiClient } from "@/lib/api-client";
+import { ProductInput } from "@/app/(protected)/dashboard/products/schema";
 
 export interface ProductParams {
   page: number;
@@ -18,12 +19,12 @@ export const productsService = {
     return res.data;
   },
 
-  async createProduct(data: any) {
+  async createProduct(data: ProductInput) {
     const res = await apiClient.post("/api/v1/admin/products", data);
     return res.data;
   },
 
-  async updateProduct(id: string, data: any) {
+  async updateProduct(id: string, data: ProductInput) {
     const res = await apiClient.put(`/api/v1/admin/products/${id}`, data);
     return res.data;
   },

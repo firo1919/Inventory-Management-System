@@ -1,4 +1,9 @@
 import { apiClient } from "@/lib/api-client";
+import { ProfileDetailsInput } from "@/app/(protected)/dashboard/profile/schema";
+
+export interface UpdateProfilePayload extends ProfileDetailsInput {
+  password?: string;
+}
 
 export const profileService = {
   async getProfile() {
@@ -6,7 +11,7 @@ export const profileService = {
     return res.data;
   },
 
-  async updateProfile(data: any) {
+  async updateProfile(data: UpdateProfilePayload) {
     const res = await apiClient.put("/api/v1/profile", data);
     return res.data;
   },

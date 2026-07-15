@@ -1,7 +1,17 @@
 import { apiClient } from "@/lib/api-client";
+import { RestockInput } from "@/app/(protected)/dashboard/restocks/schema";
+
+export interface RestockParams {
+  page: number;
+  size: number;
+  sortBy?: string;
+  sortDirection?: string;
+  startDate?: string;
+  endDate?: string;
+}
 
 export const restocksService = {
-  async getRestocks(isAdmin: boolean, params: any) {
+  async getRestocks(isAdmin: boolean, params: RestockParams) {
     const endpoint = isAdmin
       ? "/api/v1/admin/restocks"
       : "/api/v1/employee/restocks";
@@ -9,7 +19,7 @@ export const restocksService = {
     return res.data;
   },
 
-  async createRestock(data: any) {
+  async createRestock(data: RestockInput) {
     const res = await apiClient.post("/api/v1/restocks", data);
     return res.data;
   },

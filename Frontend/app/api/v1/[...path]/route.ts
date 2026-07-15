@@ -40,7 +40,7 @@ async function handleProxy(
   }
 
   // 3. Prepare body
-  let body: any = null;
+  let body: Blob | null = null;
   if (request.method !== "GET" && request.method !== "HEAD") {
     if (pathStr === "auth/logout") {
       // For logout, map token to body
@@ -54,7 +54,7 @@ async function handleProxy(
     } else {
       try {
         body = await request.blob();
-      } catch (e) {
+      } catch {
         // ignore
       }
     }
