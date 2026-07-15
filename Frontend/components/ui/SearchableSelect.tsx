@@ -4,30 +4,30 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Search, ChevronDown, X, Loader2, Package } from "lucide-react";
 import { apiClient } from "@/lib/api-client";
 
-interface SelectOption {
+interface SelectOption<T = unknown> {
   value: string;
   label: string;
   subLabel?: string;
   disabled?: boolean;
-  raw?: any;
+  raw?: T;
 }
 
-interface SearchableSelectProps {
+interface SearchableSelectProps<T = unknown> {
   /** URL to fetch from e.g. "/api/v1/products" */
   endpoint: string;
   /** map a raw API item to SelectOption */
-  mapItem: (item: any) => SelectOption;
+  mapItem: (item: T) => SelectOption<T>;
   value: string;
-  onChange: (value: string, raw?: any) => void;
+  onChange: (value: string, raw?: T) => void;
   placeholder?: string;
   label?: string;
   required?: boolean;
   /** Extra query params merged into every request */
-  extraParams?: Record<string, any>;
+  extraParams?: Record<string, unknown>;
   pageSize?: number;
 }
 
-export default function SearchableSelect({
+export default function SearchableSelect<T = unknown>({
   endpoint,
   mapItem,
   value,
@@ -37,10 +37,10 @@ export default function SearchableSelect({
   required,
   extraParams = {},
   pageSize = 20,
-}: SearchableSelectProps) {
+}: SearchableSelectProps<T>) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const [options, setOptions] = useState<SelectOption[]>([]);
+  const [options, setOptions] = useState<SelectOption<T>[]>([]);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -58,7 +58,7 @@ export default function SearchableSelect({
         const res = await apiClient.get(endpoint, {
           params: { page: pageNum, size: pageSize, ...extraParams },
         });
-        const content: any[] = res.data?.content || [];
+        const content: T[] = res.data?.content || [];
         const totalPages: number = res.data?.totalPages || 1;
 
         // Client-side filter on search term (works even if API has no search param)
@@ -114,7 +114,7 @@ export default function SearchableSelect({
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const handleSelect = (opt: SelectOption) => {
+  const handleSelect = (opt: SelectOption<T>) => {
     onChange(opt.value, opt.raw);
     setSelectedLabel(opt.label);
     setOpen(false);
