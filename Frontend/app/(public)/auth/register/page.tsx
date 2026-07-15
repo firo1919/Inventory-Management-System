@@ -14,12 +14,14 @@ export default function RegisterPage() {
   const onSubmit = async (data: RegisterInput) => {
     setLoading(true);
     try {
-      const { confirmPassword, ...payload } = data;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { confirmPassword: _confirmPassword, ...payload } = data;
       await authService.registerAdmin(payload);
       toast.success("Admin registered! Check your email for the OTP code.");
       router.push(`/auth/verify-otp?email=${encodeURIComponent(data.email)}`);
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || err.message || "Failed to register admin");
+    } catch (err: unknown) {
+      const errorObj = err as { response?: { data?: { message?: string } } };
+      toast.error(errorObj.response?.data?.message || (err as Error).message || "Failed to register admin");
       setLoading(false);
     }
   };

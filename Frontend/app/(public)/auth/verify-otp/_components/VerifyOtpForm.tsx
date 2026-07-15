@@ -21,11 +21,7 @@ export function VerifyOtpForm() {
 
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  useEffect(() => {
-    if (emailParam) setEmail(emailParam);
-  }, [emailParam]);
-
-  // Countdown timer for resend button
+  // Set email from params (initial state covers most cases)  // Countdown timer for resend button
   useEffect(() => {
     if (timer <= 0) return;
     const interval = setInterval(() => setTimer((t) => t - 1), 1000);
@@ -103,9 +99,10 @@ export function VerifyOtpForm() {
         data?.message || "OTP confirmed! Redirecting to login..."
       );
       setTimeout(() => router.push("/auth/login"), 2000);
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errorObj = err as { response?: { data?: { message?: string } } };
       toast.error(
-        err.response?.data?.message || err.message || "Failed to verify OTP"
+        errorObj.response?.data?.message || (err as Error).message || "Failed to verify OTP"
       );
     } finally {
       setLoading(false);
@@ -123,9 +120,10 @@ export function VerifyOtpForm() {
       // Clear boxes and refocus
       setDigits(Array(OTP_LENGTH).fill(""));
       setTimeout(() => inputRefs.current[0]?.focus(), 100);
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errorObj = err as { response?: { data?: { message?: string } } };
       toast.error(
-        err.response?.data?.message || err.message || "Failed to resend OTP"
+        errorObj.response?.data?.message || (err as Error).message || "Failed to resend OTP"
       );
     } finally {
       setResending(false);

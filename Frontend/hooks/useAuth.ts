@@ -31,7 +31,7 @@ export function useAuth() {
 
       router.push("/dashboard");
       return response;
-    } catch (err: any) {
+    } catch (err: unknown) {
       throw err;
     }
   };
@@ -39,7 +39,7 @@ export function useAuth() {
   const logout = async () => {
     try {
       await authService.logout();
-    } catch (e) {
+    } catch {
       // ignore
     } finally {
       await signOut({ callbackUrl: "/auth/login" });

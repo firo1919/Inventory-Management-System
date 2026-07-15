@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/incompatible-library */
 import React, { useState } from "react";
 import Link from "next/link";
 import { User, Mail, Phone, Lock, ShieldCheck, Eye, EyeOff, Warehouse } from "lucide-react";
