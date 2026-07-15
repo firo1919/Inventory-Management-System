@@ -1,8 +1,9 @@
 import React from "react";
 import { Clock, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { Transaction } from "@/types";
 
 interface RecentActionsProps {
-  transactions: any[];
+  transactions: Transaction[];
   loading: boolean;
 }
 

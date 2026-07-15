@@ -13,6 +13,7 @@ import { MetricCards } from "./_components/MetricCards";
 import { TransactionsAnalytics } from "./_components/TransactionsAnalytics";
 import { LowStockWarnings } from "./_components/LowStockWarnings";
 import { RecentActions } from "./_components/RecentActions";
+import { Product, Transaction, Sale, Restock } from "@/types";
 
 interface Stats {
   totalProducts: number;
@@ -31,8 +32,8 @@ export default function DashboardOverview() {
     salesCount: 0,
     restocksCount: 0,
   });
-  const [lowStockProducts, setLowStockProducts] = useState<any[]>([]);
-  const [recentTransactions, setRecentTransactions] = useState<any[]>([]);
+  const [lowStockProducts, setLowStockProducts] = useState<Product[]>([]);
+  const [recentTransactions, setRecentTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -44,8 +45,8 @@ export default function DashboardOverview() {
         const productsData = await productsService.getProducts({ page: 0, size: 100 });
         const totalProducts = productsData?.totalElements || 0;
         const productsList = productsData?.content || [];
-        const pMap: Record<string, any> = {};
-        productsList.forEach((pr: any) => {
+        const pMap: Record<string, Product> = {};
+        productsList.forEach((pr: Product) => {
           pMap[pr.id] = pr;
         });
 
@@ -58,7 +59,7 @@ export default function DashboardOverview() {
         let inventoryValue = 0;
         let salesCount = 0;
         let restocksCount = 0;
-        let txList: any[] = [];
+        let txList: Transaction[] = [];
 
         if (isAdmin) {
           // Admin specific APIs
@@ -75,7 +76,7 @@ export default function DashboardOverview() {
 
           console.log("pMap:", pMap, "salesList:", salesList);
           // Merge sales and restocks into recent transactions
-          const formattedSales = salesList.map((s: any) => {
+          const formattedSales: Transaction[] = salesList.map((s: Sale) => {
             const product = pMap[s.productId];
             return {
               id: s.id,
@@ -83,12 +84,12 @@ export default function DashboardOverview() {
               productName: product?.name || "Product",
               quantity: s.quantity,
               totalPrice: s.salePrice ? (s.quantity * s.salePrice) : (s.quantity * (product?.sellingPrice || 0)),
-              date: s.timestamp || s.createdAt || s.saleDate,
+              date: s.timestamp || s.createdAt || s.saleDate || "",
               user: "Staff",
             };
           });
 
-          const formattedRestocks = restocksList.map((r: any) => {
+          const formattedRestocks: Transaction[] = restocksList.map((r: Restock) => {
             const product = pMap[r.productId];
             return {
               id: r.id,
@@ -96,7 +97,7 @@ export default function DashboardOverview() {
               productName: product?.name || "Product",
               quantity: r.quantity,
               totalPrice: r.quantity * (product?.costPrice || 0),
-              date: r.timestamp || r.createdAt || r.restockDate,
+              date: r.timestamp || r.createdAt || r.restockDate || "",
               user: "Staff",
             };
           });
@@ -115,7 +116,7 @@ export default function DashboardOverview() {
           restocksCount = restocksData?.totalElements || 0;
           const restocksList = restocksData?.content || [];
 
-          const formattedSales = salesList.map((s: any) => {
+          const formattedSales: Transaction[] = salesList.map((s: Sale) => {
             const product = pMap[s.productId];
             return {
               id: s.id,
@@ -123,12 +124,12 @@ export default function DashboardOverview() {
               productName: product?.name || "Product",
               quantity: s.quantity,
               totalPrice: s.salePrice ? (s.quantity * s.salePrice) : (s.quantity * (product?.sellingPrice || 0)),
-              date: s.timestamp || s.createdAt || s.saleDate,
+              date: s.timestamp || s.createdAt || s.saleDate || "",
               user: "Me",
             };
           });
 
-          const formattedRestocks = restocksList.map((r: any) => {
+          const formattedRestocks: Transaction[] = restocksList.map((r: Restock) => {
             const product = pMap[r.productId];
             return {
               id: r.id,
@@ -136,7 +137,7 @@ export default function DashboardOverview() {
               productName: product?.name || "Product",
               quantity: r.quantity,
               totalPrice: r.quantity * (product?.costPrice || 0),
-              date: r.timestamp || r.createdAt || r.restockDate,
+              date: r.timestamp || r.createdAt || r.restockDate || "",
               user: "Me",
             };
           });

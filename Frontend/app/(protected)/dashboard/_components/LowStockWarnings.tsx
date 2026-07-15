@@ -2,8 +2,10 @@ import React from "react";
 import { Package } from "lucide-react";
 import Link from "next/link";
 
+import { Product } from "@/types";
+
 interface LowStockWarningsProps {
-  products: any[];
+  products: Product[];
   loading: boolean;
 }
 

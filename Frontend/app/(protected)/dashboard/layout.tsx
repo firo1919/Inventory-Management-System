@@ -12,7 +12,6 @@ import {
   ShoppingBag,
   Users,
   FileSpreadsheet,
-  UserCircle,
   LogOut,
   Menu,
   X,
@@ -21,7 +20,6 @@ import {
   Sun,
   Moon,
   Warehouse,
-  Bell,
   Loader2,
 } from "lucide-react";
 
@@ -35,7 +33,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   // Restore sidebar state from localStorage on mount
   useEffect(() => {
     const saved = localStorage.getItem("sidebarCollapsed");
-    if (saved !== null) setSidebarCollapsed(saved === "true");
+    if (saved !== null) {
+      setTimeout(() => setSidebarCollapsed(saved === "true"), 0);
+    }
   }, []);
 
   // Persist sidebar state on change
@@ -49,7 +49,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   useEffect(() => {
     const root = window.document.documentElement;
     const initialDark = root.classList.contains("dark") || root.style.colorScheme === "dark";
-    setDarkMode(initialDark);
+    setTimeout(() => setDarkMode(initialDark), 0);
   }, []);
 
 
@@ -120,7 +120,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* LOGO */}
         <div className="h-16 flex items-center justify-between px-6 border-b border-slate-200 dark:border-white/5">
           <div className="flex items-center gap-2.5 overflow-hidden">
-            <div className="w-9 h-9 bg-gradient-to-tr from-purple-500 to-indigo-600 rounded-lg flex items-center justify-center shrink-0">
+            <div className="w-9 h-9 bg-linear-to-tr from-purple-500 to-indigo-600 rounded-lg flex items-center justify-center shrink-0">
               <Warehouse className="w-5 h-5 text-white" />
             </div>
             {!sidebarCollapsed && (
