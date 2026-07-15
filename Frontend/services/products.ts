@@ -39,15 +39,10 @@ export const productsService = {
     return res.data;
   },
 
-  async uploadProductImage(id: string, formData: FormData) {
+  async uploadProductImage(id: string, objectKey: string) {
     const res = await apiClient.post(
-      `/api/v1/admin/products/${id}/image`,
-      formData,
-      {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      }
+      `/api/v1/admin/products/${id}/images`,
+      { objectKey }
     );
     return res.data;
   },

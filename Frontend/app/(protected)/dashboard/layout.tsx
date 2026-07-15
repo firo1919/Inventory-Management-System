@@ -337,7 +337,6 @@ function LoaderComponent() {
   return (
     <div className="flex flex-col items-center gap-3">
       <Loader2 className="w-10 h-10 text-indigo-500 animate-spin" />
-      <p className="text-slate-400 text-sm font-medium animate-pulse">Initializing session...</p>
     </div>
   );
 }

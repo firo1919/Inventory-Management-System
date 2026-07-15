@@ -4,6 +4,8 @@ import React, { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { productsService } from "@/services/products";
 import { categoriesService } from "@/services/categories";
+import { profileService } from "@/services/profile";
+import axios from "axios";
 import { toast } from "sonner";
 import { Plus, Search, Edit2, Trash2, Image as ImageIcon, CheckCircle, XCircle, Eye, Upload } from "lucide-react";
 import { ProductFormModal } from "./_components/ProductFormModal";
@@ -45,6 +47,9 @@ export default function ProductsPage() {
 
   // Selected Product State for Modals
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
+
+  // Broken image fallback state
+  const [brokenImages, setBrokenImages] = useState<Record<string, boolean>>({});
 
   // Image Upload State
   const [uploading, setUploading] = useState(false);
@@ -193,11 +198,20 @@ export default function ProductsPage() {
     setUploadProgress(10);
 
     try {
-      const formData = new FormData();
-      formData.append("file", file);
+      // 1. Get presigned upload URL from backend
+      setUploadProgress(30);
+      const presignData = await profileService.getPresignedUrl(file.name, file.type);
+      const { objectKey, uploadUrl } = presignData;
 
-      setUploadProgress(40);
-      await productsService.uploadProductImage(selectedProduct.id, formData);
+      // 2. Direct PUT upload to S3 bucket
+      setUploadProgress(60);
+      await axios.put(uploadUrl, file, {
+        headers: { "Content-Type": file.type },
+      });
+
+      // 3. Link object key to the product on the backend
+      setUploadProgress(90);
+      await productsService.uploadProductImage(selectedProduct.id, objectKey);
 
       setUploadProgress(100);
       toast.success("Image uploaded!");
@@ -367,39 +381,46 @@ export default function ProductsPage() {
                       onClick={() => openViewModal(p)}
                       className="hover:bg-slate-50/50 dark:hover:bg-[#1c1c24]/10 text-slate-600 dark:text-slate-300 cursor-pointer"
                     >
-                      <td className="p-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-slate-100 dark:bg-[#0a0a0f] rounded-lg flex items-center justify-center border border-slate-200 dark:border-white/5 overflow-hidden shrink-0">
-                            {p.imageUrls && p.imageUrls.length > 0 ? (
-                              <img src={p.imageUrls[0]} alt={p.name} className="w-full h-full object-cover" />
+                      <td className="py-4 px-5 align-middle">
+                        <div className="flex items-center gap-4">
+                          <div className="w-16 h-16 bg-slate-100 dark:bg-[#0a0a0f] rounded-xl flex items-center justify-center border border-slate-200 dark:border-white/5 overflow-hidden shrink-0 shadow-sm">
+                            {p.imageUrls && p.imageUrls.length > 0 && !brokenImages[p.id] ? (
+                              <img
+                                src={p.imageUrls[0]}
+                                alt={p.name}
+                                className="w-full h-full object-cover"
+                                onError={() => setBrokenImages((prev) => ({ ...prev, [p.id]: true }))}
+                              />
                             ) : (
-                              <ImageIcon className="w-4 h-4 text-slate-400" />
+                              <ImageIcon className="w-6 h-6 text-slate-400" />
                             )}
                           </div>
-                          <div className="min-w-0">
-                            <h4 className="font-semibold text-slate-800 dark:text-white text-sm truncate max-w-xs">{p.name}</h4>
-                            <p className="text-[10px] text-slate-400 truncate max-w-xs">{p.description || "No description provided."}</p>
+                          <div className="min-w-0 flex-1 flex flex-col justify-between py-0.5 h-16">
+                            <h4 className="font-bold text-slate-900 dark:text-white text-sm tracking-tight leading-snug truncate max-w-xs">{p.name}</h4>
+                            <p className="text-xs text-slate-400 line-clamp-2 max-w-xs leading-normal mt-auto">
+                              {p.description || "No description provided."}
+                            </p>
                           </div>
                         </div>
                       </td>
-                      <td className="p-4 font-mono text-xs text-indigo-400">{p.sku}</td>
-                      <td className="p-4">
-                        <div className="flex flex-wrap gap-1">
+                      <td className="py-4 px-5 font-mono text-sm font-bold text-indigo-400/90 align-middle">{p.sku}</td>
+                      <td className="py-4 px-5 align-middle">
+                        <div className="flex flex-wrap gap-1 max-w-[150px]">
                           {p.categoryIds && p.categoryIds.length > 0 ? (
                             p.categoryIds.map((cid: string) => (
-                              <span key={cid} className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-white/5 text-[10px] font-semibold text-slate-500">
+                              <span key={cid} className="px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-white/5 text-[10px] font-bold text-slate-500">
                                 {categoryMap[cid] || cid}
                               </span>
                             ))
                           ) : (
-                            <span className="text-[10px] text-slate-400">—</span>
+                            <span className="text-xs text-slate-400 font-medium">—</span>
                           )}
                         </div>
                       </td>
-                      <td className="p-4">
-                        <div className="flex flex-col">
+                      <td className="py-4 px-5 align-middle">
+                        <div className="flex flex-col gap-1.5">
                           <span
-                            className={`font-semibold text-xs ${
+                            className={`font-bold text-sm ${
                               isOutOfStock
                                 ? "text-red-500"
                                 : isLowStock
@@ -409,31 +430,31 @@ export default function ProductsPage() {
                           >
                             {p.quantity} units
                           </span>
-                          <span className="text-[9px] text-slate-400">Limit: {p.lowStockThreshold}</span>
+                          <span className="text-[10px] text-slate-400 font-medium">Limit: {p.lowStockThreshold}</span>
                         </div>
                       </td>
-                      <td className="p-4">
-                        <div className="flex flex-col">
-                          <span className="font-bold text-xs text-indigo-500">${p.sellingPrice?.toFixed(2)}</span>
-                          <span className="text-[9px] text-slate-400">Cost: ${p.costPrice?.toFixed(2)}</span>
+                      <td className="py-4 px-5 align-middle">
+                        <div className="flex flex-col gap-1.5">
+                          <span className="font-extrabold text-sm text-indigo-500">${p.sellingPrice?.toFixed(2)}</span>
+                          <span className="text-[10px] text-slate-400 font-medium">Cost: ${p.costPrice?.toFixed(2)}</span>
                         </div>
                       </td>
-                      <td className="p-4" onClick={(e) => e.stopPropagation()}>
+                      <td className="py-4 px-5 align-middle" onClick={(e) => e.stopPropagation()}>
                         {isAdmin ? (
                           <button
                             onClick={() => handleToggleStatus(p.id, p.active)}
-                            className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase border transition-all ${
+                            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-[11px] font-bold uppercase border transition-all ${
                               p.active
                                 ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20"
                                 : "bg-red-500/10 text-red-500 border-red-500/20 hover:bg-red-500/20"
                             } cursor-pointer`}
                           >
-                            {p.active ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
+                            {p.active ? <CheckCircle className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
                             {p.active ? "Active" : "Disabled"}
                           </button>
                         ) : (
                           <span
-                            className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase border ${
+                            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-[11px] font-bold uppercase border ${
                               p.active
                                 ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
                                 : "bg-red-500/10 text-red-500 border-red-500/20"
@@ -444,35 +465,35 @@ export default function ProductsPage() {
                         )}
                       </td>
                       {isAdmin && (
-                        <td className="p-4" onClick={(e) => e.stopPropagation()}>
-                          <div className="flex items-center justify-center gap-1.5">
+                        <td className="py-4 px-5 align-middle" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center justify-center gap-2">
                             <button
                               onClick={() => openViewModal(p)}
                               title="View details"
-                              className="p-1.5 rounded-lg border border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-[#0a0a0f] text-slate-400 hover:text-indigo-500 hover:bg-slate-100 transition-colors cursor-pointer"
+                              className="p-2 rounded-xl border border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-[#0a0a0f] text-slate-400 hover:text-indigo-500 hover:bg-slate-100 transition-colors cursor-pointer"
                             >
-                              <Eye className="w-4 h-4" />
+                              <Eye className="w-4.5 h-4.5" />
                             </button>
                             <button
                               onClick={() => openUploadModal(p)}
                               title="Upload product image"
-                              className="p-1.5 rounded-lg border border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-[#0a0a0f] text-slate-400 hover:text-blue-500 hover:bg-slate-100 transition-colors cursor-pointer"
+                              className="p-2 rounded-xl border border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-[#0a0a0f] text-slate-400 hover:text-blue-500 hover:bg-slate-100 transition-colors cursor-pointer"
                             >
-                              <Upload className="w-4 h-4" />
+                              <Upload className="w-4.5 h-4.5" />
                             </button>
                             <button
                               onClick={() => openEditModal(p)}
                               title="Edit product"
-                              className="p-1.5 rounded-lg border border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-[#0a0a0f] text-slate-400 hover:text-emerald-500 hover:bg-slate-100 transition-colors cursor-pointer"
+                              className="p-2 rounded-xl border border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-[#0a0a0f] text-slate-400 hover:text-emerald-500 hover:bg-slate-100 transition-colors cursor-pointer"
                             >
-                              <Edit2 className="w-4 h-4" />
+                              <Edit2 className="w-4.5 h-4.5" />
                             </button>
                             <button
                               onClick={() => openDeleteModal(p)}
                               title="Delete product"
-                              className="p-1.5 rounded-lg border border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-[#0a0a0f] text-slate-400 hover:text-red-500 hover:bg-slate-100 transition-colors cursor-pointer"
+                              className="p-2 rounded-xl border border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-[#0a0a0f] text-slate-400 hover:text-red-500 hover:bg-slate-100 transition-colors cursor-pointer"
                             >
-                              <Trash2 className="w-4 h-4" />
+                              <Trash2 className="w-4.5 h-4.5" />
                             </button>
                           </div>
                         </td>

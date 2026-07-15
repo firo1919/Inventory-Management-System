@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 
+export const dynamic = "force-dynamic";
+
 async function handleProxy(
   request: NextRequest,
   { params }: { params: Promise<{ path: string[] }> }
@@ -63,6 +65,7 @@ async function handleProxy(
     method: request.method,
     headers,
     body,
+    cache: "no-store",
   });
 
   // 5. Handle Token Refresh if backend returns 401 Unauthorized
@@ -97,6 +100,7 @@ async function handleProxy(
           method: request.method,
           headers,
           body,
+          cache: "no-store",
         });
 
         // Set new cookies on the response so they are saved in the browser
