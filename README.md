@@ -17,7 +17,7 @@ The system operates as a decoupled architecture:
 
 ### 🔐 Authentication & Security
 
-- **Better Auth / Spring Security JWT Integration**: Secure session management using Access and Refresh tokens.
+- **Auth.js / Spring Security JWT Integration**: Secure session management using Access and Refresh tokens.
 - **Multi-Factor Admin Signups**: Administrator signups require an OTP code sent via SMTP (monitored locally via Mailhog).
 - **Role-Based Guards**: Hard separation between `ADMIN` and `EMPLOYEE` permissions on both server-side security rules and client-side view states.
 - **Internal Proxying**: All client API requests go through Next.js route handlers rather than exposing Java backend endpoints directly to the browser.
@@ -44,7 +44,7 @@ The system operates as a decoupled architecture:
 | **Framework**            | Spring Boot 4.x / Spring Security         | Next.js 15.x / React 19 / Turbopack |
 | **Languages**            | Java 25                                   | TypeScript                          |
 | **Database & Migration** | PostgreSQL 16+, Flyway                    | -                                   |
-| **Cache & Session**      | Spring Data Redis                         | Better Auth                         |
+| **Cache & Session**      | Spring Data Redis                         | Auth.js                         |
 | **Storage / Assets**     | AWS S3 SDK (compatible with MinIO/RustFS) | Axios & Presigned PUT uploads       |
 | **Developer Tools**      | OpenAPI (SpringDoc), Mailhog, Docker      | Tailwind CSS, Lucide icons, Sonner  |
 

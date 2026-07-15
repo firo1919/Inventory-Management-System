@@ -4,7 +4,7 @@ This is the Next.js frontend application for the **Inventory Management System**
 
 ## 🚀 Key Features
 
-- **🔐 Robust Authentication**: Secure user login and registration powered by **Better Auth** and Spring Security, featuring:
+- **🔐 Robust Authentication**: Secure user login and registration powered by **Auth.js** and Spring Security, featuring:
   - Email/Password login with JWT access & refresh tokens.
   - Multi-Factor/OTP verification for administrator signup (integrated with Mailhog for local development).
   - Role-based views & route protection (Admin vs. Employee).
@@ -26,7 +26,7 @@ This is the Next.js frontend application for the **Inventory Management System**
 | **Framework** | Next.js 15+ (App Router) |
 | **Language** | TypeScript |
 | **Styling** | Tailwind CSS |
-| **Authentication** | Better Auth Client |
+| **Authentication** | Auth.js |
 | **API Client** | Axios (configured with interceptors for JWT auth headers) |
 | **State Management** | React Context (with local storage & cookies) |
 
