@@ -46,9 +46,14 @@ export default function DashboardOverview() {
       try {
         setLoading(true);
         
-        // 1) Fetch products (for total count)
-        const productsData = await productsService.getProducts({ page: 0, size: 1 });
+        // 1) Fetch products (to build product map & get total count)
+        const productsData = await productsService.getProducts({ page: 0, size: 100 });
         const totalProducts = productsData?.totalElements || 0;
+        const productsList = productsData?.content || [];
+        const pMap: Record<string, any> = {};
+        productsList.forEach((pr: any) => {
+          pMap[pr.id] = pr;
+        });
 
         // 2) Fetch low stock count & list
         const lowStockData = await productsService.getLowStockProducts({ page: 0, size: 5 });
@@ -74,26 +79,33 @@ export default function DashboardOverview() {
           restocksCount = restocksData?.totalElements || 0;
           const restocksList = restocksData?.content || [];
 
+          console.log("pMap:", pMap, "salesList:", salesList);
           // Merge sales and restocks into recent transactions
-          const formattedSales = salesList.map((s: any) => ({
-            id: s.id,
-            type: "SALE",
-            productName: s.productName || "Product",
-            quantity: s.quantity,
-            totalPrice: s.totalPrice || (s.quantity * s.unitPrice),
-            date: s.createdAt || s.saleDate,
-            user: s.employeeName || "System",
-          }));
+          const formattedSales = salesList.map((s: any) => {
+            const product = pMap[s.productId];
+            return {
+              id: s.id,
+              type: "SALE",
+              productName: product?.name || "Product",
+              quantity: s.quantity,
+              totalPrice: s.salePrice ? (s.quantity * s.salePrice) : (s.quantity * (product?.sellingPrice || 0)),
+              date: s.timestamp || s.createdAt || s.saleDate,
+              user: "Staff",
+            };
+          });
 
-          const formattedRestocks = restocksList.map((r: any) => ({
-            id: r.id,
-            type: "RESTOCK",
-            productName: r.productName || "Product",
-            quantity: r.quantity,
-            totalPrice: r.totalPrice || (r.quantity * r.unitPrice),
-            date: r.createdAt || r.restockDate,
-            user: r.employeeName || "System",
-          }));
+          const formattedRestocks = restocksList.map((r: any) => {
+            const product = pMap[r.productId];
+            return {
+              id: r.id,
+              type: "RESTOCK",
+              productName: product?.name || "Product",
+              quantity: r.quantity,
+              totalPrice: r.quantity * (product?.costPrice || 0),
+              date: r.timestamp || r.createdAt || r.restockDate,
+              user: "Staff",
+            };
+          });
 
           txList = [...formattedSales, ...formattedRestocks]
             .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
@@ -109,25 +121,31 @@ export default function DashboardOverview() {
           restocksCount = restocksData?.totalElements || 0;
           const restocksList = restocksData?.content || [];
 
-          const formattedSales = salesList.map((s: any) => ({
-            id: s.id,
-            type: "SALE",
-            productName: s.productName || "Product",
-            quantity: s.quantity,
-            totalPrice: s.totalPrice || (s.quantity * s.unitPrice),
-            date: s.createdAt || s.saleDate,
-            user: "Me",
-          }));
+          const formattedSales = salesList.map((s: any) => {
+            const product = pMap[s.productId];
+            return {
+              id: s.id,
+              type: "SALE",
+              productName: product?.name || "Product",
+              quantity: s.quantity,
+              totalPrice: s.salePrice ? (s.quantity * s.salePrice) : (s.quantity * (product?.sellingPrice || 0)),
+              date: s.timestamp || s.createdAt || s.saleDate,
+              user: "Me",
+            };
+          });
 
-          const formattedRestocks = restocksList.map((r: any) => ({
-            id: r.id,
-            type: "RESTOCK",
-            productName: r.productName || "Product",
-            quantity: r.quantity,
-            totalPrice: r.totalPrice || (r.quantity * r.unitPrice),
-            date: r.createdAt || r.restockDate,
-            user: "Me",
-          }));
+          const formattedRestocks = restocksList.map((r: any) => {
+            const product = pMap[r.productId];
+            return {
+              id: r.id,
+              type: "RESTOCK",
+              productName: product?.name || "Product",
+              quantity: r.quantity,
+              totalPrice: r.quantity * (product?.costPrice || 0),
+              date: r.timestamp || r.createdAt || r.restockDate,
+              user: "Me",
+            };
+          });
 
           txList = [...formattedSales, ...formattedRestocks]
             .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
@@ -150,7 +168,6 @@ export default function DashboardOverview() {
         setLoading(false);
       }
     }
-
     fetchDashboardData();
   }, [isAdmin]);
 

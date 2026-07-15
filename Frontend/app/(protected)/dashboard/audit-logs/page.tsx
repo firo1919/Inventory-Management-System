@@ -204,7 +204,10 @@ export default function AuditLogsPage() {
         </div>
         <div className="flex flex-wrap gap-3">
           <button
-            onClick={() => setIsDeleteModalOpen(true)}
+            onClick={() => {
+              console.log("Clear Logs button clicked!");
+              setIsDeleteModalOpen(true);
+            }}
             className="inline-flex items-center gap-1.5 px-3 py-2 bg-red-600/10 hover:bg-red-600/20 text-red-500 text-xs font-semibold rounded-xl transition-all border border-red-500/10 cursor-pointer"
           >
             <Trash2 className="w-4 h-4" /> Clear Logs
@@ -238,7 +241,7 @@ export default function AuditLogsPage() {
                 Total Actions
               </p>
               <h4 className="text-lg font-bold text-slate-800 dark:text-white mt-0.5">
-                {stats.totalLogsCount || 0}
+                {stats.totalLogs || 0}
               </h4>
             </div>
           </div>
