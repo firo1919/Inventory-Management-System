@@ -1,7 +1,6 @@
 package com.firomsa.inventory.service;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.UUID;
 
 import org.slf4j.MDC;
@@ -19,9 +18,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.firomsa.inventory.model.AuditAction;
 import com.firomsa.inventory.model.AuditLog;
 import com.firomsa.inventory.model.AuditStatus;
+import com.firomsa.inventory.model.User;
 import com.firomsa.inventory.repository.AuditLogRepository;
 import com.firomsa.inventory.repository.UserRepository;
-import com.firomsa.inventory.model.User;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
