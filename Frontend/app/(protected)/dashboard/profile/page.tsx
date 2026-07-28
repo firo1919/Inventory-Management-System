@@ -47,7 +47,6 @@ export default function ProfilePage() {
     try {
       const updatedData = await profileService.updateProfile({
         ...data,
-        password: "", // Not changing password — send empty placeholder
       });
       setProfile(updatedData);
       toast.success("Profile updated successfully!");

@@ -44,23 +44,22 @@ export default function CategoriesPage() {
         size: pageSize,
       });
 
-      let content = data?.content || [];
-
-      // Client side filtering for search query if needed
-      if (search) {
-        const query = search.toLowerCase();
-        content = content.filter((c: Category) => c.name.toLowerCase().includes(query));
-      }
-
-      setCategories(content);
+      setCategories(data?.content || []);
       setTotalPages(data?.totalPages || 1);
-      setTotalElements(data?.totalElements || content.length);
+      setTotalElements(data?.totalElements || (data?.content || []).length);
     } catch {
       toast.error("Failed to fetch categories.");
     } finally {
       setLoading(false);
     }
   };
+
+  const displayedCategories = search.trim()
+    ? categories.filter((c) => c.name.toLowerCase().includes(search.toLowerCase()))
+    : categories;
+
+  const effectiveTotalElements = search.trim() ? displayedCategories.length : totalElements;
+  const effectiveTotalPages = search.trim() ? (Math.ceil(displayedCategories.length / pageSize) || 1) : totalPages;
 
   useEffect(() => {
     const load = async () => {
@@ -191,14 +190,14 @@ export default function CategoriesPage() {
                     <td colSpan={3} className="p-4 h-12 bg-slate-50/10 dark:bg-[#0e0e13]/10" />
                   </tr>
                 ))
-              ) : categories.length === 0 ? (
+              ) : displayedCategories.length === 0 ? (
                 <tr>
                   <td colSpan={3} className="p-8 text-center text-slate-400">
                     No categories found
                   </td>
                 </tr>
               ) : (
-                categories.map((c) => (
+                displayedCategories.map((c) => (
                   <tr key={c.id} className="hover:bg-slate-50/50 dark:hover:bg-[#1c1c24]/10 text-slate-600 dark:text-slate-300">
                     <td className="p-4 font-mono text-xs text-indigo-400">{c.id}</td>
                     <td className="p-4 font-semibold text-slate-800 dark:text-white">{c.name}</td>
@@ -233,8 +232,8 @@ export default function CategoriesPage() {
         <Pagination
           page={page}
           pageSize={pageSize}
-          totalPages={totalPages}
-          totalElements={totalElements}
+          totalPages={effectiveTotalPages}
+          totalElements={effectiveTotalElements}
           onPageChange={setPage}
           loading={loading}
           itemName="categories"

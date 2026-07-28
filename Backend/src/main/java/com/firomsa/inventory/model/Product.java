@@ -20,6 +20,7 @@ import jakarta.persistence.EntityListeners;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.DecimalMin;
@@ -82,7 +83,8 @@ public class Product {
     @Builder.Default
     private boolean active = Boolean.TRUE;
 
-    @ManyToMany(mappedBy = "products")
+    @ManyToMany
+    @JoinTable(name = "product_categories", joinColumns = @JoinColumn(name = "product_id", referencedColumnName = "id"), inverseJoinColumns = @JoinColumn(name = "categories_id", referencedColumnName = "id"))
     @Builder.Default
     private Set<Category> categories = new HashSet<>();
 

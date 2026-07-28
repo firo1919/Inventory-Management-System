@@ -39,6 +39,7 @@ public interface UserMapper {
     void updateModelFromDTO(@MappingTarget User user, UserUpdateRequestDTO requestDTO);
 
     @Mapping(target = "id", ignore = true)
+    @Mapping(target = "password", ignore = true)
     @Mapping(target = "imageKey", ignore = true)
     @Mapping(target = "active", ignore = true)
     @Mapping(target = "enabled", ignore = true)
