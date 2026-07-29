@@ -37,7 +37,7 @@ import lombok.Setter;
 @Getter
 @Setter
 public class AuditLog {
-    
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

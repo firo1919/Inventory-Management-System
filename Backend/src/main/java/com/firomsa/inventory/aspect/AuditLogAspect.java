@@ -7,6 +7,10 @@ import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
+import org.slf4j.MDC;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,11 +18,14 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import com.firomsa.inventory.model.AuditAction;
 import com.firomsa.inventory.model.AuditStatus;
 import com.firomsa.inventory.service.AuditLogService;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -46,18 +53,61 @@ public class AuditLogAspect {
         Object oldValue = null;
         Object newValue = null;
 
+        // Synchronously capture user details and HTTP request context before proceeding or spawning @Async thread
+        String username = extractUsername();
+        String correlationId = MDC.get("correlationId");
+        HttpServletRequest request = getCurrentRequest();
+        String ipAddress = request != null ? getClientIpAddress(request) : null;
+        String userAgent = request != null ? request.getHeader("User-Agent") : null;
+
         try {
             Object result = joinPoint.proceed();
 
-            auditLogService.logAudit(action, resourceType, resourceId, oldValue, newValue,
-                    AuditStatus.SUCCESS, null);
+            auditLogService.logAuditWithContext(action, resourceType, resourceId, oldValue, newValue,
+                    AuditStatus.SUCCESS, null, username, correlationId, ipAddress, userAgent);
 
             return result;
         } catch (Exception e) {
-            auditLogService.logAudit(action, resourceType, resourceId, oldValue, newValue,
-                    AuditStatus.FAILURE, e.getMessage());
+            auditLogService.logAuditWithContext(action, resourceType, resourceId, oldValue, newValue,
+                    AuditStatus.FAILURE, e.getMessage(), username, correlationId, ipAddress, userAgent);
             throw e;
         }
+    }
+
+    private String extractUsername() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()
+                || "anonymousUser".equals(authentication.getPrincipal())) {
+            return null;
+        }
+
+        Object principal = authentication.getPrincipal();
+        if (principal instanceof Jwt jwt) {
+            String email = jwt.getClaimAsString("email");
+            if (email != null && !email.isBlank()) {
+                return email;
+            }
+            return jwt.getSubject();
+        } else if (principal instanceof org.springframework.security.core.userdetails.UserDetails ud) {
+            return ud.getUsername();
+        } else if (principal instanceof String s) {
+            return s;
+        }
+
+        return authentication.getName();
+    }
+
+    private HttpServletRequest getCurrentRequest() {
+        ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        return attributes != null ? attributes.getRequest() : null;
+    }
+
+    private String getClientIpAddress(HttpServletRequest request) {
+        String xForwardedFor = request.getHeader("X-Forwarded-For");
+        if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
+            return xForwardedFor.split(",")[0].trim();
+        }
+        return request.getRemoteAddr();
     }
 
     private String extractResourceType(Method method) {

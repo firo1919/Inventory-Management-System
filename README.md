@@ -2,6 +2,8 @@
 
 A production-ready, full-stack Inventory Management System featuring a high-performance **Spring Boot 4 backend** and a modern, responsive **Next.js 15+ frontend** dashboard. Manage your catalog, category hierarchies, transactions, users, role-based controls, audits, and uploads under a unified workflow.
 
+<img width="1366" height="1198" alt="image" src="https://github.com/user-attachments/assets/8fc5eef7-6187-4a76-8bf2-c59086d226fe" />
+
 ---
 
 ## 🏗️ Architecture Overview
