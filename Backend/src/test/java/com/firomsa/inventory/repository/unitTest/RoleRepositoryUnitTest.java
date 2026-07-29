@@ -26,6 +26,7 @@ public class RoleRepositoryUnitTest {
     @DisplayName("should find role by name")
     void shouldFindRoleByName() {
         // Arrange
+        roleRepository.deleteAll();
         Role role = new Role();
         role.setName(Roles.EMPLOYEE);
         roleRepository.save(role);
