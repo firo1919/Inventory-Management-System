@@ -132,11 +132,11 @@ public class ProductRepositoryUnitTest {
         productRepository.save(product1);
         productRepository.save(product2);
 
-        // Category owns the join table, so associate from the owning side.
-        electronics.setProducts(new java.util.HashSet<>(java.util.Set.of(product1)));
-        furniture.setProducts(new java.util.HashSet<>(java.util.Set.of(product2)));
-        categoryRepository.save(electronics);
-        categoryRepository.save(furniture);
+        // Product owns the join table, so associate from the owning side.
+        product1.setCategories(new java.util.HashSet<>(java.util.Set.of(electronics)));
+        product2.setCategories(new java.util.HashSet<>(java.util.Set.of(furniture)));
+        productRepository.save(product1);
+        productRepository.save(product2);
 
         // Act
         BigDecimal electronicsValue = productRepository.calculateInventoryValueByCategory(electronics.getId());
