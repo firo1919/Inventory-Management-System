@@ -8,6 +8,7 @@ import org.springframework.core.env.Environment;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -39,6 +40,14 @@ public class AuditLogService {
     @Async
     public void logAudit(AuditAction action, String resourceType, UUID resourceId,
             Object oldValue, Object newValue, AuditStatus status, String errorMessage) {
+        logAuditWithContext(action, resourceType, resourceId, oldValue, newValue, status, errorMessage,
+                null, null, null, null);
+    }
+
+    @Async
+    public void logAuditWithContext(AuditAction action, String resourceType, UUID resourceId,
+            Object oldValue, Object newValue, AuditStatus status, String errorMessage,
+            String username, String correlationId, String ipAddress, String userAgent) {
 
         if (!isAuditLoggingEnabled()) {
             return;
@@ -46,7 +55,7 @@ public class AuditLogService {
 
         try {
             AuditLog auditLog = buildAuditLog(action, resourceType, resourceId,
-                    oldValue, newValue, status, errorMessage);
+                    oldValue, newValue, status, errorMessage, username, correlationId, ipAddress, userAgent);
 
             auditLogRepository.save(auditLog);
             log.debug("Audit log saved successfully for action: {} on resource: {}",
@@ -57,34 +66,31 @@ public class AuditLogService {
     }
 
     private AuditLog buildAuditLog(AuditAction action, String resourceType, UUID resourceId,
-            Object oldValue, Object newValue, AuditStatus status, String errorMessage) {
+            Object oldValue, Object newValue, AuditStatus status, String errorMessage,
+            String providedUsername, String providedCorrelationId, String providedIpAddress, String providedUserAgent) {
 
-        String correlationId = MDC.get("correlationId");
+        String correlationId = providedCorrelationId != null ? providedCorrelationId : MDC.get("correlationId");
         UUID correlationIdUuid = correlationId != null ? UUID.fromString(correlationId) : UUID.randomUUID();
 
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = providedUsername;
+        if (username == null) {
+            username = resolveUsernameFromSecurityContext();
+        }
+
         UUID userId = null;
-        String username = null;
-
-        if (authentication != null && authentication.isAuthenticated()
-                && !"anonymousUser".equals(authentication.getPrincipal())) {
-            Object principal = authentication.getPrincipal();
-            if (principal instanceof org.springframework.security.core.userdetails.UserDetails) {
-                username = ((org.springframework.security.core.userdetails.UserDetails) principal).getUsername();
-            } else if (principal instanceof String) {
-                username = (String) principal;
-            }
-
-            if (username != null) {
-                userId = userRepository.findByEmail(username)
-                        .map(User::getId)
-                        .orElse(null);
-            }
+        if (username != null) {
+            final String targetUsername = username;
+            userId = userRepository.findByEmail(targetUsername)
+                    .or(() -> userRepository.findByUsername(targetUsername))
+                    .map(User::getId)
+                    .orElse(null);
         }
 
         HttpServletRequest request = getCurrentRequest();
-        String ipAddress = request != null ? getClientIpAddress(request) : null;
-        String userAgent = request != null ? request.getHeader("User-Agent") : null;
+        String ipAddress = providedIpAddress != null ? providedIpAddress
+                : (request != null ? getClientIpAddress(request) : null);
+        String userAgent = providedUserAgent != null ? providedUserAgent
+                : (request != null ? request.getHeader("User-Agent") : null);
 
         return AuditLog.builder()
                 .correlationId(correlationIdUuid)
@@ -101,6 +107,27 @@ public class AuditLogService {
                 .status(status)
                 .errorMessage(errorMessage)
                 .build();
+    }
+
+    private String resolveUsernameFromSecurityContext() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.isAuthenticated()
+                && !"anonymousUser".equals(authentication.getPrincipal())) {
+            Object principal = authentication.getPrincipal();
+            if (principal instanceof Jwt jwt) {
+                String email = jwt.getClaimAsString("email");
+                if (email != null && !email.isBlank()) {
+                    return email;
+                }
+                return jwt.getSubject();
+            } else if (principal instanceof org.springframework.security.core.userdetails.UserDetails ud) {
+                return ud.getUsername();
+            } else if (principal instanceof String s) {
+                return s;
+            }
+            return authentication.getName();
+        }
+        return null;
     }
 
     private String serializeToJson(Object object) {
