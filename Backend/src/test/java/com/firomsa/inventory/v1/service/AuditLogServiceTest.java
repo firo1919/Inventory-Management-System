@@ -118,7 +118,7 @@ class AuditLogServiceTest {
 
         org.mockito.ArgumentCaptor<AuditLog> captor = org.mockito.ArgumentCaptor.forClass(AuditLog.class);
         verify(auditLogRepository).save(captor.capture());
-        
+
         assertEquals(userId, captor.getValue().getUserId());
         assertEquals(username, captor.getValue().getUsername());
     }

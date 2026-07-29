@@ -24,17 +24,17 @@ public class CorrelationIdFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
             FilterChain filterChain) throws ServletException, IOException {
-        
+
         String correlationId = request.getHeader(CORRELATION_ID_HEADER);
-        
+
         if (correlationId == null || correlationId.isBlank()) {
             correlationId = UUID.randomUUID().toString();
         }
-        
+
         try {
             MDC.put(CORRELATION_ID_MDC_KEY, correlationId);
             response.setHeader(CORRELATION_ID_HEADER, correlationId);
-            
+
             filterChain.doFilter(request, response);
         } finally {
             MDC.remove(CORRELATION_ID_MDC_KEY);

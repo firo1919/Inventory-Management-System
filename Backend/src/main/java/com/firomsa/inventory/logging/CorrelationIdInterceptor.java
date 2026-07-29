@@ -15,11 +15,11 @@ public class CorrelationIdInterceptor implements HandlerInterceptor {
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
         String correlationId = MDC.get(CORRELATION_ID_MDC_KEY);
-        
+
         if (correlationId == null || correlationId.isBlank()) {
             MDC.put(CORRELATION_ID_MDC_KEY, "MISSING");
         }
-        
+
         return true;
     }
 }

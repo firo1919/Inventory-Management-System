@@ -15,12 +15,12 @@ import lombok.NoArgsConstructor;
 public class PageRequest {
     @Builder.Default
     private int page = 0;
-    
+
     @Builder.Default
     private int size = 10;
-    
+
     private String sortBy;
-    
+
     @Builder.Default
     private Sort.Direction sortDirection = Sort.Direction.ASC;
 
