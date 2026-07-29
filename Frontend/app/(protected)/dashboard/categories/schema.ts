@@ -1,7 +1,10 @@
 import * as z from "zod";
 
 export const categorySchema = z.object({
-  name: z.string().min(1, "Category name is required").max(50, "Category name cannot exceed 50 characters"),
+    name: z
+        .string()
+        .min(1, "Category name is required")
+        .max(50, "Category name cannot exceed 50 characters"),
 });
 
 export type CategoryInput = z.infer<typeof categorySchema>;
